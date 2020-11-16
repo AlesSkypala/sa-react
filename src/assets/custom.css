@@ -1,0 +1,83 @@
+#toph {
+
+  display: none;
+}
+
+.main-sidebar {
+  height: 100%;
+  overflow: auto;
+}
+
+.myBox p {
+  margin: 0 0 0 0;
+  display: block;
+  line-height: 1em;
+}
+
+#world-map-markers {
+  height: 400px;
+}
+
+app-iframe {
+  min-height: inherit;
+}
+
+section.container-fluid {
+  min-height: inherit;
+}
+
+#form-iframe {
+  min-height: inherit;
+}
+
+.custom-knob-label {
+  font: bold 15px solid;
+  margin-bottom: 10px;
+}
+
+.top-part-menu {
+  /*position: absolute;*/
+  /*top: 50px;*/
+  width: 100%;
+  /*height: 238px; !*Height of top frame div*!*/
+  overflow: hidden; /*Disable scrollbars. Set to "scroll" to enable*/
+}
+
+.central-part-menu {
+  /*position: fixed;*/
+  /*top: 288px; !*Set top value to HeightOfTopFrameDiv*!*/
+  width: 230px;
+  bottom: 1px;
+  overflow: auto;
+}
+
+.bottom-part-menu {
+  top: auto;
+  bottom: 0;
+  height: 110px; /*Height of bottom frame div*/
+  overflow: hidden; /*Disable scrollbars. Set to "scroll" to enable*/
+
+}
+
+/*****
+** Scrollbar customs
+***/
+/* width */
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: #1e5474;
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: #3c8dbc;
+}
