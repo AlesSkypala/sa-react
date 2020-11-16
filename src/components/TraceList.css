@@ -1,0 +1,7 @@
+.btn-group.btn-group-stretch {
+    display: flex;
+}
+
+.btn-group-stretch .btn {
+    flex: 1
+}
