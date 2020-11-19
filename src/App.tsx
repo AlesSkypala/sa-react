@@ -2,6 +2,8 @@ import React from 'react';
 import { GraphContainer, Header, SideMenu, ContainerLayout, GraphComponent } from './components';
 
 import './App.css';
+import { ModalPortal, ImportModal, ImportResult } from './components/Modals';
+import { DialogService } from './services';
 
 class App
 extends React.Component<{}, AppState> {
@@ -13,7 +15,12 @@ extends React.Component<{}, AppState> {
     };
 
     toggleLock = () => this.setState({ locked: !this.state.locked });
-    addGraph = () => console.log('Adding a graph');
+    addGraph = () => DialogService.open(ImportModal, this.onAdd, { isGraph: true });
+
+    onAdd = (result: ImportResult) => {
+        if (!result) { return; }
+        console.log(result);
+    }
 
     public render() {
         return (
@@ -26,11 +33,12 @@ extends React.Component<{}, AppState> {
                 <SideMenu>
 
                 </SideMenu>
-                <GraphContainer layout={this.state.layout}>
+                <GraphContainer layout={this.state.layout} locked={this.state.locked}>
                     {this.state.graphs.map(g => (
                         <GraphComponent key={g.id} {...g} />
                     ))}
                 </GraphContainer>
+                <ModalPortal />
             </>
         );
     }
