@@ -11,6 +11,9 @@ extends React.Component<Props, State> {
                     isResizable={!this.props.locked}
                     isDraggable={!this.props.locked}
                     useCSSTransforms
+                    style={{ height: '100%'}}
+
+                    onLayoutChange={this.props.onLayoutChange}
                 >
                 {this.props.children}
                 </Grid>
@@ -22,6 +25,8 @@ extends React.Component<Props, State> {
 export interface Props {
     layout?: ContainerLayout;
     locked?: boolean;
+
+    onLayoutChange?(layout: ContainerLayout): void;
 }
 
 export interface State {

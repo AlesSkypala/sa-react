@@ -15,12 +15,18 @@ extends React.Component<{}, AppState> {
     };
 
     toggleLock = () => this.setState({ locked: !this.state.locked });
-    addGraph = () => DialogService.open(ImportModal, this.onAdd, { isGraph: true });
+    addGraph = () => DialogService.open(ImportModal, this.onAddGraph, { isGraph: true });
 
-    onAdd = (result: ImportResult) => {
+    onAddGraph = (result: Graph) => {
         if (!result) { return; }
-        console.log(result);
+
+        const { graphs } = this.state;
+        
+        result.id = graphs.length > 0 ? Math.max(...graphs.map(g => g.id)) + 1 : 0;
+        this.setState({ graphs: [ ...graphs, result ]})
     }
+
+    onRelayout = (layout: ContainerLayout) => this.setState({ layout });
 
     public render() {
         return (
@@ -33,7 +39,11 @@ extends React.Component<{}, AppState> {
                 <SideMenu>
 
                 </SideMenu>
-                <GraphContainer layout={this.state.layout} locked={this.state.locked}>
+                <GraphContainer
+                    layout={this.state.layout}
+                    locked={this.state.locked}
+                    onLayoutChange={this.onRelayout}
+                >
                     {this.state.graphs.map(g => (
                         <GraphComponent key={g.id} {...g} />
                     ))}

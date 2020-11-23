@@ -7,6 +7,8 @@ import { ControlsService, DataService, Deserialization } from '../services';
 import Plotly from 'plotly.js-gl2d-dist';
 import { Figure } from 'react-plotly.js';
 
+import './Graph.css';
+
 const Plot = createPlotlyComponent(Plotly);
 
 class GraphComponent
@@ -82,7 +84,7 @@ extends React.Component<GraphProps, State> {
         const { title, traces, xLabel, yLabel } = this.props;
 
         return (
-            <div>
+            <div className='graph'>
                 <div className='text-center position-relative'>
                     <h1 className='w-100 text-center'>{title}</h1>
                     <div style={{ right: 0, top: 0 }} className='position-absolute buttons'>

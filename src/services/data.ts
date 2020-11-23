@@ -18,14 +18,26 @@ class Data {
     public getPipelineSpecs = async (pipeline: PipelineRequest) => {
       return await (await fetch(
         this.getApiPath('data', 'specs'),
-        { body: JSON.stringify(pipeline), method: 'post' }
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(pipeline),
+          method: 'post'
+        }
       )).json();
     }
   
     public getPipelineData = async (request: PipelineRequest): Promise<ArrayBuffer> => {
       return await (await fetch(
         this.getApiPath('data'),
-        { body: JSON.stringify(request), method: 'post' }
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(request),
+          method: 'post'
+        }
       )).arrayBuffer();
     }
   
@@ -33,8 +45,11 @@ class Data {
       return await (await fetch(
         this.getApiPath('data', source, 'features', 'ldev_map'),
         {
-            body: JSON.stringify({ id: ldev }),
-            method: 'post'
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id: ldev }),
+          method: 'post'
         }
       )).json();
     }

@@ -3,9 +3,11 @@ import * as React from 'react';
 import { Button, Col, ModalTitle, Row, Form } from 'react-bootstrap';
 import Tree, { TreeNode } from 'rc-tree';
 import { ModalComponent } from '.';
-import { DataService } from '../../services';
+import { DataService, Deserialization } from '../../services';
+import DateRangePicker from 'react-bootstrap-daterangepicker';
 
 import 'rc-tree/assets/index.css';
+import 'bootstrap-daterangepicker/daterangepicker.css';
 
 class InfoModal
 extends ModalComponent<ImportResult, Args, State> {
@@ -14,16 +16,27 @@ extends ModalComponent<ImportResult, Args, State> {
         xLabel: 'osa x',
         yLabel: 'osa y',
 
+        startDate: new Date(),
+        endDate: new Date(),
+
+        minDate: undefined,
+        maxDate: undefined,
+
         selected: [],
     };
 
-    constructor(props: any) {
-        super(props);
-
+    public componentDidMount() {
         DataService.getSources().then(this.loadTraces);
     }
 
-    private loadTraces = (sources: DataSource[]) => this.setState({ sources });
+    private sourceMap: { [key: string]: Dataset } = {};
+    private loadTraces = (sources: DataSource[]) => {
+        this.sourceMap = {};
+        sources.forEach(s => s.datasets.forEach(d => {
+            this.sourceMap[`${s.id}::${d.id}`] = d;
+        }))
+        this.setState({ sources })
+    }
 
     protected renderHeader(): JSX.Element {
         const { isGraph } = this.props.args;
@@ -32,8 +45,26 @@ extends ModalComponent<ImportResult, Args, State> {
         );
     }
 
-    private onCheck = (selected: any) => this.setState({ selected });
+    private onCheck = (selected: React.ReactText[]) => {
+        selected = selected.filter(s => s in this.sourceMap);
+        let additional: Partial<Pick<State, 'minDate' | 'maxDate'>> = {};
+        
+        if (this.state.selected.length <= 0 && selected.length > 0) {
+            additional = {
+                minDate: Deserialization.parseTimestamp(Math.max(...selected.map(t => this.sourceMap[t].availableXRange[0]))),
+                maxDate: Deserialization.parseTimestamp(Math.min(...selected.map(t => this.sourceMap[t].availableXRange[1]))),
+            };
+            // this.timeRange = [ this.minDate, this.maxDate ];
+        } else if (selected.length <= 0) {
+            additional = { maxDate: undefined, minDate: undefined };
+        }
+
+        this.setState({ ...additional, selected: selected as string[] });
+    }
     private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as any);
+    private onRangeChange = (start: any, end: any) => {
+        this.setState({ startDate: start._d, endDate: end._d });
+    }
 
     protected renderBody(): JSX.Element {
         if (!this.state.sources) {
@@ -50,7 +81,7 @@ extends ModalComponent<ImportResult, Args, State> {
                         selectable={false}
                         multiple
 
-                        onCheck={this.onCheck}
+                        onCheck={this.onCheck as any}
                     >
                     {this.state.sources.map(s => (
                         <TreeNode key={s.id} title={s.name}>
@@ -77,14 +108,58 @@ extends ModalComponent<ImportResult, Args, State> {
                     </Form.Group>
                     <Form.Group>
                         <Form.Label>Rozmezí</Form.Label>
-                        <Form.Control name='timeRange'></Form.Control>
-                        {/* TODO: time range */}
+                        
+                        <DateRangePicker
+                            key={this.rangeHash()}
+                            initialSettings={{
+                                minDate: this.state.minDate,
+                                maxDate: this.state.maxDate,
+                                timePicker: true,
+                                timePicker24Hour: true,
+                            }}
+                            onCallback={this.onRangeChange}
+                        >
+                            <Form.Control name='timeRange'></Form.Control>
+                        </DateRangePicker>
                     </Form.Group>
                 </Col>
             ) : undefined}
             </Row>
         );
     }
+
+    private rangeHash = () => (this.state.minDate?.getTime() || 0) + (this.state.maxDate?.getTime() || 0);
+    private generateTraces = (): Trace[] => this.state.selected.flatMap(s => {
+        const set = this.sourceMap[s];
+
+        if (set.variants) {
+            return set.variants.map(v => ({
+                id: `${s}::${v}`,
+                title: `${set.name} (${v})`,
+                pipeline: {
+                    type: 'data',
+                    dataset: {
+                        source: set.source,
+                        id: set.id,
+                        variant: v,
+                    }
+                } 
+            } as Trace));
+        } else {
+            return [ {
+                id: s,
+                title: set.name,
+                pipeline: {
+                    type: 'data',
+                    dataset: {
+                        source: set.source,
+                        id: set.id,
+                    }
+                } 
+            } as Trace ];
+        }
+    });
+
     private okClicked = () => this.resolve(this.props.args.isGraph ? {
         id: 0,
 
@@ -92,9 +167,12 @@ extends ModalComponent<ImportResult, Args, State> {
         xLabel: this.state.xLabel, 
         yLabel: this.state.yLabel,
 
-        xRange: [0, 0],
-        traces: [],
-    } as Graph : []);
+        xRange: [
+            Deserialization.dateToTimestamp(this.state.startDate),
+            Deserialization.dateToTimestamp(this.state.endDate)
+        ],
+        traces: this.generateTraces(),
+    } as Graph : this.generateTraces());
     private cancelClicked = () => this.resolve(undefined);
 
     protected renderFooter(): JSX.Element {
@@ -124,6 +202,12 @@ interface State {
     title: Graph['title'],
     xLabel: Graph['xLabel'],
     yLabel: Graph['yLabel'],
+
+    minDate?: Date,
+    maxDate?: Date,
+
+    startDate: Date,
+    endDate: Date,
 }
 
 export type ImportResult = Graph | Trace[];
