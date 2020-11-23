@@ -1,22 +1,30 @@
 import * as React from 'react';
-import { default as Grid, Layout } from 'react-grid-layout';
+import { default as Grid, Layout, WidthProvider } from 'react-grid-layout';
+
+import 'react-grid-layout/css/styles.css'
+import 'react-resizable/css/styles.css'
+
+const ResponsiveGrid = WidthProvider(Grid);
 
 class GraphContainerComponent
 extends React.Component<Props, State> {
     public render() {
         return (
             <div className='content-wrapper'>
-                <Grid
+                <ResponsiveGrid
                     layout={this.props.layout}
                     isResizable={!this.props.locked}
                     isDraggable={!this.props.locked}
                     useCSSTransforms
-                    style={{ height: '100%'}}
+                    cols={12}
+                    rowHeight={64}
+
+                    draggableHandle=".graph"
 
                     onLayoutChange={this.props.onLayoutChange}
                 >
                 {this.props.children}
-                </Grid>
+                </ResponsiveGrid>
             </div>
         );
     }

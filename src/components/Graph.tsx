@@ -3,9 +3,10 @@ import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import * as React from 'react';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import { ControlsService, DataService, Deserialization } from '../services';
-
+import AutoSizer from 'react-virtualized-auto-sizer';
 import Plotly from 'plotly.js-gl2d-dist';
 import { Figure } from 'react-plotly.js';
+import { Data as PlotlyData } from 'plotly.js';
 
 import './Graph.css';
 
@@ -48,7 +49,8 @@ extends React.Component<GraphProps, State> {
                     const idx = this.state.loadedData.findIndex(d => d.id === trace.id);
         
                     if (idx >= 0) {
-                        this.state.loadedData[idx].data = r;
+                        this.state.loadedData[idx].x = r.x;
+                        this.state.loadedData[idx].y = r.y;
                     } else {
                         this.setState({ loadedData: [ ...this.state.loadedData, {
                             id: trace.id,
@@ -67,6 +69,7 @@ extends React.Component<GraphProps, State> {
     }
 
     private onZoomSync = (zoom: Graph['zoom']) => this.setState({ zoom });
+    private onRemove = () => this.props.onRemove && this.props.onRemove(this.props.id);
 
     private onInitialized = (figure: Readonly<Figure>, elem: Readonly<HTMLElement>) => {
         this.figure = figure;
@@ -84,17 +87,19 @@ extends React.Component<GraphProps, State> {
         const { title, traces, xLabel, yLabel } = this.props;
 
         return (
-            <div className='graph'>
+            <div className={`graph ${this.props.focused ? 'active' : ''}`}>
                 <div className='text-center position-relative'>
                     <h1 className='w-100 text-center'>{title}</h1>
                     <div style={{ right: 0, top: 0 }} className='position-absolute buttons'>
-                        <button className='btn btn-lg' onClick={undefined}><FontAwesomeIcon icon={faTrash} /></button>
+                        <button className='btn btn-lg' onClick={this.onRemove}><FontAwesomeIcon icon={faTrash} /></button>
                     </div>
                 </div>
                 <div className='graph-content'>
                 {traces.length <= 0 ?(
                     <div>Graf nemá žádné křivky</div>
                     ) : (
+                    <AutoSizer>
+                    {({height, width}) => (
                     <Plot
                         divId={`graph-${this.props.id}`}
                         config={{
@@ -108,14 +113,16 @@ extends React.Component<GraphProps, State> {
                             margin: { l: 48, t: 32, r: 16, b: 48 },
                             hovermode: false,
 
-                            // width:
-                            // height:
+                            width,
+                            height,
                         }}
                         revision={this.state.revision}
                         onInitialized={this.onInitialized}
                         onAfterPlot={this.onAfterPlot}
                         data={this.state.loadedData}
                     />
+                    )}
+                    </AutoSizer>
                 )}
                 </div>
             </div>
@@ -125,12 +132,15 @@ extends React.Component<GraphProps, State> {
 
 export interface GraphProps
 extends Graph {
+    focused?: boolean;
+
     onZoomUpdated?(id: Graph['id'], zoom: Graph['zoom']): void;
+    onRemove?(id: Graph['id']): void;
 }
 
 export interface State {
     revision: number;
-    loadedData: any[];
+    loadedData: (PlotlyData & { id: string })[];
 
     zoom?: Graph['zoom'];
 }
