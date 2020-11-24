@@ -1,11 +1,15 @@
 import { EventEmitter } from ".";
-import ModalComponent, { Props } from "../components/Modals/ModalComponent";
+import { ModalComponent, ModalProps, ConfirmArgs, ConfirmModal } from "../components/Modals";
 
 class Dialogs {
     public onOpen: EventEmitter<{ type: typeof ModalComponent, resolve: (result: any) => void; args: any; }> = new EventEmitter();
 
-    public open<T extends ModalComponent<S, SS>, S, SS>(type: new (props: Props<S,SS>) => T, resolve: ((result: S) => void), args: SS): void {
+    public open<T extends ModalComponent<S, SS>, S, SS>(type: new (props: ModalProps<S,SS>) => T, resolve: ((result: S) => void), args: SS): void {
         this.onOpen.emit({ type, resolve, args });
+    }
+
+    public openConfirmation(args: ConfirmArgs, resolve: ((result: boolean | undefined) => void)) {
+        this.onOpen.emit({ type: ConfirmModal, args, resolve });
     }
 }
 

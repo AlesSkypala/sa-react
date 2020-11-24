@@ -42,9 +42,9 @@ extends React.Component<GraphProps, State> {
             }
     
             if (newTraces.length > 0) {
-                DataService.getTraceData(this.props.xRange[0], this.props.xRange[1], newTraces).then(result => {
-    
-                Promise.all(result.map((t, i) => Deserialization.deserializePlotly(t[0], t[1]).then(r => {
+
+                const traceData = await DataService.getTraceData(this.props.xRange[0], this.props.xRange[1], newTraces);
+                await Promise.all(traceData.slice(0, 50).map((t, i) => Deserialization.deserializePlotly(t[0], t[1]).then(r => {
                     const trace = newTraces[i];
                     const idx = this.state.loadedData.findIndex(d => d.id === trace.id);
         
@@ -58,12 +58,11 @@ extends React.Component<GraphProps, State> {
                             name: trace.title,
                             mode: 'lines+markers',
                             ...r,
-                        } ] 
+                        } ],
+                            revision: ++this.state.revision
                         });
                     }
-                }))).then(_ => this.setState({ revision: ++this.state.revision }));
-    
-            });
+                })));
             }
         }
     }

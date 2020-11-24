@@ -1,17 +1,17 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import * as React from 'react';
-import { Form } from 'react-bootstrap';
+import { Button, Form } from 'react-bootstrap';
 
 import './SideMenu.css';
 import TraceList from './TraceList';
 
 class SideMenuComponent
 extends React.Component<Props, State> {
-    onPropertyChange = (event: React.ChangeEvent<HTMLInputElement>) => this.props.onPropertyChange && this.props.onPropertyChange(event.currentTarget.name as keyof Graph, event.currentTarget.value);
+    onPropertyChange = ({ currentTarget: { name, value } }: React.ChangeEvent<HTMLInputElement>) => this.props.onGraphPropChange(name as keyof Graph, value);
 
     public render() {
-        const { selectedGraph } = this.props;
+        const { selectedGraph, selectedTraces } = this.props;
 
         return (
             <aside className='main-sidebar'>
@@ -25,20 +25,25 @@ extends React.Component<Props, State> {
                             <Form.Group><Form.Label>Osa y:</Form.Label><Form.Control name='yLabel' value={selectedGraph.yLabel} onChange={this.onPropertyChange} /></Form.Group>
                         </Form>
                         <ul className="sidebar-menu">
-                            <li className="header" style={{ display: 'flex', alignItems: 'center' }}>
+                            <li className="header d-flex align-items-center pr-1">
                                 KŘIVKY
-                                <span className="btn btn-menu active text-secondary" style={{ marginLeft: 'auto'}}><FontAwesomeIcon icon={faPlusCircle} /></span>
+                                <Button
+                                    variant='link'
+                                    className='btn-menu active text-secondary'
+                                    style={{ marginLeft: 'auto'}}
+                                    onClick={this.props.onTraceAddClick}
+                                >
+                                    <FontAwesomeIcon icon={faPlusCircle} />
+                                </Button>
                             </li>
                         </ul>
-                        <TraceList traces={selectedGraph.traces} />
-                        {/* <app-trace-controls (action)="traceControl($event)"></app-trace-controls>
-                        <app-trace-list
-                        [traces]="selectedGraph.traces"
-                        [selected]="selectedTraces"
-                        (toggle)="toggleTrace($event)"
-                        (showLdevMap)="showLdevMap($event)"
-                        >
-                        </app-trace-list> */}
+                        <TraceList
+                            traces={selectedGraph.traces}
+                            selected={selectedTraces}
+
+                            onSelect={this.props.onTraceSelect}
+                            onAction={this.props.onTraceAction}                            
+                        />
                     </>
                 ) : (
                     <ul className='sidebar-menu'>
@@ -54,8 +59,12 @@ extends React.Component<Props, State> {
 
 export interface Props {
     selectedGraph?: Graph;
+    selectedTraces: Trace['id'][];
 
-    onPropertyChange?<T extends keyof Graph>(key: T, value: Graph[T]): void;
+    onGraphPropChange<T extends keyof Graph>(key: T, value: Graph[T]): void;
+    onTraceSelect(id: Trace['id']): void;
+    onTraceAction(action: TraceAction): void;
+    onTraceAddClick(): void;
 }
 
 export interface State {

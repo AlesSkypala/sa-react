@@ -5,9 +5,9 @@ import ModalHeader from 'react-bootstrap/ModalHeader';
 abstract class ModalComponent<R, T = any, S = {}>
 extends React.Component<Props<R, T>, S> {
 
-    protected abstract renderHeader(): JSX.Element;
-    protected abstract renderBody(): JSX.Element;
-    protected abstract renderFooter(): JSX.Element;
+    protected abstract renderHeader(): React.ReactNode;
+    protected abstract renderBody(): React.ReactNode;
+    protected abstract renderFooter(): React.ReactNode;
 
     private onHide = () => this.resolve(undefined);
 

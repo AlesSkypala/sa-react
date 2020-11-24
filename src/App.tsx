@@ -1,15 +1,16 @@
 import React from 'react';
 import { GraphContainer, Header, SideMenu, ContainerLayout, GraphComponent } from './components';
+import { ModalPortal, ImportModal } from './components/Modals';
+import { DialogService } from './services';
 
 import './App.css';
-import { ModalPortal, ImportModal, ImportResult } from './components/Modals';
-import { DialogService } from './services';
 
 class App
 extends React.Component<{}, AppState> {
     public state: AppState = {
         locked: true,
         focused: -1,
+        selectedTraces: [],
 
         graphs: [],
         layout: [],
@@ -32,13 +33,54 @@ extends React.Component<{}, AppState> {
         });
     }
 
+    onAddTraces = (result: Trace[]) => {
+        if (!result || !Array.isArray(result)) {
+            return;
+        }
+        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+
+        if (graph) {
+            graph.traces = [ ...graph.traces, ...result ];
+            this.forceUpdate();
+        }
+    }
+
     onRelayout = (layout: ContainerLayout) => this.setState({ layout });
     focusGraph = (e: React.MouseEvent<HTMLDivElement>) => {
         const graphId = e.currentTarget.dataset.graph as string;
 
-        this.setState({ focused: Number.parseInt(graphId) });
+        this.setState({ focused: Number.parseInt(graphId), selectedTraces: [] });
     }
-    onRemoveGraph = (id: number) => this.setState({ graphs: [ ...this.state.graphs.filter(g => g.id !== id) ]});
+    onRemoveGraph = (id: number) => DialogService.openConfirmation(
+            {
+                title: `Smazat graf ${this.state.graphs.find(g => g.id === id)?.title || 'unkown'}`,
+                body: 'Opravdu chcete tento graf smazat?',
+                okColor: 'danger',
+            },
+            res => res && this.setState({ graphs: [ ...this.state.graphs.filter(g => g.id !== id) ]})
+        );
+
+    onTraceAction = (action: TraceAction) => { };
+    onTraceSelect = (id: string) => {
+        const { selectedTraces } = this.state;
+        const idx = selectedTraces.indexOf(id);
+
+        if (idx < 0) {
+            this.setState({ selectedTraces: [ ...selectedTraces, id ] });
+        } else {
+            selectedTraces.splice(idx, 1);
+            this.setState({ selectedTraces: [...selectedTraces] });
+        }
+    };
+    onGraphPropChange = (key: keyof Graph, value: Graph[keyof Graph]) => {
+        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+
+        if (graph) {
+            graph[key] = value as never;
+            this.forceUpdate();
+        }
+    };
+    onTraceAddClick = () => DialogService.open(ImportModal, this.onAddTraces, { isGraph: false });
 
     public render() {
         return (
@@ -50,6 +92,11 @@ extends React.Component<{}, AppState> {
                 />
                 <SideMenu
                     selectedGraph={this.state.graphs.find(g => g.id === this.state.focused)}
+                    selectedTraces={this.state.selectedTraces}
+                    onGraphPropChange={this.onGraphPropChange}
+                    onTraceAction={this.onTraceAction}
+                    onTraceSelect={this.onTraceSelect}
+                    onTraceAddClick={this.onTraceAddClick}
                 />
                 <GraphContainer
                     layout={this.state.layout}
@@ -78,6 +125,7 @@ extends React.Component<{}, AppState> {
 export interface AppState {
     locked: boolean;
     focused: Graph['id'];
+    selectedTraces: Trace['id'][];
     
     graphs: Graph[];
     layout: ContainerLayout;
