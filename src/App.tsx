@@ -1,6 +1,6 @@
 import React from 'react';
 import { GraphContainer, Header, SideMenu, ContainerLayout, GraphComponent } from './components';
-import { ModalPortal, ImportModal } from './components/Modals';
+import { ModalPortal, ImportModal, TraceSearchModal } from './components/Modals';
 import { DataService, Deserialization, DialogService } from './services';
 
 import './App.css';
@@ -91,7 +91,7 @@ extends React.Component<{}, AppState> {
                 this.selectUnique();
                 break;
             case 'search':
-                // TODO:
+                DialogService.open(TraceSearchModal, traces => traces !== undefined && this.setState({ selectedTraces: traces }), { traces: graph.traces });
                 break;
             case 'tres':
                 // TODO:
