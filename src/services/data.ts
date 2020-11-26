@@ -103,7 +103,7 @@ class Data {
       });
     }
   
-    private getTraceHash = (trace: Trace & { hash?: string }) => {
+    public getTraceHash = (trace: Trace & { hash?: string }) => {
       return trace.hash || (trace.hash = Md5.hashStr(JSON.stringify(trace.pipeline), false) as string);
     }
 }
