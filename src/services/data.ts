@@ -1,4 +1,5 @@
 import { Md5 } from "ts-md5";
+import TraceData from "./TraceData";
 
 class Data {
     private sources: DataSource[] | undefined = undefined;
@@ -54,7 +55,7 @@ class Data {
       )).json();
     }
   
-    public getTraceData = async (from: any, to: any, traces: Trace[]): Promise<[ PipelineSpecs, DataView, Trace ][]> => {
+    public getTraceData = async (from: any, to: any, traces: Trace[]): Promise<TraceData[]> => {
   
       const cached = traces.filter(t => {
         const h = this.getTraceHash(t);
@@ -98,8 +99,7 @@ class Data {
         const segment = entry.loadedSegments.find(seg => from >= seg[0] && to <= seg[1]);
   
         // TODO: view narrowing
-  
-        return [ entry.specs, new DataView(segment![2]), t];
+        return new TraceData(t, entry.specs, new DataView(segment![2]));
       });
     }
   

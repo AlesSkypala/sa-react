@@ -1,7 +1,7 @@
 import React from 'react';
 import { GraphContainer, Header, SideMenu, ContainerLayout, GraphComponent } from './components';
 import { ModalPortal, ImportModal, TraceSearchModal } from './components/Modals';
-import { DataService, Deserialization, DialogService } from './services';
+import { ControlsService, DataService, DialogService } from './services';
 
 import './App.css';
 
@@ -66,15 +66,24 @@ extends React.Component<{}, AppState> {
 
         const remaining: Trace[] = [];
 
-        for (const trace of graph.traces) {
-            const data = await DataService.getTraceData(graph.xRange[0], graph.xRange[1], [trace]);
+        const data = await DataService.getTraceData(graph.xRange[0], graph.xRange[1], graph.traces);
 
-            if (!(await Deserialization.isZero(data[0][0], data[0][1]))) {
-                remaining.push(trace);
+        for (const row of data) {
+            if (! await row.isZero()) {
+                remaining.push(row.trace);
             }
         }
 
         graph.traces = remaining;
+        this.setState({ selectedTraces: [] });
+    }
+
+    filterCurves = async () => {
+        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        if (!graph) return;
+
+        const filtered = graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) >= 0).map(t => ({ ...t, filtering: 'sg' } as Trace));
+        graph.traces = [ ...graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) < 0), ...filtered ];
         this.setState({ selectedTraces: [] });
     }
 
@@ -85,7 +94,7 @@ extends React.Component<{}, AppState> {
 
         switch (action) {
             case 'filter':
-                // TODO:
+                this.filterCurves();
                 break;
             case 'sel-unq':
                 this.selectUnique();
@@ -134,7 +143,7 @@ extends React.Component<{}, AppState> {
                 // TODO:
                 break;
             case 'zoom-sync':
-                // TODO:
+                this.zoomSync(graph.zoom);
                 break;
         }
     };
@@ -180,6 +189,20 @@ extends React.Component<{}, AppState> {
         }
         this.setState({ selectedTraces: newSel });
     }
+    onZoomUpdated = (id: number, zoom: [[Date, Date], [any, any]]) => {
+        const graph = this.state.graphs.find(g => g.id === id);
+        if (!graph) return;
+
+        graph.zoom = zoom;
+        this.forceUpdate();
+    }
+    zoomSync = (zoom: Graph['zoom']) => {
+        for (const graph of this.state.graphs) {
+            graph.zoom = zoom ? [ ...zoom ] : [ undefined, undefined ];
+        }
+
+        this.forceUpdate();
+    };
 
     public render() {
         return (
@@ -208,7 +231,12 @@ extends React.Component<{}, AppState> {
                             data-graph={g.id}
                             onClick={this.focusGraph}
                         >
-                            <GraphComponent {...g} focused={g.id === this.state.focused} onRemove={this.onRemoveGraph} />
+                            <GraphComponent
+                                {...g}
+                                focused={g.id === this.state.focused}
+                                onRemove={this.onRemoveGraph}
+                                onZoomUpdated={this.onZoomUpdated}
+                            />
                         </div>
                     ))}
                 </GraphContainer>

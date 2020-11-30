@@ -1,9 +1,9 @@
 import EventEmitter from "./EventEmitter";
 
 class Controls {
-    public zoomSync = new EventEmitter<Graph['zoom']>();
+    // public zoomSync = new EventEmitter<Graph['zoom']>();
 
-    public performZoomSync = (zoom: Graph['zoom']): void => this.zoomSync.emit(zoom);
+    // public performZoomSync = (zoom: Graph['zoom']): void => this.zoomSync.emit(zoom);
 }
 
 const _instance = new Controls();

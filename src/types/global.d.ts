@@ -38,3 +38,14 @@ declare var DateRangePicker: typeof ReactBootstrapDaterangepicker.DateRangePicke
 declare module "react-bootstrap-daterangepicker" {
     export = DateRangePicker;
 }
+
+declare module "ml-savitzky-golay-generalized" {
+    interface SGOptions {
+        windowSize: number = 9;
+        derivative: number = 0;
+        polynomial: number = 3;
+    }
+
+    export default function(dataY: number[], deltaXorX: number | number[], options?: Optional<SGOptions>): number[];
+
+}

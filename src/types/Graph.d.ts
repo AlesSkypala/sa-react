@@ -13,13 +13,14 @@ interface Graph {
     traces: Trace[];
 
     // Runtime
-    zoom?: [ [Date, Date], [any, any] ];
+    zoom?: [ [Date, Date] | undefined, [any, any] | undefined ];
 }
 
 interface Trace {
     id: string;
     title: string;
     
+    filtering?: 'sg';
     pipeline: NodeDescriptor;
 }
 

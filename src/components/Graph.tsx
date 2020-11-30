@@ -2,11 +2,11 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import * as React from 'react';
 import createPlotlyComponent from 'react-plotly.js/factory';
-import { ControlsService, DataService, Deserialization } from '../services';
+import {  DataService } from '../services';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import Plotly from 'plotly.js-gl2d-dist';
 import { Figure } from 'react-plotly.js';
-import { Data as PlotlyData } from 'plotly.js';
+import { Data as PlotlyData, PlotRelayoutEvent } from 'plotly.js';
 
 import './Graph.css';
 
@@ -14,21 +14,15 @@ const Plot = createPlotlyComponent(Plotly);
 
 class GraphComponent
 extends React.Component<GraphProps, State> {
-    private figure?: Readonly<Figure> = undefined;
-    private plotlyElem?: Readonly<HTMLElement> = undefined;
+    // private figure?: Readonly<Figure> = undefined;
+    // private plotlyElem?: Readonly<HTMLElement> = undefined;
 
     public state: State = {
         revision: 0,
         loadedData: [],
     }
-
     public componentDidMount() {
-        ControlsService.zoomSync.on(this.onZoomSync);
         this.componentDidUpdate({ ...this.props, traces: [] }, this.state);
-    }
-
-    public componentWillUnmount() {
-        ControlsService.zoomSync.remove(this.onZoomSync);
     }
 
     public async componentDidUpdate(prevProps: GraphProps, prevState: State) {
@@ -44,7 +38,7 @@ extends React.Component<GraphProps, State> {
             if (newTraces.length > 0) {
 
                 const traceData = await DataService.getTraceData(this.props.xRange[0], this.props.xRange[1], newTraces);
-                await Promise.all(traceData.slice(0, 50).map((t, i) => Deserialization.deserializePlotly(t[0], t[1]).then(r => {
+                await Promise.all(traceData.slice(0, 50).map((t, i) => t.toPlotly().then(r => {
                     const trace = newTraces[i];
                     const idx = this.state.loadedData.findIndex(d => d.id === trace.id);
         
@@ -67,23 +61,29 @@ extends React.Component<GraphProps, State> {
         }
     }
 
-    private onZoomSync = (zoom: Graph['zoom']) => this.setState({ zoom });
     private onRemove = () => this.props.onRemove && this.props.onRemove(this.props.id);
 
-    private onInitialized = (figure: Readonly<Figure>, elem: Readonly<HTMLElement>) => {
-        this.figure = figure;
-        this.plotlyElem = elem;
-    }
+    onRelayout = (event: Readonly<PlotRelayoutEvent>) => {
+        const zoom: Graph['zoom'] = [ undefined, undefined ];
 
-    private onAfterPlot = () => {
-        this.props.onZoomUpdated && this.props.onZoomUpdated(this.props.id, [
-            this.figure!.layout!.xaxis!.range!.map(a => new Date(a)) as [Date, Date],
-            this.figure!.layout!.yaxis!.range as [any, any]
-        ]);
+        if ('xaxis.range[0]' in event) {
+            zoom[0] = [ event['xaxis.range[0]'] as any, event['xaxis.range[1]'] as any ];
+        } else if (!(event['xaxis.autorange'] || false)) {
+            zoom[0] = this.props.zoom && this.props.zoom[0] ? [ ...this.props.zoom[0] ] : undefined;
+        }
+
+        if ('yaxis.range[0]' in event) {
+            zoom[1] = [ event['yaxis.range[0]'] as any, event['yaxis.range[1]'] as any ];
+        } else if (!(event['yaxis.autorange'] || false)) {
+            zoom[1] = this.props.zoom && this.props.zoom[1] ? [ ...this.props.zoom[1] ] : undefined;
+        }
+
+        this.props.onZoomUpdated && this.props.onZoomUpdated(this.props.id, zoom);
     }
 
     public render() {
         const { title, traces, xLabel, yLabel } = this.props;
+        const zoom = this.props.zoom || [ undefined, undefined ];
 
         return (
             <div className={`graph ${this.props.focused ? 'active' : ''}`}>
@@ -107,8 +107,8 @@ extends React.Component<GraphProps, State> {
                             modeBarButtonsToRemove: [ 'select2d', 'lasso2d' ],
                         }}
                         layout={{
-                            xaxis: { title: xLabel, range: this.state.zoom && this.state.zoom[0] },
-                            yaxis: { title: yLabel, range: this.state.zoom && this.state.zoom[1] },
+                            xaxis: { title: xLabel, range: zoom[0], autorange: !zoom[0] },
+                            yaxis: { title: yLabel, range: zoom[1], autorange: !zoom[1] },
                             margin: { l: 48, t: 32, r: 16, b: 48 },
                             hovermode: false,
 
@@ -116,8 +116,9 @@ extends React.Component<GraphProps, State> {
                             height,
                         }}
                         revision={this.state.revision}
-                        onInitialized={this.onInitialized}
-                        onAfterPlot={this.onAfterPlot}
+                        // onInitialized={this.onInitialized}
+                        // onUpdate={this.onAfterPlot}
+                        onRelayout={this.onRelayout}
                         data={this.state.loadedData}
                     />
                     )}
@@ -140,8 +141,6 @@ extends Graph {
 export interface State {
     revision: number;
     loadedData: (PlotlyData & { id: string })[];
-
-    zoom?: Graph['zoom'];
 }
 
 export default GraphComponent;
