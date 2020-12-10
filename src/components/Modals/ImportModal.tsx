@@ -4,10 +4,10 @@ import { Button, Col, ModalTitle, Row, Form } from 'react-bootstrap';
 import Tree, { TreeNode } from 'rc-tree';
 import { ModalComponent } from '.';
 import { DataService, Deserialization } from '../../services';
-import DateRangePicker from 'react-bootstrap-daterangepicker';
+import DateRangePicker from 'react-advanced-datetimerange-picker';
+import { default as moment, Moment } from 'moment';
 
 import 'rc-tree/assets/index.css';
-import 'bootstrap-daterangepicker/daterangepicker.css';
 
 class InfoModal
 extends ModalComponent<ImportResult, Args, State> {
@@ -16,8 +16,8 @@ extends ModalComponent<ImportResult, Args, State> {
         xLabel: 'osa x',
         yLabel: 'osa y',
 
-        startDate: new Date(),
-        endDate: new Date(),
+        startDate: moment(),
+        endDate: moment(),
 
         minDate: undefined,
         maxDate: undefined,
@@ -62,8 +62,8 @@ extends ModalComponent<ImportResult, Args, State> {
         this.setState({ ...additional, selected: selected as string[] });
     }
     private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as any);
-    private onRangeChange = (start: any, end: any) => {
-        this.setState({ startDate: start._d, endDate: end._d });
+    private onRangeChange = (start: Moment, end: Moment) => {
+        this.setState({ startDate: start, endDate: end });
     }
 
     protected renderBody(): JSX.Element {
@@ -108,16 +108,16 @@ extends ModalComponent<ImportResult, Args, State> {
                     </Form.Group>
                     <Form.Group>
                         <Form.Label>Rozmezí</Form.Label>
-                        
                         <DateRangePicker
-                            key={this.rangeHash()}
-                            initialSettings={{
-                                minDate: this.state.minDate,
-                                maxDate: this.state.maxDate,
-                                timePicker: true,
-                                timePicker24Hour: true,
+                            ranges={{
+                                "All": [ moment(this.state.minDate), moment(this.state.maxDate) ]
                             }}
-                            onCallback={this.onRangeChange}
+                            start={this.state.startDate}
+                            end={this.state.endDate}
+                            applyCallback={this.onRangeChange}
+                            local={{
+                                format: 'HH:mm DD.MM.YYYY'
+                            }}
                         >
                             <Form.Control name='timeRange'></Form.Control>
                         </DateRangePicker>
@@ -168,8 +168,8 @@ extends ModalComponent<ImportResult, Args, State> {
         yLabel: this.state.yLabel,
 
         xRange: [
-            Deserialization.dateToTimestamp(this.state.startDate),
-            Deserialization.dateToTimestamp(this.state.endDate)
+            Deserialization.dateToTimestamp(this.state.startDate.toDate()),
+            Deserialization.dateToTimestamp(this.state.endDate.toDate())
         ],
         traces: this.generateTraces(),
     } as Graph : this.generateTraces());
@@ -206,8 +206,8 @@ interface State {
     minDate?: Date,
     maxDate?: Date,
 
-    startDate: Date,
-    endDate: Date,
+    startDate: Moment,
+    endDate: Moment,
 }
 
 export type ImportResult = Graph | Trace[];

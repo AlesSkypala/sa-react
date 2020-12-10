@@ -21,10 +21,23 @@ interface DataNodeDescriptor {
     }
 }
 
-interface PipeDescriptor {
-    type: string,
-    options: { [k: string]: any },
+type PipeDescriptor = DiffPipe | ExprPipe | SumPipe | AvgPipe;
 
-    child: NodeDescriptor,
-    children: NodeDescriptor[],
+type DiffPipe = OneChildPipe<'diff', {}>;
+type ExprPipe = OneChildPipe<'expr', { expression: string }>;
+type SumPipe = ManyChildPipe<'sum', undefined>;
+type AvgPipe = ManyChildPipe<'avg', undefined>;
+
+interface OneChildPipe<T extends string, O> {
+    type: T;
+    options: O;
+
+    child: NodeDescriptor;
+}
+
+interface ManyChildPipe<T extends string, O> {
+    type: T;
+    options: O;
+
+    children: NodeDescriptor[];
 }

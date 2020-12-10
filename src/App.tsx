@@ -1,9 +1,10 @@
 import React from 'react';
 import { GraphContainer, Header, SideMenu, ContainerLayout, GraphComponent } from './components';
-import { ModalPortal, ImportModal, TraceSearchModal } from './components/Modals';
+import { ModalPortal, ImportModal, TraceSearchModal, TresholdModal } from './components/Modals';
 import { ControlsService, DataService, DialogService } from './services';
 
 import './App.css';
+import { Md5 } from 'ts-md5';
 
 class App
 extends React.Component<{}, AppState> {
@@ -87,6 +88,47 @@ extends React.Component<{}, AppState> {
         this.setState({ selectedTraces: [] });
     }
 
+    selectAboveTreshold = async (treshold: number) => {
+        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        if (!graph) return;
+
+        const select: Trace['id'][] = [];
+        const data = await DataService.getTraceData(graph.xRange[0], graph.xRange[1], graph.traces);
+
+        for (const trace of data) {
+            if (await trace.treshold(treshold)) {
+                select.push(trace.trace.id);
+            }
+        }
+
+        this.setState({ selectedTraces: select })
+    }
+
+    createCommonTrace = (idPrefix: 'avg' | 'sum', titlePrefix: string) => {
+        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        if (!graph) return;
+
+        const selected = graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) >= 0);
+
+        if (selected.length > 1)
+        {
+            graph.traces = [
+                ...graph.traces,
+                {
+                    id: idPrefix + '::' + Md5.hashStr(selected.map(s => s.id).join(','), false),
+                    title: `${titlePrefix} ${selected.length} křivek`,
+                    pipeline: {
+                        type: idPrefix,
+                        children: selected.map(s => JSON.parse(JSON.stringify(s.pipeline))),
+                        options: undefined,
+                    }
+                }
+            ];
+
+            this.forceUpdate();
+        }
+    }
+
     onTraceAction = (action: TraceAction) => {
         const graph = this.state.graphs.find(g => g.id === this.state.focused);
 
@@ -103,7 +145,7 @@ extends React.Component<{}, AppState> {
                 DialogService.open(TraceSearchModal, traces => traces !== undefined && this.setState({ selectedTraces: traces }), { traces: graph.traces });
                 break;
             case 'tres':
-                // TODO:
+                DialogService.open(TresholdModal, val => this.selectAboveTreshold(val), {});
                 break;
 
             case 'sel-all':
@@ -119,11 +161,11 @@ extends React.Component<{}, AppState> {
                 this.filterZero();
                 break;
 
-            case 'sum':
-                // TODO:
-                break;
             case 'avg':
-                // TODO:
+                this.createCommonTrace('avg', 'Průměr');
+                break;
+            case 'sum':
+                this.createCommonTrace('sum', 'Suma');
                 break;
             case 'del-unsel':
                 if (this.state.selectedTraces.length > 0) {

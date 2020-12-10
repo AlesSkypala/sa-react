@@ -24,6 +24,10 @@ class TraceData {
 
         return data;
     }
+
+    public async treshold(tres: number): Promise<boolean> {
+        return await Deserialization.treshold(this.specs, this.data, tres);
+    }
 }
 
 export default TraceData;

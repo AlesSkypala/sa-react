@@ -5,8 +5,7 @@ import createPlotlyComponent from 'react-plotly.js/factory';
 import {  DataService } from '../services';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import Plotly from 'plotly.js-gl2d-dist';
-import { Figure } from 'react-plotly.js';
-import { Data as PlotlyData, PlotRelayoutEvent } from 'plotly.js';
+import { Data as PlotlyData, PlotRelayoutEvent, LayoutAxis, PlotMouseEvent } from 'plotly.js';
 
 import './Graph.css';
 
@@ -81,9 +80,16 @@ extends React.Component<GraphProps, State> {
         this.props.onZoomUpdated && this.props.onZoomUpdated(this.props.id, zoom);
     }
 
+    onGraphClick = (event: Readonly<PlotMouseEvent>) => {
+        console.log(event.points);
+    }
+
     public render() {
         const { title, traces, xLabel, yLabel } = this.props;
         const zoom = this.props.zoom || [ undefined, undefined ];
+        
+        const xaxis: Partial<LayoutAxis> = { ...(zoom[0] ? { range: zoom[0] } : { autorange: true }), title: xLabel };
+        const yaxis: Partial<LayoutAxis> = { ...(zoom[1] ? { range: zoom[1] } : { autorange: true }), title: yLabel };
 
         return (
             <div className={`graph ${this.props.focused ? 'active' : ''}`}>
@@ -107,8 +113,8 @@ extends React.Component<GraphProps, State> {
                             modeBarButtonsToRemove: [ 'select2d', 'lasso2d' ],
                         }}
                         layout={{
-                            xaxis: { title: xLabel, range: zoom[0], autorange: !zoom[0] },
-                            yaxis: { title: yLabel, range: zoom[1], autorange: !zoom[1] },
+                            xaxis,
+                            yaxis,
                             margin: { l: 48, t: 32, r: 16, b: 48 },
                             hovermode: false,
 
@@ -116,9 +122,8 @@ extends React.Component<GraphProps, State> {
                             height,
                         }}
                         revision={this.state.revision}
-                        // onInitialized={this.onInitialized}
-                        // onUpdate={this.onAfterPlot}
                         onRelayout={this.onRelayout}
+                        onClick={this.onGraphClick}
                         data={this.state.loadedData}
                     />
                     )}
