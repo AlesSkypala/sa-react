@@ -3,7 +3,6 @@ import { faTrash } from '@fortawesome/free-solid-svg-icons';
 import * as React from 'react';
 import createPlotlyComponent from 'react-plotly.js/factory';
 import {  DataService } from '../services';
-import AutoSizer from 'react-virtualized-auto-sizer';
 import Plotly from 'plotly.js-gl2d-dist';
 import { Data as PlotlyData, PlotRelayoutEvent, LayoutAxis, PlotMouseEvent } from 'plotly.js';
 
@@ -13,15 +12,24 @@ const Plot = createPlotlyComponent(Plotly);
 
 class GraphComponent
 extends React.Component<GraphProps, State> {
-    // private figure?: Readonly<Figure> = undefined;
-    // private plotlyElem?: Readonly<HTMLElement> = undefined;
 
     public state: State = {
         revision: 0,
         loadedData: [],
+        width: 0,
+        height: 0,
     }
+
+    private contentRef: React.RefObject<HTMLDivElement> = React.createRef();
+
     public componentDidMount() {
         this.componentDidUpdate({ ...this.props, traces: [] }, this.state);
+        window.addEventListener('resize', this.updateSize);
+        this.updateSize();
+    }
+
+    public componentWillUnmount() {
+        window.removeEventListener('resize', this.updateSize);
     }
 
     public async componentDidUpdate(prevProps: GraphProps, prevState: State) {
@@ -37,30 +45,40 @@ extends React.Component<GraphProps, State> {
             if (newTraces.length > 0) {
 
                 const traceData = await DataService.getTraceData(this.props.xRange[0], this.props.xRange[1], newTraces);
-                await Promise.all(traceData.slice(0, 50).map((t, i) => t.toPlotly().then(r => {
-                    const trace = newTraces[i];
-                    const idx = this.state.loadedData.findIndex(d => d.id === trace.id);
-        
+                const plotly = await Promise.all(traceData.map(d => d.toPlotly()));
+                const newStateTraces = [ ...this.state.loadedData ];
+
+                for (let i = 0; i < plotly.length; ++i) {
+                    const trace = traceData[i].trace;
+                    const idx = newStateTraces.findIndex(d => d.id === trace.id);
+
                     if (idx >= 0) {
-                        this.state.loadedData[idx].x = r.x;
-                        this.state.loadedData[idx].y = r.y;
+                        newStateTraces[idx].x = plotly[i].x;
+                        newStateTraces[idx].y = plotly[i].y;
                     } else {
-                        this.setState({ loadedData: [ ...this.state.loadedData, {
+                        newStateTraces.push({
                             id: trace.id,
                             type: 'scattergl',
                             name: trace.title,
                             mode: 'lines+markers',
-                            ...r,
-                        } ],
-                            revision: ++this.state.revision
+                            ...plotly[i],
                         });
                     }
-                })));
+                }
+
+                this.setState({ loadedData: newStateTraces, revision: ++this.state.revision });
             }
+        }
+
+        if (this.props.layoutLocked !== prevProps.layoutLocked && this.props.layoutLocked) {
+            this.updateSize();
         }
     }
 
     private onRemove = () => this.props.onRemove && this.props.onRemove(this.props.id);
+    private updateSize = () => {
+        this.contentRef.current && this.setState({ width: this.contentRef.current.clientWidth, height: this.contentRef.current.clientHeight });
+    }
 
     onRelayout = (event: Readonly<PlotRelayoutEvent>) => {
         const zoom: Graph['zoom'] = [ undefined, undefined ];
@@ -99,12 +117,10 @@ extends React.Component<GraphProps, State> {
                         <button className='btn btn-lg' onClick={this.onRemove}><FontAwesomeIcon icon={faTrash} /></button>
                     </div>
                 </div>
-                <div className='graph-content'>
+                <div className='graph-content' ref={this.contentRef}>
                 {traces.length <= 0 ?(
                     <div>Graf nemá žádné křivky</div>
                     ) : (
-                    <AutoSizer>
-                    {({height, width}) => (
                     <Plot
                         divId={`graph-${this.props.id}`}
                         config={{
@@ -118,18 +134,17 @@ extends React.Component<GraphProps, State> {
                             margin: { l: 48, t: 32, r: 16, b: 48 },
                             hovermode: false,
 
-                            width,
-                            height,
+                            width: this.state.width,
+                            height: this.state.height,
                         }}
                         revision={this.state.revision}
                         onRelayout={this.onRelayout}
                         onClick={this.onGraphClick}
                         data={this.state.loadedData}
                     />
-                    )}
-                    </AutoSizer>
                 )}
                 </div>
+                {!this.props.layoutLocked && (<div className='graph-resize-overlay'><h3>Graf se překreslí po uzamknutí rozložení...</h3></div>)}
             </div>
         );
     }
@@ -138,6 +153,7 @@ extends React.Component<GraphProps, State> {
 export interface GraphProps
 extends Graph {
     focused?: boolean;
+    layoutLocked: boolean;
 
     onZoomUpdated?(id: Graph['id'], zoom: Graph['zoom']): void;
     onRemove?(id: Graph['id']): void;
@@ -146,6 +162,9 @@ extends Graph {
 export interface State {
     revision: number;
     loadedData: (PlotlyData & { id: string })[];
+
+    width: number;
+    height: number;
 }
 
 export default GraphComponent;

@@ -276,6 +276,7 @@ extends React.Component<{}, AppState> {
                             <GraphComponent
                                 {...g}
                                 focused={g.id === this.state.focused}
+                                layoutLocked={this.state.locked}
                                 onRemove={this.onRemoveGraph}
                                 onZoomUpdated={this.onZoomUpdated}
                             />

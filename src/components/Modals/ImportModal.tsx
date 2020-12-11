@@ -9,6 +9,8 @@ import { default as moment, Moment } from 'moment';
 
 import 'rc-tree/assets/index.css';
 
+const dateFormat = 'HH:mm DD.MM.YYYY';
+
 class InfoModal
 extends ModalComponent<ImportResult, Args, State> {
     public state: State = {
@@ -19,8 +21,8 @@ extends ModalComponent<ImportResult, Args, State> {
         startDate: moment(),
         endDate: moment(),
 
-        minDate: undefined,
-        maxDate: undefined,
+        minDate: moment(),
+        maxDate: moment(),
 
         selected: [],
     };
@@ -47,19 +49,23 @@ extends ModalComponent<ImportResult, Args, State> {
 
     private onCheck = (selected: React.ReactText[]) => {
         selected = selected.filter(s => s in this.sourceMap);
-        let additional: Partial<Pick<State, 'minDate' | 'maxDate'>> = {};
+        let additional: {} | Pick<State, 'minDate' | 'maxDate' | 'startDate' | 'endDate'> = {};
         
         if (this.state.selected.length <= 0 && selected.length > 0) {
+            const min = moment(Deserialization.parseTimestamp(Math.max(...selected.map(t => this.sourceMap[t].availableXRange[0]))));
+            const max = moment(Deserialization.parseTimestamp(Math.min(...selected.map(t => this.sourceMap[t].availableXRange[1]))));
+
             additional = {
-                minDate: Deserialization.parseTimestamp(Math.max(...selected.map(t => this.sourceMap[t].availableXRange[0]))),
-                maxDate: Deserialization.parseTimestamp(Math.min(...selected.map(t => this.sourceMap[t].availableXRange[1]))),
+                minDate: min,
+                maxDate: max,
+                startDate: min,
+                endDate: max,
             };
-            // this.timeRange = [ this.minDate, this.maxDate ];
         } else if (selected.length <= 0) {
-            additional = { maxDate: undefined, minDate: undefined };
+            additional = { maxDate: moment(), minDate: moment(), startDate: moment(), endDate: moment() };
         }
 
-        this.setState({ ...additional, selected: selected as string[] });
+        this.setState({ ...additional, selected } as any);
     }
     private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as any);
     private onRangeChange = (start: Moment, end: Moment) => {
@@ -112,14 +118,18 @@ extends ModalComponent<ImportResult, Args, State> {
                             ranges={{
                                 "All": [ moment(this.state.minDate), moment(this.state.maxDate) ]
                             }}
+
                             start={this.state.startDate}
                             end={this.state.endDate}
+                            // TODO: min date
+                            // minDate={moment(this.state.minDate)}
+                            maxDate={moment(this.state.maxDate)}
                             applyCallback={this.onRangeChange}
                             local={{
-                                format: 'HH:mm DD.MM.YYYY'
+                                format: dateFormat
                             }}
                         >
-                            <Form.Control name='timeRange'></Form.Control>
+                            <Form.Control name='timeRange' readOnly autoComplete='off' value={`${this.state.startDate.format(dateFormat)} - ${this.state.endDate.format(dateFormat)}`}></Form.Control>
                         </DateRangePicker>
                     </Form.Group>
                 </Col>
@@ -128,7 +138,6 @@ extends ModalComponent<ImportResult, Args, State> {
         );
     }
 
-    private rangeHash = () => (this.state.minDate?.getTime() || 0) + (this.state.maxDate?.getTime() || 0);
     private generateTraces = (): Trace[] => this.state.selected.flatMap(s => {
         const set = this.sourceMap[s];
 
@@ -203,8 +212,8 @@ interface State {
     xLabel: Graph['xLabel'],
     yLabel: Graph['yLabel'],
 
-    minDate?: Date,
-    maxDate?: Date,
+    minDate: Moment,
+    maxDate: Moment,
 
     startDate: Moment,
     endDate: Moment,

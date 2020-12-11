@@ -17,3 +17,18 @@
     overflow: hidden;
     text-align: center;
 }
+
+.graph-resize-overlay {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+
+    background-color: #00000090;
+    color: white;
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+}
