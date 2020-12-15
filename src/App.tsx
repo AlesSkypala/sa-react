@@ -269,7 +269,7 @@ extends React.Component<{}, AppState> {
                 >
                     {this.state.graphs.map(g => (
                         <div
-                            key={String(g.id)}
+                            key={g.id}
                             data-graph={g.id}
                             onClick={this.focusGraph}
                         >

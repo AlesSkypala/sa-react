@@ -6,3 +6,33 @@
 .btn-group-stretch .btn {
     flex: 1
 }
+
+.trace-row {
+    background-color: white;
+    padding: 0.3rem;
+    display: flex;
+    align-items: center;
+    height: 35px;
+    user-select: none;
+}
+.trace-row > .trace-row-title {
+    flex-shrink: 1;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.trace-row > .btn {
+    flex-grow: 0;
+    flex-shrink: 1;
+}
+
+.trace-row:not(:last-child) {
+    border-bottom: 1px black solid;
+}
+.trace-row.active {
+    background-color: rgb(67, 149, 255);
+}
+
+.ReactVirtualized__Grid {
+    outline: none;
+}

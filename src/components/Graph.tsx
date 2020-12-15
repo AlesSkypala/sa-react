@@ -121,31 +121,61 @@ extends React.Component<GraphProps, State> {
                 {traces.length <= 0 ?(
                     <div>Graf nemá žádné křivky</div>
                     ) : (
-                    <Plot
-                        divId={`graph-${this.props.id}`}
-                        config={{
-                            responsive: true,
-                            displaylogo: false,
-                            modeBarButtonsToRemove: [ 'select2d', 'lasso2d' ],
-                        }}
-                        layout={{
-                            xaxis,
-                            yaxis,
-                            margin: { l: 48, t: 32, r: 16, b: 48 },
-                            hovermode: false,
+                    <DumbGraph
+                        id={this.props.id}
+                        zoom={this.props.zoom}
+                        xLabel={this.props.xLabel}
+                        yLabel={this.props.yLabel}
 
-                            width: this.state.width,
-                            height: this.state.height,
-                        }}
                         revision={this.state.revision}
+                        width={this.state.width}
+                        height={this.state.height}
+
                         onRelayout={this.onRelayout}
-                        onClick={this.onGraphClick}
                         data={this.state.loadedData}
                     />
                 )}
                 </div>
                 {!this.props.layoutLocked && (<div className='graph-resize-overlay'><h3>Graf se překreslí po uzamknutí rozložení...</h3></div>)}
             </div>
+        );
+    }
+}
+
+class DumbGraph
+extends React.PureComponent<{ revision: number, width: number, height: number, onRelayout: any, data: any } & Pick<Graph, 'id' | 'zoom' | 'xLabel' | 'yLabel'>> {
+
+    public render() {
+        const { id, width, height, xLabel, yLabel } = this.props;
+        const zoom = this.props.zoom || [ undefined, undefined ];
+        
+        const xaxis: Partial<LayoutAxis> = { ...(zoom[0] ? { range: zoom[0] } : { autorange: true }), title: xLabel };
+        const yaxis: Partial<LayoutAxis> = { ...(zoom[1] ? { range: zoom[1] } : { autorange: true }), title: yLabel };
+
+        return ( 
+            <Plot
+                divId={`graph-${id}`}
+                config={{
+                    responsive: true,
+                    displaylogo: false,
+                    modeBarButtonsToRemove: [ 'select2d', 'lasso2d' ],
+                    
+                }}
+                layout={{
+                    xaxis,
+                    yaxis,
+                    margin: { l: 48, t: 32, r: 16, b: 48 },
+                    hovermode: false,
+                    showlegend: false,
+
+                    width: width,
+                    height: height,
+                }}
+                revision={this.props.revision}
+
+                onRelayout={this.props.onRelayout}
+                data={this.props.data}
+            />
         );
     }
 }

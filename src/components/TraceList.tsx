@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { AutoSizer, List, ListRowProps } from 'react-virtualized';
 import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
 
@@ -80,6 +81,22 @@ extends React.PureComponent<Props, State> {
         }
     }
 
+    rowRenderer = (props: ListRowProps) => {
+        const t = this.props.traces[props.index];
+
+        return (
+            <li
+                key={props.key}
+                data-id={t.id}
+                style={props.style}
+                className={`trace-row ${this.props.selected.indexOf(t.id) >= 0 ? 'active' : ''}`}
+                onClick={this.traceClicked}
+            >
+            <span className='trace-row-title'>{t.title}</span> {this.hasLdevMaps(t) ? (<button className='btn ldev' data-trace={t.id} onClick={this.onLdevClick}>(I)</button>) : undefined}
+            </li>
+        );
+    }
+
     public render() {
         const { traces, selected } = this.props;
 
@@ -94,18 +111,20 @@ extends React.PureComponent<Props, State> {
                     </div>
                 ))}
                 </div>
-                <ul className='list-group'>
-                {traces.map(t => (
-                    <li
-                        key={t.id}
-                        data-id={t.id}
-                        className={`list-group-item list-group-item-action ${selected.indexOf(t.id) >= 0 ? 'active' : ''}`}
-                        onClick={this.traceClicked}
-                    >
-                    {t.title} {this.hasLdevMaps(t) ? (<button className='btn' data-trace={t.id} onClick={this.onLdevClick}>(I)</button>) : undefined}
-                    </li>
-                ))}
-                </ul>
+                <div style={{flexGrow: 1}}>
+                <AutoSizer>
+                {({height, width}) => (
+                    <List
+                        containerProps={{ className: 'list-group' }}
+                        height={height}
+                        width={width}
+                        rowHeight={35}
+                        rowCount={traces.length}
+                        rowRenderer={this.rowRenderer}
+                    />
+                )}
+                </AutoSizer>
+                </div>
             </>
         );
     }

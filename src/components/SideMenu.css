@@ -5,3 +5,13 @@
 .main-sidebar {
     overflow-x: hidden;
 }
+
+.sidebar {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0 !important;
+}
+.sidebar .sidebar-menu {
+    overflow: visible;
+}

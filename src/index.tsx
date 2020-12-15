@@ -8,6 +8,7 @@ import './assets/skin-blue.min.css';
 import './assets/fonts.css';
 import './assets/custom.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'react-virtualized/styles.css'
 
 ReactDOM.render(
   <App />,
