@@ -1,13 +1,11 @@
 
 import * as React from 'react';
 import { Button, Col, ModalTitle, Row, Form } from 'react-bootstrap';
-import Tree, { TreeNode } from 'rc-tree';
 import { ModalComponent } from '.';
 import { DataService, Deserialization } from '../../services';
 import DateRangePicker from 'react-advanced-datetimerange-picker';
 import { default as moment, Moment } from 'moment';
-
-import 'rc-tree/assets/index.css';
+import SourceTree from '../SourceTree';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
@@ -82,7 +80,7 @@ extends ModalComponent<ImportResult, Args, State> {
         return (
             <Row>
                 <Col>
-                    <Tree
+                    {/* <Tree
                         checkable
                         selectable={false}
                         multiple
@@ -96,7 +94,8 @@ extends ModalComponent<ImportResult, Args, State> {
                         ))}
                         </TreeNode>
                     ))}
-                    </Tree>
+                    </Tree> */}
+                    <SourceTree sources={this.state.sources} />
                 </Col>
             {isGraph ? (
                 <Col>

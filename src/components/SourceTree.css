@@ -1,0 +1,30 @@
+[class^="src-tree-row"] {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    height: 24px;
+    user-select: none;
+}
+
+[class^="src-tree-row"] > .btn-expand {
+    width: 24px;
+    height: 24px;
+    text-align: center;
+}
+
+[class^="src-tree-row"] > .btn-expand:not(.disabled) {
+    cursor: pointer;
+}
+
+[class^="src-tree-row"] > .btn-select {
+    margin-right: 0.25em;
+    height: 100%;
+}
+
+.src-tree-row-1 {
+    padding-left: 1rem;
+}
+
+.src-tree-row-2 {
+    padding-left: 2rem;
+}

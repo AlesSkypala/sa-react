@@ -32,6 +32,9 @@
 .trace-row.active {
     background-color: rgb(67, 149, 255);
 }
+.trace-row:hover:not(.active) {
+    background-color: rgb(199, 223, 255);
+}
 
 .ReactVirtualized__Grid {
     outline: none;

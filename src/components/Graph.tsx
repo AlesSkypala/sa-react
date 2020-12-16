@@ -103,11 +103,7 @@ extends React.Component<GraphProps, State> {
     }
 
     public render() {
-        const { title, traces, xLabel, yLabel } = this.props;
-        const zoom = this.props.zoom || [ undefined, undefined ];
-        
-        const xaxis: Partial<LayoutAxis> = { ...(zoom[0] ? { range: zoom[0] } : { autorange: true }), title: xLabel };
-        const yaxis: Partial<LayoutAxis> = { ...(zoom[1] ? { range: zoom[1] } : { autorange: true }), title: yLabel };
+        const { title, traces } = this.props;
 
         return (
             <div className={`graph ${this.props.focused ? 'active' : ''}`}>
@@ -166,7 +162,7 @@ extends React.PureComponent<{ revision: number, width: number, height: number, o
                     yaxis,
                     margin: { l: 48, t: 32, r: 16, b: 48 },
                     hovermode: false,
-                    showlegend: false,
+                    showlegend: true,
 
                     width: width,
                     height: height,

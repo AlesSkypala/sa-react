@@ -2,6 +2,8 @@ import * as React from 'react';
 import { AutoSizer, List, ListRowProps } from 'react-virtualized';
 import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHdd } from '@fortawesome/free-solid-svg-icons';
 
 import './TraceList.css';
 
@@ -92,14 +94,12 @@ extends React.PureComponent<Props, State> {
                 className={`trace-row ${this.props.selected.indexOf(t.id) >= 0 ? 'active' : ''}`}
                 onClick={this.traceClicked}
             >
-            <span className='trace-row-title'>{t.title}</span> {this.hasLdevMaps(t) ? (<button className='btn ldev' data-trace={t.id} onClick={this.onLdevClick}>(I)</button>) : undefined}
+            <span className='trace-row-title'>{t.title}</span> {this.hasLdevMaps(t) ? (<button className='btn ldev' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faHdd} /></button>) : undefined}
             </li>
         );
     }
 
     public render() {
-        const { traces, selected } = this.props;
-
         return (
             <>
                 <div>
@@ -119,7 +119,7 @@ extends React.PureComponent<Props, State> {
                         height={height}
                         width={width}
                         rowHeight={35}
-                        rowCount={traces.length}
+                        rowCount={this.props.traces.length}
                         rowRenderer={this.rowRenderer}
                     />
                 )}
