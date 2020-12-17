@@ -10,32 +10,75 @@ extends React.PureComponent<Props, State> {
     constructor(props: Props) {
         super(props);
 
+        const [ tree, map ] = this.generateTreeMap(props.sources);
+
+        this.map = map;
         this.state = {
-            tree: this.calculateTree(props.sources), selected: [],
+            tree,
+            selected: new Set<string>(),
+            revision: 0,
         };
     }
+    
+    private map: { [key: string]: NodeDescriptor } = {};
+    generateTreeMap = (sources: DataSource[]): [Leaf[], { [key: string]: NodeDescriptor }] => {
+        const map: { [key: string]: NodeDescriptor } = {};
 
-    calculateTree = (sources: DataSource[]): Leaf[] => sources.map(s => ({
-        id: s.id,
-        name: s.name,
-        level: 0,
-        children: s.datasets.map(d => ({
-            id: `${s.id}:${d.id}`,
-            name: d.name,
-            level: 1,
-            children: d.variants ? d.variants.map(v => ({
-                id: `${s.id}:${d.id}:${v}`,
-                name: v,
-                level: 2,
-            })) : undefined,
-        }))
-    }))
+        return [ 
+            sources.map(s => ({
+                id: s.id,
+                name: s.name,
+                level: 0,
+                children: s.datasets.map(d => {
+                    const id = `${s.id}:${d.id}`;
+
+                    if (d.variants?.length) {
+                        for (let variant of d.variants) {
+                            map[`${id}:${variant}`] = {
+                                type: 'data',
+                                dataset: {
+                                    source: d.source,
+                                    id: d.id,
+                                    variant,
+                                }
+                            };
+                        }
+
+                        return {
+                            id,
+                            name: d.name,
+                            level: 1,
+                            children: d.variants.map(v => ({
+                                id: `${id}:${v}`,
+                                name: v,
+                                level: 2,
+                            })),
+                        };
+                    }
+                    
+                    map[id] = {
+                        type: 'data',
+                        dataset: { source: d.source, id: d.id },
+                    };
+                    return {
+                        id,
+                        name: d.name,
+                        level: 1,
+                    };
+                })
+            })),
+            map
+        ];
+    }
 
     public componentDidUpdate(prevProps: Props) {
         if (prevProps.sources !== this.props.sources) {
+            const [ tree, map ] = this.generateTreeMap(this.props.sources);
+
+            this.map = map;
             this.setState({
-                tree: this.calculateTree(this.props.sources),
-                selected: [],
+                tree,
+                selected: new Set<string>(),
             });
         }
     }
@@ -87,22 +130,33 @@ extends React.PureComponent<Props, State> {
 
         if (!row) { return; }
 
-        const idx = this.state.selected.indexOf(row.id);
+        const has = this.state.selected.has(row.id);
         const fltr = [ row.id, ...this.selectChildren(row) ]
 
-        if (idx >= 0) {
-            this.setState({ selected: [ ...this.state.selected.filter(r => fltr.indexOf(r) < 0) ] });
+        if (has) {
+            for (const k of fltr) { this.state.selected.delete(k); }
         } else {
-            this.setState({ selected: [ ...this.state.selected, ...fltr.filter(r => this.state.selected.indexOf(r) < 0) ]});
+            for (const k of fltr) { this.state.selected.add(k); }
         }
+        this.setState({ revision: this.state.revision + 1 });
 
-        // TODO:
-        // this.props.onChange && this.props.onChange(this.state.)
+        if (this.props.onChange) {
+            const nodes: NodeDescriptor[] = [];
+            const iterator = this.state.selected.values();
+            
+            for (let result = iterator.next(); !result.done; result = iterator.next()) {
+                if (result.value in this.map) {
+                    nodes.push(this.map[result.value]);
+                }
+            }
+
+            this.props.onChange(nodes);
+        }
     }
 
     rowRenderer = (props: ListRowProps): React.ReactNode => {
         const row = this.state.tree[props.index];
-        const selected = this.state.selected.indexOf(row.id) >= 0;
+        const selected = this.state.selected.has(row.id);
 
         return (
             <div key={props.key} style={props.style} className={`src-tree-row-${row.level}`}>
@@ -129,6 +183,7 @@ extends React.PureComponent<Props, State> {
                     rowRenderer={this.rowRenderer}
                     
                     selected={this.state.selected}
+                    revision={this.state.revision}
                 />
             )}
             </AutoSizer>
@@ -138,13 +193,15 @@ extends React.PureComponent<Props, State> {
 
 export interface Props {
     sources: DataSource[];
-    onChange?(traces: NodeDescriptor[]): void;
+    onChange?(nodes: NodeDescriptor[]): void;
 }
 
-type Leaf = { id: string, name: string, level: number, children?: Leaf[], expanded?: boolean, node?: NodeDescriptor };
+type Leaf = { id: string, name: string, level: number, children?: Leaf[], expanded?: boolean };
 export interface State {
     tree: Leaf[];
-    selected: string[];
+
+    selected: Set<string>;
+    revision: number;
 }
 
 export default SourceTree;

@@ -33,7 +33,7 @@ extends ModalComponent<ImportResult, Args, State> {
     private loadTraces = (sources: DataSource[]) => {
         this.sourceMap = {};
         sources.forEach(s => s.datasets.forEach(d => {
-            this.sourceMap[`${s.id}::${d.id}`] = d;
+            this.sourceMap[`${s.id}:${d.id}`] = d;
         }))
         this.setState({ sources })
     }
@@ -45,13 +45,12 @@ extends ModalComponent<ImportResult, Args, State> {
         );
     }
 
-    private onCheck = (selected: React.ReactText[]) => {
-        selected = selected.filter(s => s in this.sourceMap);
+    private onCheck = (selected: DataNodeDescriptor[]) => {
         let additional: {} | Pick<State, 'minDate' | 'maxDate' | 'startDate' | 'endDate'> = {};
         
         if (this.state.selected.length <= 0 && selected.length > 0) {
-            const min = moment(Deserialization.parseTimestamp(Math.max(...selected.map(t => this.sourceMap[t].availableXRange[0]))));
-            const max = moment(Deserialization.parseTimestamp(Math.min(...selected.map(t => this.sourceMap[t].availableXRange[1]))));
+            const min = moment(Deserialization.parseTimestamp(Math.max(...selected.map(t => this.sourceMap[`${t.dataset.source}:${t.dataset.id}`].availableXRange[0]))));
+            const max = moment(Deserialization.parseTimestamp(Math.min(...selected.map(t => this.sourceMap[`${t.dataset.source}:${t.dataset.id}`].availableXRange[1]))));
 
             additional = {
                 minDate: min,
@@ -63,7 +62,7 @@ extends ModalComponent<ImportResult, Args, State> {
             additional = { maxDate: moment(), minDate: moment(), startDate: moment(), endDate: moment() };
         }
 
-        this.setState({ ...additional, selected } as any);
+        this.setState({ ...(additional as any), selected });
     }
     private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as any);
     private onRangeChange = (start: Moment, end: Moment) => {
@@ -80,22 +79,10 @@ extends ModalComponent<ImportResult, Args, State> {
         return (
             <Row>
                 <Col>
-                    {/* <Tree
-                        checkable
-                        selectable={false}
-                        multiple
-
-                        onCheck={this.onCheck as any}
-                    >
-                    {this.state.sources.map(s => (
-                        <TreeNode key={s.id} title={s.name}>
-                        {s.datasets.map(d => (
-                            <TreeNode key={`${s.id}::${d.id}`} title={d.name} />
-                        ))}
-                        </TreeNode>
-                    ))}
-                    </Tree> */}
-                    <SourceTree sources={this.state.sources} />
+                    <SourceTree
+                        sources={this.state.sources}
+                        onChange={this.onCheck}
+                    />
                 </Col>
             {isGraph ? (
                 <Col>
@@ -138,34 +125,14 @@ extends ModalComponent<ImportResult, Args, State> {
     }
 
     private generateTraces = (): Trace[] => this.state.selected.flatMap(s => {
-        const set = this.sourceMap[s];
+        const dId = `${s.dataset.source}:${s.dataset.id}`;
+        const set = this.sourceMap[dId];
 
-        if (set.variants) {
-            return set.variants.map(v => ({
-                id: `${s}::${v}`,
-                title: `${set.name} (${v})`,
-                pipeline: {
-                    type: 'data',
-                    dataset: {
-                        source: set.source,
-                        id: set.id,
-                        variant: v,
-                    }
-                } 
-            } as Trace));
-        } else {
-            return [ {
-                id: s,
-                title: set.name,
-                pipeline: {
-                    type: 'data',
-                    dataset: {
-                        source: set.source,
-                        id: set.id,
-                    }
-                } 
-            } as Trace ];
-        }
+        return {
+            id: s.dataset.variant ? `${dId}:${s.dataset.variant}` : dId,
+            title: s.dataset.variant ? `${set.name} (${s.dataset.variant})` : set.name,
+            pipeline: s,
+        };
     });
 
     private okClicked = () => this.resolve(this.props.args.isGraph ? {
@@ -205,7 +172,7 @@ export interface Args {
 
 interface State {
     sources?: DataSource[];
-    selected: string[];
+    selected: DataNodeDescriptor[];
 
     title: Graph['title'],
     xLabel: Graph['xLabel'],
