@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { AutoSizer, List, ListRowProps } from 'react-virtualized';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faAngleRight, faAngleDown } from '@fortawesome/free-solid-svg-icons';
+import { faAngleRight, faAngleDown, faSquare, faMinusSquare, faCheckSquare } from '@fortawesome/free-solid-svg-icons';
 
 import './SourceTree.css';
 
@@ -93,6 +93,11 @@ extends React.PureComponent<Props, State> {
         return leaf.children.flatMap(c => [ c.id, ...this.selectChildren(c) ]);
     }
 
+    expandChildren = (leaf: Leaf): Leaf[] => {
+        if (!leaf.expanded || !leaf.children) { return []; }
+        return leaf.children.flatMap(c => [ c, ...this.expandChildren(c) ]);
+    }
+
     onExpandToggle = (event: React.MouseEvent<HTMLSpanElement>) => {
         const id = event.currentTarget.dataset.id ?? '';
         const rowIdx = this.state.tree.findIndex(r => r.id === id);
@@ -116,7 +121,7 @@ extends React.PureComponent<Props, State> {
             row.expanded = true;
             const tree = [
                 ...this.state.tree.slice(0, rowIdx + 1),
-                ...row.children,
+                ...this.expandChildren(row),
                 ...this.state.tree.slice(rowIdx + 1)
             ];
 
@@ -124,7 +129,7 @@ extends React.PureComponent<Props, State> {
         }
     }
 
-    onCheck = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onCheck = (event: React.MouseEvent<HTMLDivElement>) => {
         const id = event.currentTarget.dataset.id ?? '';
         const row = this.state.tree.find(r => r.id === id);
 
@@ -157,6 +162,11 @@ extends React.PureComponent<Props, State> {
     rowRenderer = (props: ListRowProps): React.ReactNode => {
         const row = this.state.tree[props.index];
         const selected = this.state.selected.has(row.id);
+        let indeterminate = false;
+
+        if (!selected && row.children?.length) {
+            indeterminate = !!this.selectChildren(row).find(c => this.state.selected.has(c));
+        }
 
         return (
             <div key={props.key} style={props.style} className={`src-tree-row-${row.level}`}>
@@ -165,7 +175,10 @@ extends React.PureComponent<Props, State> {
                 ) : (
                     <span className='btn-expand disabled'></span>
                 )}
-                <input type='checkbox' className='btn-select' checked={selected} data-id={row.id} onChange={this.onCheck}/>
+                
+                <span className='btn-select' data-id={row.id} onClick={this.onCheck}>
+                    <FontAwesomeIcon icon={selected ? faCheckSquare : (indeterminate ? faMinusSquare : faSquare)} />
+                </span>
                 {row.name}
             </div>
         );

@@ -1,7 +1,7 @@
 import React from 'react';
 import { GraphContainer, Header, SideMenu, ContainerLayout, GraphComponent } from './components';
 import { ModalPortal, ImportModal, TraceSearchModal, TresholdModal } from './components/Modals';
-import { ControlsService, DataService, DialogService } from './services';
+import { DataService, DialogService } from './services';
 
 import './App.css';
 import { Md5 } from 'ts-md5';
