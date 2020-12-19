@@ -14,6 +14,14 @@ declare module "ml-savitzky-golay-generalized" {
 
 }
 
+declare module 'worker-loader!*' {
+    class WebpackWorker extends Worker {
+        constructor();
+    }
+
+    export = WebpackWorker;
+}
+
 declare module 'react-advanced-datetimerange-picker' {
     type Moment = import('moment').Moment;
 

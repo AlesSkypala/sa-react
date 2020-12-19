@@ -179,7 +179,9 @@ extends React.PureComponent<Props, State> {
                 <span className='btn-select' data-id={row.id} onClick={this.onCheck}>
                     <FontAwesomeIcon icon={selected ? faCheckSquare : (indeterminate ? faMinusSquare : faSquare)} />
                 </span>
+                <span data-id={row.id} onClick={this.onCheck}>
                 {row.name}
+                </span>
             </div>
         );
     }
