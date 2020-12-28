@@ -18,6 +18,7 @@ extends React.Component<Props, State> {
                     useCSSTransforms
                     cols={12}
                     rowHeight={64}
+                    compactType='horizontal'
 
                     draggableHandle=".graph"
 
