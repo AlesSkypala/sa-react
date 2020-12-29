@@ -1,6 +1,6 @@
+import * as React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
-import * as React from 'react';
 import { Button, Form } from 'react-bootstrap';
 
 import './SideMenu.css';
@@ -20,7 +20,7 @@ extends React.Component<Props, State> {
                     <>
                         <ul className="sidebar-menu"><li className="header">VLASTNOSTI</li></ul>
                         <Form style={{ color: 'white' }}>
-                            <Form.Group><Form.Label>Název:</Form.Label><Form.Control name='title' value={selectedGraph.title} onChange={this.onPropertyChange} /></Form.Group>
+                            <Form.Group><Form.Label>Název:</Form.Label><Form.Control name='title'  value={selectedGraph.title}  onChange={this.onPropertyChange} /></Form.Group>
                             <Form.Group><Form.Label>Osa x:</Form.Label><Form.Control name='xLabel' value={selectedGraph.xLabel} onChange={this.onPropertyChange} /></Form.Group>
                             <Form.Group><Form.Label>Osa y:</Form.Label><Form.Control name='yLabel' value={selectedGraph.yLabel} onChange={this.onPropertyChange} /></Form.Group>
                         </Form>

@@ -5,6 +5,7 @@ import { DataService, DialogService } from './services';
 
 import './App.css';
 import { Md5 } from 'ts-md5';
+import { GlobalHotKeys } from 'react-hotkeys';
 
 class App
 extends React.Component<{}, AppState> {
@@ -167,6 +168,12 @@ extends React.Component<{}, AppState> {
             case 'sum':
                 this.createCommonTrace('sum', 'Suma');
                 break;
+            case 'del-sel':
+                if (this.state.selectedTraces.length > 0) {
+                    graph.traces = graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) < 0);
+                    this.forceUpdate();
+                }
+                break;
             case 'del-unsel':
                 if (this.state.selectedTraces.length > 0) {
                     graph.traces = graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) >= 0);
@@ -284,6 +291,7 @@ extends React.Component<{}, AppState> {
                     ))}
                 </GraphContainer>
                 <ModalPortal />
+                <GlobalHotKeys keyMap={{ SEL_ALL: 'ctrl+a', SEL_INV: 'ctrl+i', DEL_TRACE: 'del' }} handlers={{ DEL_TRACE: () => this.onTraceAction('del-sel'), SEL_ALL: () => this.onTraceAction('sel-all'), SEL_INV: () => this.onTraceAction('inv') }} />
             </>
         );
     }

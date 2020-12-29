@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHdd } from '@fortawesome/free-solid-svg-icons';
 
 import './TraceList.css';
+import { withHotKeys } from 'react-hotkeys';
 
 const buttons: { label: string, action: TraceAction }[][] = [
     [
@@ -33,14 +34,13 @@ const buttons: { label: string, action: TraceAction }[][] = [
     // { label: 'DelSel', action: 'del-sel' },
 ];
 
-// TODO: LDEV map button
-
 class TraceList
 extends React.PureComponent<Props, State> {
     public state: State = {
         sources: []
     };
-
+    
+    private listRef = React.createRef<HTMLDivElement>();
     public componentDidMount() {
         DataService.getSources().then(sources => this.setState({ sources }));
     }
@@ -48,6 +48,7 @@ extends React.PureComponent<Props, State> {
     traceClicked = (e: React.MouseEvent<HTMLLIElement>) => {
         const id = e.currentTarget.dataset.id as Trace['id'];
         this.props.onSelect(id);
+        this.listRef.current?.focus();
     }
 
     actionClicked = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -101,7 +102,7 @@ extends React.PureComponent<Props, State> {
 
     public render() {
         return (
-            <>
+            <React.Fragment>
                 <div>
                 {buttons.map((row, i) => (
                     <div key={i} className='btn-group btn-group-stretch'>
@@ -111,7 +112,7 @@ extends React.PureComponent<Props, State> {
                     </div>
                 ))}
                 </div>
-                <div style={{flexGrow: 1}}>
+                <div style={{flexGrow: 1}} tabIndex={0} ref={this.listRef}>
                 <AutoSizer>
                 {({height, width}) => (
                     <List
@@ -125,7 +126,7 @@ extends React.PureComponent<Props, State> {
                 )}
                 </AutoSizer>
                 </div>
-            </>
+            </React.Fragment>
         );
     }
 }
