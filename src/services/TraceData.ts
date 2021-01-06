@@ -1,32 +1,42 @@
 import { DataService, Deserialization } from ".";
 import sg from 'ml-savitzky-golay-generalized';
+import Plot from "react-plotly.js";
+import type { GraphExtents, GraphRenderer } from "../plotting";
+
+type Plotting = typeof import('../plotting');
+
+let plotting: Plotting;
+import('../plotting').then(wsm => plotting = wsm);
 
 class TraceData {
-    constructor(public readonly trace: Trace, private specs: PipelineSpecs, private data: DataView) {
+    private dataPtr: number;
 
+    constructor(public readonly trace: Trace, private specs: PipelineSpecs, _data: ArrayBuffer) {
+        this.dataPtr = plotting.malloc_data(new Uint8Array(_data), this.specs.xType, this.specs.yType);
     }
 
-    public getTraceHash() {
+    public getTraceHash(): string {
         return DataService.getTraceHash(this.trace);
     }
 
-    public async isZero() {
-        return await Deserialization.isZero(this.specs, this.data);
+    public isZero(): boolean {
+        return plotting.is_zero(this.dataPtr);
     }
 
-    public async toPlotly(): Promise<{x: any[], y: any[]}> {
-        const data = await Deserialization.deserializePlotly(this.specs, this.data);
-
-        if (this.trace.filtering === 'sg' && data.x.length > 9) {
-            const filtered = sg(data.y, data.x, { derivative: 0 });
-            return { y: filtered, x: data.x };
-        }
-
-        return data;
+    public render(renderer: GraphRenderer) {
+        renderer.draw_trace(this.dataPtr);
     }
 
-    public async treshold(tres: number): Promise<boolean> {
-        return await Deserialization.treshold(this.specs, this.data, tres);
+    public treshold(tres: number): boolean {
+        return plotting.treshold(this.dataPtr, tres);
+    }
+
+    public getRecommendation(): GraphExtents {
+        return plotting.recommend_range(this.dataPtr);
+    }
+
+    public static getRecommendation(...traces: TraceData[]) {
+        return plotting.recommend_range_all(new Uint32Array(traces.map(t => t.dataPtr)));
     }
 }
 

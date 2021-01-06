@@ -99,7 +99,7 @@ class Data {
         const segment = entry.loadedSegments.find(seg => from >= seg[0] && to <= seg[1]);
   
         // TODO: view narrowing
-        return new TraceData(t, entry.specs, new DataView(segment![2]));
+        return new TraceData(t, entry.specs, segment![2]);
       });
     }
   

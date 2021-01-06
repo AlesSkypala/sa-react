@@ -13,9 +13,16 @@
 }
 
 .graph-content {
-    flex: 1;
+    display: flex;
     overflow: hidden;
-    text-align: center;
+    align-items: stretch;
+    justify-content: stretch;
+
+    height: 100%
+}
+
+.graph-content > canvas {
+    flex-grow: 1;
 }
 
 .graph-resize-overlay {
