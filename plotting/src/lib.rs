@@ -3,7 +3,7 @@ pub mod utils;
 use std::rc::Rc;
 use std::cell::RefCell;
 use wasm_bindgen::prelude::*;
-use plotters::coord::Shift;
+use plotters::coord::{{ Shift, types::RangedCoordf32 }};
 use plotters::prelude::*;
 use plotters_canvas::{{ CanvasBackend, OffscreenCanvasBackend }};
 use std::ops::Range;
@@ -77,12 +77,20 @@ impl GraphRenderer {
                 .build_cartesian_2d(self.x_range.clone(), self.y_range.clone()).expect("Failed to build range.");
         
             chart.configure_mesh();
+
+            let color;
+            unsafe {
+                color = &utils::DATA[trace_ptr].color;
+            }
+
+            log(&format!("{:?}", color)[..]);
         
             chart.draw_series(
                 LineSeries::new(
                     utils::TraceIterator::new(trace_ptr, self.x_range.start, self.x_range.end),
-                    &RED,
-                )).expect("Failed to draw test series");
+                    color,
+                )
+            ).expect("Failed to draw test series");
         }
     }
 
@@ -103,6 +111,7 @@ impl GraphRenderer {
 pub struct OffscreenGraphRenderer {
     backend: Rc<RefCell<OffscreenCanvasBackend>>,
     root: Option<DrawingArea<OffscreenCanvasBackend, Shift>>,
+    x_type: String,
     x_range: Range<f32>,
     y_range: Range<f32>,
 }
@@ -111,11 +120,12 @@ pub struct OffscreenGraphRenderer {
 impl OffscreenGraphRenderer {
 
     #[wasm_bindgen(constructor)]
-    pub fn new(elem: OffscreenCanvas, x_from: f32, x_to: f32, y_from: f32, y_to: f32) -> Self {
+    pub fn new(elem: OffscreenCanvas, x_type: &str, x_from: f32, x_to: f32, y_from: f32, y_to: f32) -> Self {
         let canvas = Rc::new(RefCell::new(OffscreenCanvasBackend::new(elem.clone()).expect("Couldn't create a backend from canvas.")));
 
         Self {
             root: Option::Some((&canvas).into()),
+            x_type: x_type.into(),
             backend: canvas,
             x_range: (x_from..x_to),
             y_range: (y_from..y_to),
@@ -146,37 +156,53 @@ impl OffscreenGraphRenderer {
         }
     }
 
-    pub fn draw_trace(&mut self, trace_ptr: usize) {
+    fn build_cartesian<'a>(&'a self) -> ChartContext<'a, OffscreenCanvasBackend, Cartesian2d<RangedCoordf32, RangedCoordf32>> {
         if let Option::Some(root) = &self.root {
-            let mut chart = ChartBuilder::on(&root)
+            ChartBuilder::on(&root)
                 .margin(5)
-                .x_label_area_size(30)
-                .y_label_area_size(30)
+                .x_label_area_size(24)
+                .y_label_area_size(60)
                 .build_cartesian_2d(self.x_range.clone(), self.y_range.clone())
-                .expect("Failed to build range.");
-        
-            chart.configure_mesh();
-        
-            chart.draw_series(
-                LineSeries::new(
-                    utils::TraceIterator::new(trace_ptr, self.x_range.start, self.x_range.end),
-                    &RED,
-                )).expect("Failed to draw test series");
-
-            // root.present().expect("Failed to present the trace.");
+                .expect("Failed to build range.")
+        } else {
+            panic!("Drawing area not present.");
         }
     }
 
+    pub fn draw_trace(&mut self, trace_ptr: usize) {
+        if let Option::Some(_) = &self.root {
+            let mut chart = self.build_cartesian();
+        
+            chart.configure_mesh();
+
+            let color;
+            unsafe {
+                color = &utils::DATA[trace_ptr].color;
+            }
+
+            chart.draw_series(
+                LineSeries::new(
+                    utils::TraceIterator::new(trace_ptr, self.x_range.start, self.x_range.end),
+                    color,
+                )).expect("Failed to draw test series");
+        }
+    }
+
+    fn date_formatter(date: &f32) -> String {
+        chrono::NaiveDateTime::from_timestamp(* date as i64, 0u32).format("%d.%m. %H:%M").to_string()
+    }
+
     pub fn draw_chart(&mut self) {
-        if let Option::Some(root) = &self.root {
-            let mut chart = ChartBuilder::on(root)
-                .margin(5)
-                .x_label_area_size(30)
-                .y_label_area_size(30)
-                .build_cartesian_2d(self.x_range.clone(), self.y_range.clone())
-                .expect("Failed to build range.");
+        if let Option::Some(_) = &self.root {
+            let mut chart = self.build_cartesian();
             
-            chart.configure_mesh().draw().expect("Failed to draw chart.");
+            let mut mesh = chart.configure_mesh();
+
+            if self.x_type == "datetime" {
+                mesh.x_label_formatter(&OffscreenGraphRenderer::date_formatter);
+            }
+
+            mesh.draw().expect("Failed to draw chart.");
         }
     }
 }

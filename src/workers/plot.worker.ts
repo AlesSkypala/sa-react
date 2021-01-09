@@ -14,10 +14,10 @@ export class PlotWorkerProxy {
     private renderers: { [key: string]: OffscreenGraphRenderer } = {};
     private traceData: TraceData[] = [];
 
-    public createOffscreen(canvas: OffscreenCanvas, extents: Extents): string {
+    public createOffscreen(canvas: OffscreenCanvas, xType: string, extents: Extents): string {
         const uid = uuid.v4();
         
-        this.renderers[uid] = new plotting.OffscreenGraphRenderer(canvas, extents.x_start, extents.x_end, extents.y_start, extents.y_end);
+        this.renderers[uid] = new plotting.OffscreenGraphRenderer(canvas, xType, extents.x_start, extents.x_end, extents.y_start, extents.y_end);
 
         return uid;
     }

@@ -4,6 +4,7 @@ import * as React from 'react';
 import debounce from 'lodash.debounce';
 import { transfer } from 'comlink';
 import { plotWorker } from '..';
+import { Spinner } from 'react-bootstrap';
 
 import './Graph.css';
 
@@ -12,6 +13,7 @@ extends React.Component<GraphProps, State> {
 
     public state: State = {
         revision: 0,
+        rendering: false,
     }
 
     private contentRef: React.RefObject<HTMLDivElement> = React.createRef();
@@ -22,13 +24,13 @@ extends React.Component<GraphProps, State> {
     redrawGraph = async () => {
         console.log(this.rendererUid);
         if (this.rendererUid) {
-
             const n = performance.now();
-
+            this.setState({ rendering: true });
             const trace_ptrs = this.traces.map(t => t.ptr);
             await plotWorker.clearChart(this.rendererUid);
             await plotWorker.renderTraces(this.rendererUid, trace_ptrs);
             console.log(`rendered ${this.traces.length} traces with the total of ${24 * 60 * this.traces.length} points in ${(performance.now() - n)}`);
+            this.traces.length > 0 && this.setState({ rendering: false });
         }
     }
 
@@ -41,6 +43,7 @@ extends React.Component<GraphProps, State> {
 
         this.rendererUid = await plotWorker.createOffscreen(
             transfer(offscreen, [ offscreen ]),
+            this.props.xType ?? "datetime",
             {
                 x_start: 0,
                 x_end: 1e10,
@@ -69,6 +72,7 @@ extends React.Component<GraphProps, State> {
             }
     
             if (newTraces.length > 0) {
+                this.setState({ rendering: true });
                 const loaded = await plotWorker.getTraceData(this.props.xRange[0], this.props.xRange[1], newTraces);
                 this.traces.push(...loaded);
 
@@ -76,12 +80,12 @@ extends React.Component<GraphProps, State> {
                 this.rendererUid && plotWorker.callRendererFunc(this.rendererUid, 'set_extents', [
                     { x_start, x_end, y_start, y_end } as any
                 ]);
-                this.redrawGraph();
+                await this.redrawGraph();
             }
         }
 
         if (this.props.layoutLocked !== prevProps.layoutLocked && this.props.layoutLocked) {
-            this.updateSize();
+            await this.updateSize();
         }
     }
 
@@ -118,13 +122,14 @@ extends React.Component<GraphProps, State> {
                     </div>
                 </div>
                 <div className='graph-content' ref={this.contentRef}>
-                {traces.length <= 0 ?(
-                    <div>Graf nemá žádné křivky</div>
-                    ) : (
-                    <canvas ref={this.canvasRef} />
-                )}
+                    {traces.length <= 0 && (<div>Graf nemá žádné křivky</div>)}
+                    <canvas ref={this.canvasRef} hidden={traces.length <= 0} />
                 </div>
-                {!this.props.layoutLocked && (<div className='graph-resize-overlay'><h3>Graf se překreslí po uzamknutí rozložení...</h3></div>)}
+                {!this.props.layoutLocked ? (
+                <div className='graph-resize-overlay'><h3>Graf se překreslí po uzamknutí rozložení...</h3></div>
+                ) : (this.state.rendering && (
+                <div className='graph-resize-overlay'><Spinner animation='border' variant='light' /></div>
+                ))}
             </div>
         );
     }
@@ -141,6 +146,7 @@ extends Graph {
 
 export interface State {
     revision: number;
+    rendering: boolean;
 }
 
 export default GraphComponent;

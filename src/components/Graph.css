@@ -15,8 +15,9 @@
 .graph-content {
     display: flex;
     overflow: hidden;
-    align-items: stretch;
+    align-items: center;
     justify-content: stretch;
+    flex-direction: column;
 
     height: 100%
 }

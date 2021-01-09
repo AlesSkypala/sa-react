@@ -11,7 +11,7 @@ class TraceData {
     private dataPtr: number;
 
     constructor(public readonly trace: Trace, private specs: PipelineSpecs, _data: ArrayBuffer) {
-        this.dataPtr = plotting.malloc_data(new Uint8Array(_data), this.specs.xType, this.specs.yType);
+        this.dataPtr = plotting.malloc_data(new Uint8Array(_data), this.trace.id, this.specs.xType, this.specs.yType);
     }
 
     public getTraceHash(): string {

@@ -32,6 +32,7 @@ plotters = { version = "^0.3.0", default_features = false, features = [ "line_se
 plotters-canvas = { path = "../plotters_canvas" }
 
 lazy_static = "1.4.0"
+chrono = { version = "0.4", features=[ "wasmbind" ] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.13"

@@ -9,15 +9,18 @@ pub fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
+use plotters::prelude::RGBColor;
 use wasm_bindgen::prelude::*;
 use lazy_static::lazy_static;
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::DefaultHasher};
 use core::convert::TryInto;
+use std::hash::Hasher;
 
 pub struct SerializedData {
-    x_type: String,
-    y_type: String,
-    data: Box<[u8]>
+    pub x_type: String,
+    pub y_type: String,
+    pub color: RGBColor,
+    pub data: Box<[u8]>
 }
 
 pub static mut DATA: Vec<SerializedData> = vec!();
@@ -39,9 +42,18 @@ lazy_static! {
 }
 
 #[wasm_bindgen]
-pub fn malloc_data(data: Box<[u8]>, x_type: &str, y_type: &str) -> usize {
+pub fn malloc_data(data: Box<[u8]>, id: &str, x_type: &str, y_type: &str) -> usize {
+    let mut hasher = DefaultHasher::new();
+    hasher.write(id.as_bytes());
+    let hash = hasher.finish() as u32;
+
     unsafe {
-        DATA.push(SerializedData { data: data, x_type: x_type.into(), y_type: y_type.into() });
+        DATA.push(SerializedData {
+            data,
+            color: RGBColor(hash as u8, (hash >> 8) as u8, (hash >> 16) as u8),
+            x_type: x_type.into(),
+            y_type: y_type.into()
+        });
         DATA.len() - 1
     }
 }
