@@ -172,7 +172,18 @@ pub struct GraphExtents {
     pub y_end: f32,
 }
 
+#[wasm_bindgen]
 impl GraphExtents {
+    #[wasm_bindgen(constructor)]
+    pub fn new(x_start: f32, x_end: f32, y_start: f32, y_end: f32) -> Self {
+        GraphExtents {
+            x_start,
+            x_end,
+            y_start,
+            y_end,
+        }
+    }
+
     fn outer(mut self, b: Self) -> Self {
         self.x_start = self.x_start.min(b.x_start);
         self.y_start = self.y_start.min(b.y_start);
@@ -186,7 +197,9 @@ impl GraphExtents {
 
 #[allow(dead_code)]
 #[wasm_bindgen]
-pub fn recommend_range(data_ptr: usize) -> GraphExtents {
+pub fn recommend_range(data_ptr: usize, overhang: f32) -> GraphExtents {
+    let overhang = overhang + 1.0;
+    
     unsafe {
         let data = &DATA[data_ptr];
         let x_size = *TYPE_SIZES.get(&data.x_type[..]).unwrap();
@@ -204,19 +217,25 @@ pub fn recommend_range(data_ptr: usize) -> GraphExtents {
 
         let y_iter = (x_size..data.len()).step_by(x_size + y_size).map(|i| y_parser(&data[i..(i+y_size)]));
 
-        GraphExtents {
-            x_start,
-            x_end,
+        let y_start = y_iter.clone().fold(f32::INFINITY, |a, b| a.min(b));
+        let y_end   = y_iter.fold(f32::NEG_INFINITY, |a, b| a.max(b));
 
-            y_start: y_iter.clone().fold(f32::INFINITY, |a, b| a.min(b)),
-            y_end:   y_iter.fold(f32::NEG_INFINITY, |a, b| a.max(b)),
+        let over_width = (x_end - x_start) * overhang;
+        let over_height = (y_end - y_start) * overhang;
+
+        GraphExtents {
+            x_start: x_end - over_width,
+            x_end: x_start + over_width,
+
+            y_start: y_end - over_height,
+            y_end: y_start + over_height,
         }
     }
 }
 
 #[wasm_bindgen]
-pub fn recommend_range_all(data_ptrs: &[usize]) -> GraphExtents {
-    data_ptrs.iter().map(|p| recommend_range(*p)).fold(
+pub fn recommend_range_all(data_ptrs: &[usize], overhang: f32) -> GraphExtents {
+    data_ptrs.iter().map(|p| recommend_range(*p, overhang)).fold(
         GraphExtents {
             x_start: f32::INFINITY,
             y_start: f32::INFINITY,
