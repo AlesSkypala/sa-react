@@ -2,7 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { DataWorker } from './workers';
+import { PlotWorker, PlotWorkerProxy } from './workers'
+import { wrap } from 'comlink'
 
 import './assets/AdminLTE.min.css';
 import './assets/skin-blue.min.css';
@@ -11,9 +12,7 @@ import './assets/custom.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-virtualized/styles.css'
 
-export const dataWorker = new DataWorker();
-dataWorker.postMessage({ action: 'test' });
-(window as any).dataWorker = dataWorker;
+export const plotWorker = wrap<PlotWorkerProxy>(new PlotWorker());
 
 ReactDOM.render(
   <App />,
