@@ -23,6 +23,10 @@ pub struct SerializedData {
     pub data: Box<[u8]>
 }
 
+// impl SerializedData {
+//     pub fn window()
+// }
+
 pub static mut DATA: Vec<SerializedData> = vec!();
 
 lazy_static! {
@@ -270,7 +274,7 @@ pub struct TraceIterator {
     y_parse: fn(&[u8]) -> f32,
 }
 
- impl TraceIterator {
+impl TraceIterator {
     #[allow(dead_code)]
     pub fn new(data_ptr: usize, from: f32, to: f32) -> TraceIterator {
         unsafe {

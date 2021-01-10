@@ -30,7 +30,7 @@ extends React.Component<{}, AppState> {
         this.setState({
             graphs: [...graphs, result],
             layout: [...this.state.layout, {
-                i: String(result.id), x: 0, y: 0, w: 6, h: 4
+                i: String(result.id), x: 0, y: 0, w: 12, h: 6
             }]
         });
     }

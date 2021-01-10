@@ -179,12 +179,11 @@ impl OffscreenGraphRenderer {
             unsafe {
                 color = &utils::DATA[trace_ptr].color;
             }
+            
 
-            chart.draw_series(
-                LineSeries::new(
-                    utils::TraceIterator::new(trace_ptr, self.x_range.start, self.x_range.end),
-                    color,
-                )).expect("Failed to draw test series");
+            (*self.backend).borrow_mut().draw_path(utils::TraceIterator::new(trace_ptr, self.x_range.start, self.x_range.end).map(
+                |(x,y)| chart.backend_coord(&(x, y))
+            ), color).expect("Failed to draw a trace");
         }
     }
 

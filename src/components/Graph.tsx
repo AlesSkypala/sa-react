@@ -22,16 +22,17 @@ extends React.Component<GraphProps, State> {
     private traces: { id: Trace['id'], ptr: number }[] = [];
 
     redrawGraph = async () => {
-        console.log(this.rendererUid);
-        if (this.rendererUid) {
-            const n = performance.now();
-            this.setState({ rendering: true });
-            const trace_ptrs = this.traces.map(t => t.ptr);
-            await plotWorker.clearChart(this.rendererUid);
-            await plotWorker.renderTraces(this.rendererUid, trace_ptrs);
-            console.log(`rendered ${this.traces.length} traces with the total of ${24 * 60 * this.traces.length} points in ${(performance.now() - n)}`);
-            this.traces.length > 0 && this.setState({ rendering: false });
-        }
+        if (!this.rendererUid) return;
+
+        const n = performance.now();
+        
+        this.setState({ rendering: true });
+        const trace_ptrs = this.traces.map(t => t.ptr);
+        await plotWorker.clearChart(this.rendererUid);
+        await plotWorker.renderTraces(this.rendererUid, trace_ptrs);
+        console.log(`rendered ${this.traces.length} traces with the total of ${24 * 60 * this.traces.length} points in ${(performance.now() - n)}`);
+
+        this.traces.length > 0 && this.setState({ rendering: false });
     }
 
     public async componentDidMount() {
