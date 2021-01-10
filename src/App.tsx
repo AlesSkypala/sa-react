@@ -19,7 +19,8 @@ extends React.Component<{}, AppState> {
     };
 
     toggleLock = () => this.setState({ locked: !this.state.locked });
-    addGraph = () => DialogService.open(ImportModal, this.onAddGraph, { isGraph: true });
+    addGraph        = () => DialogService.open(ImportModal, this.onAddGraph,  { isGraph: true  });
+    onTraceAddClick = () => DialogService.open(ImportModal, this.onAddTraces, { isGraph: false });
 
     onAddGraph = (result: Graph) => {
         if (!result) { return; }
@@ -215,7 +216,6 @@ extends React.Component<{}, AppState> {
             this.forceUpdate();
         }
     };
-    onTraceAddClick = () => DialogService.open(ImportModal, this.onAddTraces, { isGraph: false });
     selectUnique = () => {
         const graph = this.state.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;

@@ -83,7 +83,7 @@ extends ModalComponent<ImportResult, Args, State> {
         
         return (
             <Row>
-                <Col>
+                <Col style={{ minHeight: '400px' }}>
                     <SourceTree
                         sources={this.state.sources}
                         onChange={this.onCheck}
