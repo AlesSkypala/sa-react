@@ -70,6 +70,44 @@ export class PlotWorkerProxy {
         }
     }
 
+    public is_zero(trace_ptr: number | number[]) {
+        if (Array.isArray(trace_ptr)) {
+            return trace_ptr.map(t => plotting.is_zero(t));
+        } else {
+            return plotting.is_zero(trace_ptr);
+        }
+    }
+
+    public is_zero_by_id(trace_ptr: Trace['id'] | Trace['id'][]) {
+        if (Array.isArray(trace_ptr)) {
+            const ptrs = (trace_ptr as Trace['id'][]).map((tid: Trace['id']) => this.traceData.find(t => t.trace.id === tid)?.ptr!);
+
+            return ptrs.map(t => plotting.is_zero(t));
+        } else {
+            const ptr = this.traceData.find(t => t.trace.id === trace_ptr)?.ptr!;
+            return plotting.is_zero(ptr);
+        }
+    }
+    
+    public treshold(trace_ptr: number | number[], tres: number) {
+        if (Array.isArray(trace_ptr)) {
+            return trace_ptr.map(t => plotting.treshold(t, tres));
+        } else {
+            return plotting.treshold(trace_ptr, tres);
+        }
+    }
+    
+    public treshold_by_id(trace_ptr: Trace['id'] | Trace['id'][], tres: number) {
+        if (Array.isArray(trace_ptr)) {
+            const ptrs = trace_ptr.map(tid => this.traceData.find(t => t.trace.id === tid)?.ptr!);
+            return ptrs.map(t => plotting.treshold(t, tres));
+        } else {
+            const ptr = this.traceData.find(t => t.trace.id === trace_ptr)?.ptr!;
+            return plotting.treshold(ptr, tres);
+        }
+    }
+
+
     public async getTraceData(from: any, to: any, traces: Trace[]) {
         const result = await DataService.getTraceData(from, to, traces);
         this.traceData.push(...result);

@@ -6,6 +6,7 @@ import { DataService, DialogService } from './services';
 import './App.css';
 import { Md5 } from 'ts-md5';
 import { GlobalHotKeys } from 'react-hotkeys';
+import { plotWorker } from '.';
 
 class App
 extends React.Component<{}, AppState> {
@@ -68,12 +69,11 @@ extends React.Component<{}, AppState> {
         if (!graph) return;
 
         const remaining: Trace[] = [];
+        const is_zero = await plotWorker.is_zero_by_id(graph.traces.map(t => t.id)) as boolean[];
 
-        const data = await DataService.getTraceData(graph.xRange[0], graph.xRange[1], graph.traces);
-
-        for (const row of data) {
-            if (! await row.isZero()) {
-                remaining.push(row.trace);
+        for (let i = 0; i < is_zero.length; ++i) {
+            if (!is_zero[i]) {
+                remaining.push(graph.traces[i]);
             }
         }
 
@@ -95,11 +95,11 @@ extends React.Component<{}, AppState> {
         if (!graph) return;
 
         const select: Trace['id'][] = [];
-        const data = await DataService.getTraceData(graph.xRange[0], graph.xRange[1], graph.traces);
+        const is_zero = await plotWorker.treshold_by_id(graph.traces.map(t => t.id), treshold) as boolean[];
 
-        for (const trace of data) {
-            if (await trace.treshold(treshold)) {
-                select.push(trace.trace.id);
+        for (let i = 0; i < is_zero.length; ++i) {
+            if (is_zero[i]) {
+                select.push(graph.traces[i].id);
             }
         }
 
