@@ -25,6 +25,8 @@ jobs:
         version: 'latest'
     - run: yarn
     - run: yarn build
+      env:
+        CI: ""
     - name: Create the release.zip file
       run: zip -r ../release.zip .
       working-directory: build/
