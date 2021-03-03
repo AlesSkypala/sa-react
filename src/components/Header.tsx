@@ -1,4 +1,3 @@
-/* eslint-disable jsx-a11y/anchor-is-valid */
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as React from 'react';
 import { faPlus, faUnlock, faLock } from '@fortawesome/free-solid-svg-icons';
@@ -7,7 +6,7 @@ import { Nav, NavItem, NavLink } from 'react-bootstrap';
 import './Header.css';
 
 class HeaderComponent
-extends React.Component<Props, State> {
+    extends React.Component<Props, State> {
     public render() {
         return (
             <header className="main-header">

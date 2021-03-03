@@ -1,6 +1,6 @@
-import { default as DataService } from "./data";
-import sg from 'ml-savitzky-golay-generalized';
-import type { GraphExtents, GraphRenderer } from "../plotting";
+import { default as DataService } from './data';
+// import sg from 'ml-savitzky-golay-generalized';
+import type { GraphExtents, GraphRenderer } from '../plotting';
 
 type Plotting = typeof import('../plotting');
 
@@ -30,15 +30,15 @@ class TraceData {
         return plotting.treshold(this.dataPtr, tres);
     }
 
-    public getRecommendation(overhang: number = 0.0): GraphExtents {
+    public getRecommendation(overhang = 0.0): GraphExtents {
         return plotting.recommend_range(this.dataPtr, overhang);
     }
 
-    public static getRecommendation(traces: TraceData[], overhang: number = 0.0) {
+    public static getRecommendation(traces: TraceData[], overhang = 0.0) {
         return plotting.recommend_range_all(new Uint32Array(traces.map(t => t.dataPtr)), overhang);
     }
 
-    public get ptr() { return this.dataPtr; };
+    public get ptr() { return this.dataPtr; }
 }
 
 export default TraceData;

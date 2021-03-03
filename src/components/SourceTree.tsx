@@ -6,7 +6,7 @@ import { faAngleRight, faAngleDown, faSquare, faMinusSquare, faCheckSquare } fro
 import './SourceTree.css';
 
 class SourceTree
-extends React.PureComponent<Props, State> {
+    extends React.PureComponent<Props, State> {
     constructor(props: Props) {
         super(props);
 
@@ -33,7 +33,7 @@ extends React.PureComponent<Props, State> {
                     const id = `${s.id}:${d.id}`;
 
                     if (d.variants?.length) {
-                        for (let variant of d.variants) {
+                        for (const variant of d.variants) {
                             map[`${id}:${variant}`] = {
                                 type: 'data',
                                 dataset: {
@@ -136,7 +136,7 @@ extends React.PureComponent<Props, State> {
         if (!row) { return; }
 
         const has = this.state.selected.has(row.id);
-        const fltr = [ row.id, ...this.selectChildren(row) ]
+        const fltr = [ row.id, ...this.selectChildren(row) ];
 
         if (has) {
             for (const k of fltr) { this.state.selected.delete(k); }
@@ -180,7 +180,7 @@ extends React.PureComponent<Props, State> {
                     <FontAwesomeIcon icon={selected ? faCheckSquare : (indeterminate ? faMinusSquare : faSquare)} />
                 </span>
                 <span data-id={row.id} onClick={this.onCheck}>
-                {row.name}
+                    {row.name}
                 </span>
             </div>
         );
@@ -189,18 +189,18 @@ extends React.PureComponent<Props, State> {
     public render() {
         return (
             <AutoSizer>
-            {({width, height}) => (
-                <List
-                    width={width}
-                    height={height}
-                    rowCount={this.state.tree.length}
-                    rowHeight={24}
-                    rowRenderer={this.rowRenderer}
+                {({width, height}) => (
+                    <List
+                        width={width}
+                        height={height}
+                        rowCount={this.state.tree.length}
+                        rowHeight={24}
+                        rowRenderer={this.rowRenderer}
                     
-                    selected={this.state.selected}
-                    revision={this.state.revision}
-                />
-            )}
+                        selected={this.state.selected}
+                        revision={this.state.revision}
+                    />
+                )}
             </AutoSizer>
         );
     }

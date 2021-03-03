@@ -3,7 +3,7 @@ declare module 'plotly.js-gl2d-dist' {
     export default obj;
 }
 
-declare module "ml-savitzky-golay-generalized" {
+declare module 'ml-savitzky-golay-generalized' {
     interface SGOptions {
         windowSize: number = 9;
         derivative: number = 0;
@@ -48,7 +48,7 @@ declare module 'react-advanced-datetimerange-picker' {
 
         applyCallback(from: Moment, to: Moment);
         maxDate?: Moment;
-        rangeCallback?(idx: number, value: any);
+        rangeCallback?(idx: number, value: unknown);
         autoApply?: boolean;
         descendingYears?: boolean;
         years?: number[];
@@ -65,7 +65,7 @@ declare module 'react-advanced-datetimerange-picker' {
     }
 
     class DateTimeRangeContainer
-    extends React.Component<DateTimeRangeContinerProps>{
+        extends React.Component<DateTimeRangeContinerProps>{
 
     }
 

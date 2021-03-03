@@ -8,8 +8,7 @@ import { Md5 } from 'ts-md5';
 import { GlobalHotKeys } from 'react-hotkeys';
 import { plotWorker } from '.';
 
-class App
-extends React.Component<{}, AppState> {
+class App extends React.Component<Record<string, never>, AppState> {
     public state: AppState = {
         locked: true,
         focused: -1,
@@ -19,11 +18,11 @@ extends React.Component<{}, AppState> {
         layout: [],
     };
 
-    toggleLock = () => this.setState({ locked: !this.state.locked });
-    addGraph        = () => DialogService.open(ImportModal, this.onAddGraph,  { isGraph: true  });
-    onTraceAddClick = () => DialogService.open(ImportModal, this.onAddTraces, { isGraph: false });
+    toggleLock = (): void => this.setState({ locked: !this.state.locked });
+    addGraph = (): void => DialogService.open(ImportModal, this.onAddGraph, { isGraph: true });
+    onTraceAddClick = (): void => DialogService.open(ImportModal, this.onAddTraces, { isGraph: false });
 
-    onAddGraph = (result: Graph) => {
+    onAddGraph = (result: Graph): void => {
         if (!result) { return; }
 
         const { graphs } = this.state;
@@ -37,7 +36,7 @@ extends React.Component<{}, AppState> {
         });
     }
 
-    onAddTraces = (result: Trace[]) => {
+    onAddTraces = (result: Trace[]): void => {
         if (!result || !Array.isArray(result)) {
             return;
         }
@@ -49,13 +48,13 @@ extends React.Component<{}, AppState> {
         }
     }
 
-    onRelayout = (layout: ContainerLayout) => this.setState({ layout });
-    focusGraph = (e: React.MouseEvent<HTMLDivElement>) => {
+    onRelayout = (layout: ContainerLayout): void => this.setState({ layout });
+    focusGraph = (e: React.MouseEvent<HTMLDivElement>): void => {
         const graphId = e.currentTarget.dataset.graph as string;
 
         this.setState({ focused: Number.parseInt(graphId), selectedTraces: [] });
     }
-    onRemoveGraph = (id: number) => DialogService.openConfirmation(
+    onRemoveGraph = (id: number): void => DialogService.openConfirmation(
         {
             title: `Smazat graf ${this.state.graphs.find(g => g.id === id)?.title || 'unkown'}`,
             body: 'Opravdu chcete tento graf smazat?',
@@ -64,7 +63,7 @@ extends React.Component<{}, AppState> {
         res => res && this.setState({ graphs: [...this.state.graphs.filter(g => g.id !== id)] })
     );
 
-    filterZero = async () => {
+    filterZero = async (): Promise<void> => {
         const graph = this.state.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
@@ -81,16 +80,16 @@ extends React.Component<{}, AppState> {
         this.setState({ selectedTraces: [] });
     }
 
-    filterCurves = async () => {
+    filterCurves = async (): Promise<void> => {
         const graph = this.state.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
         const filtered = graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) >= 0).map(t => ({ ...t, filtering: 'sg' } as Trace));
-        graph.traces = [ ...graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) < 0), ...filtered ];
+        graph.traces = [...graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) < 0), ...filtered];
         this.setState({ selectedTraces: [] });
     }
 
-    selectAboveTreshold = async (treshold: number) => {
+    selectAboveTreshold = async (treshold: number): Promise<void> => {
         const graph = this.state.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
@@ -103,17 +102,16 @@ extends React.Component<{}, AppState> {
             }
         }
 
-        this.setState({ selectedTraces: select })
+        this.setState({ selectedTraces: select });
     }
 
-    createCommonTrace = (idPrefix: 'avg' | 'sum', titlePrefix: string) => {
+    createCommonTrace = (idPrefix: 'avg' | 'sum', titlePrefix: string): void => {
         const graph = this.state.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
         const selected = graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) >= 0);
 
-        if (selected.length > 1)
-        {
+        if (selected.length > 1) {
             graph.traces = [
                 ...graph.traces,
                 {
@@ -131,7 +129,7 @@ extends React.Component<{}, AppState> {
         }
     }
 
-    onTraceAction = (action: TraceAction) => {
+    onTraceAction = (action: TraceAction): void => {
         const graph = this.state.graphs.find(g => g.id === this.state.focused);
 
         if (!graph) return;
@@ -152,7 +150,7 @@ extends React.Component<{}, AppState> {
 
             case 'sel-all':
                 this.setState({ selectedTraces: graph.traces.map(t => t.id) });
-                break
+                break;
             case 'inv':
                 this.setState({ selectedTraces: graph.traces.map(t => t.id).filter(t => this.state.selectedTraces.indexOf(t) < 0) });
                 break;
@@ -182,7 +180,7 @@ extends React.Component<{}, AppState> {
                 }
                 break;
             case 'sort':
-                graph.traces = [ ...graph.traces.sort((a, b) => a > b ? 1 : (a === b ? 0 : -1)) ];
+                graph.traces = [...graph.traces.sort((a, b) => a > b ? 1 : (a === b ? 0 : -1))];
                 this.forceUpdate();
                 break;
 
@@ -197,7 +195,7 @@ extends React.Component<{}, AppState> {
                 break;
         }
     };
-    onTraceSelect = (id: string) => {
+    onTraceSelect = (id: string): void => {
         const { selectedTraces } = this.state;
         const idx = selectedTraces.indexOf(id);
 
@@ -208,7 +206,7 @@ extends React.Component<{}, AppState> {
             this.setState({ selectedTraces: [...selectedTraces] });
         }
     };
-    onGraphPropChange = (key: keyof Graph, value: Graph[keyof Graph]) => {
+    onGraphPropChange = (key: keyof Graph, value: Graph[keyof Graph]): void => {
         const graph = this.state.graphs.find(g => g.id === this.state.focused);
 
         if (graph) {
@@ -216,44 +214,44 @@ extends React.Component<{}, AppState> {
             this.forceUpdate();
         }
     };
-    selectUnique = () => {
+    selectUnique = (): void => {
         const graph = this.state.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
         const hashes = graph.traces.map(t => DataService.getTraceHash(t));
         const newSel: string[] = [];
         for (let a = hashes.length - 1; a >= 0; --a) {
-          let occured = false;
+            let occured = false;
 
-          for (let b = 0; b < a; ++b) {
-            if (hashes[b] === hashes[a]) {
-              occured = true;
-              break;
+            for (let b = 0; b < a; ++b) {
+                if (hashes[b] === hashes[a]) {
+                    occured = true;
+                    break;
+                }
             }
-          }
 
-          if (!occured) {
-            newSel.push(graph.traces[a].id);
-          }
+            if (!occured) {
+                newSel.push(graph.traces[a].id);
+            }
         }
         this.setState({ selectedTraces: newSel });
     }
-    onZoomUpdated = (id: number, zoom: [[Date, Date], [any, any]]) => {
+    onZoomUpdated = (id: number, zoom: [[Date, Date], [unknown, unknown]]): void => {
         const graph = this.state.graphs.find(g => g.id === id);
         if (!graph) return;
 
         graph.zoom = zoom;
         this.forceUpdate();
     }
-    zoomSync = (zoom: Graph['zoom']) => {
+    zoomSync = (zoom: Graph['zoom']): void => {
         for (const graph of this.state.graphs) {
-            graph.zoom = zoom ? [ ...zoom ] : [ undefined, undefined ];
+            graph.zoom = zoom ? [...zoom] : [undefined, undefined];
         }
 
         this.forceUpdate();
     };
 
-    public render() {
+    public render(): React.ReactNode {
         return (
             <>
                 <Header

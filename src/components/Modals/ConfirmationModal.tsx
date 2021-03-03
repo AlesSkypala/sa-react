@@ -4,7 +4,7 @@ import { Button, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
 
 class ConfirmationModal
-extends ModalComponent<boolean, Args> {
+    extends ModalComponent<boolean, Args> {
     protected renderHeader(): JSX.Element {
         return (
             <ModalTitle>{this.props.args.title}</ModalTitle>
@@ -21,10 +21,10 @@ extends ModalComponent<boolean, Args> {
         return (
             <>
                 <Button variant={okColor || 'primary'} onClick={this.okClicked}>
-                {okTitle || 'OK'}
+                    {okTitle || 'OK'}
                 </Button>
                 <Button variant={cancelColor || 'secondary'} onClick={this.cancelClicked}>
-                {cancelTitle || 'Zrušit'}
+                    {cancelTitle || 'Zrušit'}
                 </Button>
             </>
         );

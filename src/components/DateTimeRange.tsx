@@ -9,19 +9,23 @@ const clamp = (date: Date, min: Date, max: Date) => {
     if (min > date) return min;
     if (max < date) return max;
     return date;
-}
+};
 
 class DateTimeRange
-extends React.PureComponent<Props, State> {
+    extends React.PureComponent<Props, State> {
     public state: State = { };
 
     onChange = (value: Date | Date[]) => {
         this.props.onChange && Array.isArray(value) && this.props.onChange(value[0], value[1]);
     }
     onFromChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const { from, to, minDate, maxDate } = this.props;
+        const date = event.currentTarget.valueAsDate;
 
-        const date = event.currentTarget.valueAsDate!;
+        if (!date) {
+            return;
+        }
+        
+        const { from, to, minDate, maxDate } = this.props;
         date.setFullYear(from.getFullYear());
         date.setMonth(from.getMonth());
         date.setDate(from.getDate());
@@ -31,9 +35,13 @@ extends React.PureComponent<Props, State> {
         this.props.onChange && this.props.onChange(clamp(date, minDate, maxDate), to);
     };
     onToChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const date = event.currentTarget.valueAsDate;
+
+        if (!date) {
+            return;
+        }
+
         const { from, to, minDate, maxDate } = this.props;
-        
-        const date = event.currentTarget.valueAsDate!;
         date.setFullYear(to.getFullYear());
         date.setMonth(to.getMonth());
         date.setDate(to.getDate());

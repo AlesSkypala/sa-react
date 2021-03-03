@@ -4,7 +4,7 @@ import { Button, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
 
 class InfoModal
-extends ModalComponent<void, Args> {
+    extends ModalComponent<void, Args> {
     protected renderHeader(): JSX.Element {
         return (
             <ModalTitle>{this.props.args.title}</ModalTitle>
@@ -17,7 +17,7 @@ extends ModalComponent<void, Args> {
     protected renderFooter(): JSX.Element {
         return (
             <Button variant='primary' onClick={this.okClicked}>
-            {this.props.args.okButton || 'OK'}
+                {this.props.args.okButton || 'OK'}
             </Button>
         );
     }

@@ -5,7 +5,7 @@ import { Form } from 'react-bootstrap';
 import { ModalComponent } from '.';
 
 class TraceSearchModal
-extends ModalComponent<Trace['id'][], Args, State> {
+    extends ModalComponent<Trace['id'][], Args, State> {
     public state: State = {
         search: '',
         found: [],
@@ -17,15 +17,16 @@ extends ModalComponent<Trace['id'][], Args, State> {
         );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
     private searchPromise: Promise<void> = (async () => {})();
     onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const val = event.currentTarget.value;
         this.setState({ search: val });
 
         // TODO: search promise
-        this.searchPromise.then(_ => {
+        this.searchPromise.then(() => {
             this.setState({ found: [] });
-            this.searchPromise = (async _ => 
+            this.searchPromise = (async () => 
                 this.setState({ found: this.props.args.traces.filter(t => t.title.toLowerCase().indexOf(val.toLowerCase()) >= 0) })
             )();
         });
@@ -39,9 +40,9 @@ extends ModalComponent<Trace['id'][], Args, State> {
                     <Form.Control placeholder="Hledat..." type="text" value={this.state.search} onChange={this.onChange} />
                 </Form.Group>
                 <ul>
-                {this.state.found.map(t => (
-                    <li>{t.title}</li>
-                ))}
+                    {this.state.found.map(t => (
+                        <li key={t.id}>{t.title}</li>
+                    ))}
                 </ul>
             </Form>
         );

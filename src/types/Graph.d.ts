@@ -9,11 +9,11 @@ interface Graph {
 
     // Functionality
     xType?: string;
-    xRange: [ any, any ];
+    xRange: [ unknown, unknown ];
     traces: Trace[];
 
     // Runtime
-    zoom?: [ [Date, Date] | undefined, [any, any] | undefined ];
+    zoom?: [ [Date, Date] | undefined, [ unknown, unknown ] | undefined ];
 }
 
 interface Trace {

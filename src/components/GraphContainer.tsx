@@ -1,13 +1,13 @@
 import * as React from 'react';
 import { default as Grid, Layout, WidthProvider } from 'react-grid-layout';
 
-import 'react-grid-layout/css/styles.css'
-import 'react-resizable/css/styles.css'
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
 const ResponsiveGrid = WidthProvider(Grid);
 
 class GraphContainerComponent
-extends React.Component<Props, State> {
+    extends React.Component<Props, State> {
     public render() {
         return (
             <div className='content-wrapper'>
@@ -24,7 +24,7 @@ extends React.Component<Props, State> {
 
                     onLayoutChange={this.props.onLayoutChange}
                 >
-                {this.props.children}
+                    {this.props.children}
                 </ResponsiveGrid>
             </div>
         );

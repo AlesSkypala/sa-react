@@ -2,8 +2,8 @@ import * as React from 'react';
 import { Modal, ModalBody, ModalFooter } from 'react-bootstrap';
 import ModalHeader from 'react-bootstrap/ModalHeader';
 
-abstract class ModalComponent<R, T = any, S = {}>
-extends React.Component<Props<R, T>, S> {
+abstract class ModalComponent<R, T = unknown, S = unknown>
+    extends React.Component<Props<R, T>, S> {
 
     protected abstract renderHeader(): React.ReactNode;
     protected abstract renderBody(): React.ReactNode;
@@ -19,13 +19,13 @@ extends React.Component<Props<R, T>, S> {
         return (
             <Modal size='lg' show onHide={this.onHide}>
                 <ModalHeader closeButton>
-                {this.renderHeader()}
+                    {this.renderHeader()}
                 </ModalHeader>
                 <ModalBody>
-                {this.renderBody()}
+                    {this.renderBody()}
                 </ModalBody>
                 <ModalFooter>
-                {this.renderFooter()}
+                    {this.renderFooter()}
                 </ModalFooter>
             </Modal>
         );

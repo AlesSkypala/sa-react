@@ -10,7 +10,7 @@ import DateTimeRange from '../DateTimeRange';
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
 class InfoModal
-extends ModalComponent<ImportResult, Args, State> {
+    extends ModalComponent<ImportResult, Args, State> {
     public state: State = {
         title: 'Nový graf',
         xLabel: 'osa x',
@@ -25,7 +25,7 @@ extends ModalComponent<ImportResult, Args, State> {
         selected: [],
     };
 
-    public componentDidMount() {
+    public componentDidMount(): void {
         DataService.getSources().then(this.loadTraces);
     }
 
@@ -34,8 +34,8 @@ extends ModalComponent<ImportResult, Args, State> {
         this.sourceMap = {};
         sources.forEach(s => s.datasets.forEach(d => {
             this.sourceMap[`${s.id}:${d.id}`] = d;
-        }))
-        this.setState({ sources })
+        }));
+        this.setState({ sources });
     }
 
     protected renderHeader(): JSX.Element {
@@ -54,8 +54,8 @@ extends ModalComponent<ImportResult, Args, State> {
         };
         
         if (this.state.selected.length <= 0 && selected.length > 0) {
-            const min = Deserialization.parseTimestamp(Math.max(...selected.map(t => this.sourceMap[`${t.dataset.source}:${t.dataset.id}`].availableXRange[0])));
-            const max = Deserialization.parseTimestamp(Math.min(...selected.map(t => this.sourceMap[`${t.dataset.source}:${t.dataset.id}`].availableXRange[1])));
+            const min = Deserialization.parseTimestamp(Math.max(...selected.map(t => this.sourceMap[`${t.dataset.source}:${t.dataset.id}`].availableXRange[0] as number)));
+            const max = Deserialization.parseTimestamp(Math.min(...selected.map(t => this.sourceMap[`${t.dataset.source}:${t.dataset.id}`].availableXRange[1] as number)));
 
             additional = {
                 minDate: min,
@@ -69,7 +69,7 @@ extends ModalComponent<ImportResult, Args, State> {
 
         this.setState({ ...additional, selected });
     }
-    private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as any);
+    private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
     private onRangeChange = (start: Date, end: Date) => {
         this.setState({ startDate: start, endDate: end });
     }
@@ -89,34 +89,34 @@ extends ModalComponent<ImportResult, Args, State> {
                         onChange={this.onCheck}
                     />
                 </Col>
-            {isGraph ? (
-                <Col>
-                    <Form.Group>
-                        <Form.Label>Název grafu</Form.Label>
-                        <Form.Control name='title' value={this.state.title} onChange={this.onFormChange}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Popis osy x</Form.Label>
-                        <Form.Control name='xLabel' value={this.state.xLabel} onChange={this.onFormChange}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Popis osy y</Form.Label>
-                        <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Rozmezí</Form.Label>
-                        <Form.Control name='timeRange' readOnly autoComplete='off' value={`${moment(this.state.startDate).format(dateFormat)} - ${moment(this.state.endDate).format(dateFormat)}`}></Form.Control>
-                        <DateTimeRange
-                            minDate={this.state.minDate}
-                            maxDate={this.state.maxDate}
-                            from={this.state.startDate}
-                            to={this.state.endDate}
+                {isGraph ? (
+                    <Col>
+                        <Form.Group>
+                            <Form.Label>Název grafu</Form.Label>
+                            <Form.Control name='title' value={this.state.title} onChange={this.onFormChange}></Form.Control>
+                        </Form.Group>
+                        <Form.Group>
+                            <Form.Label>Popis osy x</Form.Label>
+                            <Form.Control name='xLabel' value={this.state.xLabel} onChange={this.onFormChange}></Form.Control>
+                        </Form.Group>
+                        <Form.Group>
+                            <Form.Label>Popis osy y</Form.Label>
+                            <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
+                        </Form.Group>
+                        <Form.Group>
+                            <Form.Label>Rozmezí</Form.Label>
+                            <Form.Control name='timeRange' readOnly autoComplete='off' value={`${moment(this.state.startDate).format(dateFormat)} - ${moment(this.state.endDate).format(dateFormat)}`}></Form.Control>
+                            <DateTimeRange
+                                minDate={this.state.minDate}
+                                maxDate={this.state.maxDate}
+                                from={this.state.startDate}
+                                to={this.state.endDate}
 
-                            onChange={this.onRangeChange}
-                        />
-                    </Form.Group>
-                </Col>
-            ) : undefined}
+                                onChange={this.onRangeChange}
+                            />
+                        </Form.Group>
+                    </Col>
+                ) : undefined}
             </Row>
         );
     }
@@ -153,7 +153,7 @@ extends ModalComponent<ImportResult, Args, State> {
         return (
             <>
                 <Button variant='primary' onClick={this.okClicked} disabled={this.state.selected.length <= 0}>
-                {isGraph ? 'Přidat' : 'Importovat'}
+                    {isGraph ? 'Přidat' : 'Importovat'}
                 </Button>
                 <Button variant='secondary' onClick={this.cancelClicked}>
                 Zrušit

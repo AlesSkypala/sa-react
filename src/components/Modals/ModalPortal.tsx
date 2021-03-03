@@ -3,22 +3,22 @@ import { DialogService } from '../../services';
 import ModalComponent from './ModalComponent';
 
 class ModalPortal
-extends React.Component<Props, State> {
+    extends React.Component<Props, State> {
     public state: State = {};
 
     public componentDidMount() {
-        DialogService.onOpen.on(this.onOpen)
+        DialogService.onOpen.on(this.onOpen);
     }
 
     public componentWillUnmount() {
         DialogService.onOpen.remove(this.onOpen);
     }
 
-    private onOpen = (args: {type: typeof ModalComponent, resolve: ((result: any) => void), args: any }) => {
+    private onOpen = (args: {type: typeof ModalComponent, resolve: ((result: never) => void), args: unknown }) => {
         this.setState(args);
     };
 
-    private onClose = (res?: any) => {
+    private onClose = (res?: unknown) => {
         this.state.resolve && this.state.resolve(res);
         this.setState({ type: undefined, args: undefined, resolve: undefined });
     }
@@ -28,7 +28,7 @@ extends React.Component<Props, State> {
 
         if (Type) {
             return (
-                <Type args={this.state.args!} onClose={this.onClose} />
+                <Type args={this.state.args} onClose={this.onClose} />
             );
         }
 
@@ -41,8 +41,8 @@ export interface Props {
 
 export interface State {
     type?: typeof ModalComponent;
-    resolve?(result: any): void;
-    args?: any;
+    resolve?(result: unknown): void;
+    args?: unknown;
 }
 
 export default ModalPortal;

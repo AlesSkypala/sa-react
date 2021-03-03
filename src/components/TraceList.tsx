@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHdd } from '@fortawesome/free-solid-svg-icons';
 
 import './TraceList.css';
-import { withHotKeys } from 'react-hotkeys';
+// import { withHotKeys } from 'react-hotkeys';
 
 const buttons: { label: string, action: TraceAction }[][] = [
     [
@@ -35,7 +35,7 @@ const buttons: { label: string, action: TraceAction }[][] = [
 ];
 
 class TraceList
-extends React.PureComponent<Props, State> {
+    extends React.PureComponent<Props, State> {
     public state: State = {
         sources: []
     };
@@ -70,6 +70,7 @@ extends React.PureComponent<Props, State> {
 
     getLdevId = (trace: Trace) => {
         const { dataset } = (trace.pipeline as DataNodeDescriptor);
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         return [ dataset.source, dataset.variant! ];
     }
 
@@ -80,7 +81,8 @@ extends React.PureComponent<Props, State> {
         if (trace) {
             const ldevId = this.getLdevId(trace);
     
-            DialogService.open(LdevMapModal, () => {}, { source: ldevId[0], ldev: ldevId[1] });
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            DialogService.open(LdevMapModal, () => { }, { source: ldevId[0], ldev: ldevId[1] });
         }
     }
 
@@ -95,7 +97,7 @@ extends React.PureComponent<Props, State> {
                 className={`trace-row ${this.props.selected.indexOf(t.id) >= 0 ? 'active' : ''}`}
                 onClick={this.traceClicked}
             >
-            <span className='trace-row-title'>{t.title}</span> {this.hasLdevMaps(t) ? (<button className='btn ldev' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faHdd} /></button>) : undefined}
+                <span className='trace-row-title'>{t.title}</span> {this.hasLdevMaps(t) ? (<button className='btn ldev' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faHdd} /></button>) : undefined}
             </li>
         );
     }
@@ -104,27 +106,27 @@ extends React.PureComponent<Props, State> {
         return (
             <React.Fragment>
                 <div>
-                {buttons.map((row, i) => (
-                    <div key={i} className='btn-group btn-group-stretch'>
-                    {row.map(btn => (
-                        <button className='btn btn-secondary btn-sm' key={btn.action} data-action={btn.action} onClick={this.actionClicked}>{btn.label}</button>
+                    {buttons.map((row, i) => (
+                        <div key={i} className='btn-group btn-group-stretch'>
+                            {row.map(btn => (
+                                <button className='btn btn-secondary btn-sm' key={btn.action} data-action={btn.action} onClick={this.actionClicked}>{btn.label}</button>
+                            ))}
+                        </div>
                     ))}
-                    </div>
-                ))}
                 </div>
                 <div style={{flexGrow: 1}} tabIndex={0} ref={this.listRef}>
-                <AutoSizer>
-                {({height, width}) => (
-                    <List
-                        containerProps={{ className: 'list-group' }}
-                        height={height}
-                        width={width}
-                        rowHeight={35}
-                        rowCount={this.props.traces.length}
-                        rowRenderer={this.rowRenderer}
-                    />
-                )}
-                </AutoSizer>
+                    <AutoSizer>
+                        {({height, width}) => (
+                            <List
+                                containerProps={{ className: 'list-group' }}
+                                height={height}
+                                width={width}
+                                rowHeight={35}
+                                rowCount={this.props.traces.length}
+                                rowRenderer={this.rowRenderer}
+                            />
+                        )}
+                    </AutoSizer>
                 </div>
             </React.Fragment>
         );

@@ -7,9 +7,10 @@ import { plotWorker } from '..';
 import { Spinner } from 'react-bootstrap';
 
 import './Graph.css';
+import { GraphExtents } from '../plotting';
 
 class GraphComponent
-extends React.Component<GraphProps, State> {
+    extends React.Component<GraphProps, State> {
 
     public state: State = {
         revision: 0,
@@ -36,24 +37,27 @@ extends React.Component<GraphProps, State> {
     }
 
     public async componentDidMount() {
-        this.componentDidUpdate({ ...this.props, traces: [] }, this.state);
+        this.componentDidUpdate({ ...this.props, traces: [] });
         window.addEventListener('resize', this.debounceResize);
 
-        const canvas = this.canvasRef.current!;
-        const offscreen = canvas.transferControlToOffscreen();
+        const canvas = this.canvasRef.current;
 
-        this.rendererUid = await plotWorker.createOffscreen(
-            transfer(offscreen, [ offscreen ]),
-            this.props.xType ?? "datetime",
-            {
-                x_start: 0,
-                x_end: 1e10,
-                y_start: 0,
-                y_end: 1e3
-            }
-        );
-
-        await this.updateSize();
+        if (canvas) {
+            const offscreen = canvas.transferControlToOffscreen();
+    
+            this.rendererUid = await plotWorker.createOffscreen(
+                transfer(offscreen, [ offscreen ]),
+                this.props.xType ?? 'datetime',
+                {
+                    x_start: 0,
+                    x_end: 1e10,
+                    y_start: 0,
+                    y_end: 1e3
+                }
+            );
+    
+            await this.updateSize();
+        }
     }
 
     public async componentWillUnmount() {
@@ -61,7 +65,7 @@ extends React.Component<GraphProps, State> {
         this.rendererUid && await plotWorker.disposeOffscreen(this.rendererUid);
     }
 
-    public async componentDidUpdate(prevProps: GraphProps, prevState: State) {
+    public async componentDidUpdate(prevProps: GraphProps) {
         if (this.props.traces !== prevProps.traces) {
             const newTraces: Trace[] = this.props.traces.filter(t => prevProps.traces.indexOf(t) < 0);
             const removedTraces: Trace[] = prevProps.traces.filter(t => this.props.traces.indexOf(t) < 0);
@@ -79,7 +83,7 @@ extends React.Component<GraphProps, State> {
 
                 const { x_start, x_end, y_start, y_end } = await plotWorker.getExtentRecommendation(this.traces.map(l => l.ptr));
                 this.rendererUid && plotWorker.callRendererFunc(this.rendererUid, 'set_extents', [
-                    { x_start, x_end, y_start, y_end } as any
+                    { x_start, x_end, y_start, y_end } as GraphExtents
                 ]);
                 await this.redrawGraph();
             }
@@ -127,9 +131,9 @@ extends React.Component<GraphProps, State> {
                     <canvas ref={this.canvasRef} hidden={traces.length <= 0} />
                 </div>
                 {!this.props.layoutLocked ? (
-                <div className='graph-resize-overlay'><h3>Graf se překreslí po uzamknutí rozložení...</h3></div>
+                    <div className='graph-resize-overlay'><h3>Graf se překreslí po uzamknutí rozložení...</h3></div>
                 ) : (this.state.rendering && (
-                <div className='graph-resize-overlay'><Spinner animation='border' variant='light' /></div>
+                    <div className='graph-resize-overlay'><Spinner animation='border' variant='light' /></div>
                 ))}
             </div>
         );

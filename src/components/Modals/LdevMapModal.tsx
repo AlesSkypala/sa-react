@@ -5,7 +5,7 @@ import { ModalComponent } from '.';
 import { DataService } from '../../services';
 
 class LdevMapModal
-extends ModalComponent<void, Args, State> {
+    extends ModalComponent<void, Args, State> {
     public state: State = {
         ldevInfo: undefined,
     };
@@ -21,9 +21,9 @@ extends ModalComponent<void, Args, State> {
         );
     }
 
-    getHostgroups = () => this.state.ldevInfo!.hostPorts.map(hp => hp.hostgroup).filter((v, i, a) => a.indexOf(v) === i);
-    getPorts = (hostgroup: string) => this.state.ldevInfo!.hostPorts.filter(v => v.hostgroup === hostgroup);
-    getWwns = (hostport: HostPort) => this.state.ldevInfo!.wwns.filter(w => w.hostgroup === hostport.hostgroup && w.port === hostport.port);
+    getHostgroups = () => (this.state.ldevInfo?.hostPorts ?? []).map(hp => hp.hostgroup).filter((v, i, a) => a.indexOf(v) === i);
+    getPorts = (hostgroup: string) => (this.state.ldevInfo?.hostPorts ?? []).filter(v => v.hostgroup === hostgroup);
+    getWwns = (hostport: HostPort) => (this.state.ldevInfo?.wwns ?? []).filter(w => w.hostgroup === hostport.hostgroup && w.port === hostport.port);
 
     protected renderBody(): JSX.Element {
         const { ldevInfo } = this.state;
@@ -45,25 +45,25 @@ extends ModalComponent<void, Args, State> {
                 <li>
                     HOST:
                     <ul>
-                    {this.getHostgroups().map(hostgroup => (
-                        <li key={hostgroup}>
-                            {hostgroup}
-                            <ul>
-                            {this.getPorts(hostgroup).map(hostport => (
-                                <li key={hostport.port}>
-                                    {hostport.port}
-                                    <ul>
-                                    {this.getWwns(hostport).map(wwn => (
-                                        <li key={wwn.nickname}>
-                                            {wwn.wwn} [{wwn.nickname}]
+                        {this.getHostgroups().map(hostgroup => (
+                            <li key={hostgroup}>
+                                {hostgroup}
+                                <ul>
+                                    {this.getPorts(hostgroup).map(hostport => (
+                                        <li key={hostport.port}>
+                                            {hostport.port}
+                                            <ul>
+                                                {this.getWwns(hostport).map(wwn => (
+                                                    <li key={wwn.nickname}>
+                                                        {wwn.wwn} [{wwn.nickname}]
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </li>
                                     ))}
-                                    </ul>
-                                </li>
-                            ))}
-                            </ul>
-                        </li>
-                    ))}
+                                </ul>
+                            </li>
+                        ))}
                     </ul>
                 </li>
             </ul>

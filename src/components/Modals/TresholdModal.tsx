@@ -4,8 +4,7 @@ import { Button, ModalTitle } from 'react-bootstrap';
 import { Form } from 'react-bootstrap';
 import { ModalComponent } from '.';
 
-class TresholdModal
-extends ModalComponent<number, Args, State> {
+class TresholdModal extends ModalComponent<number, Args, State> {
     public state: State = {
         val: 0
     };
@@ -16,7 +15,7 @@ extends ModalComponent<number, Args, State> {
         );
     }
 
-    onChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
         this.setState({ val: Number.parseFloat(event.currentTarget.value) });
     }
 
@@ -48,9 +47,7 @@ extends ModalComponent<number, Args, State> {
     }
 }
 
-export interface Args {
-    
-}
+export type Args = Record<string, never>;
 
 interface State {
     val: number;

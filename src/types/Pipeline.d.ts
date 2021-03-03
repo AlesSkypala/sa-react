@@ -1,6 +1,6 @@
 interface PipelineRequest {
-    from: any,
-    to: any,
+    from: unknown,
+    to: unknown,
 
     pipelines: NodeDescriptor[],
 }
@@ -23,7 +23,7 @@ interface DataNodeDescriptor {
 
 type PipeDescriptor = DiffPipe | ExprPipe | SumPipe | AvgPipe;
 
-type DiffPipe = OneChildPipe<'diff', {}>;
+type DiffPipe = OneChildPipe<'diff', Record<string, never>>;
 type ExprPipe = OneChildPipe<'expr', { expression: string }>;
 type SumPipe = ManyChildPipe<'sum', undefined>;
 type AvgPipe = ManyChildPipe<'avg', undefined>;

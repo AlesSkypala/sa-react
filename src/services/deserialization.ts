@@ -1,5 +1,5 @@
 class Deserialization {
-    public deserializers: { [key: string]: { size: number, parser: (view: DataView, pos: number) => any } } = {
+    public deserializers: { [key: string]: { size: number, parser: (view: DataView, pos: number) => unknown } } = {
         datetime: { size: 4, parser: (view, pos) => new Date(view.getInt32(pos, true) * 1000) },
         byte:     { size: 1, parser: (view, pos) => view.getInt8(pos) },
         boolean:  { size: 1, parser: (view, pos) => view.getInt8(pos) > 0 },

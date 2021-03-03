@@ -13,7 +13,7 @@ extends Identified {
     xType: string;
     yType: string;
 
-    availableXRange: [ any, any ];
+    availableXRange: [ unknown, unknown ];
 
     variants?: string[];
 }
