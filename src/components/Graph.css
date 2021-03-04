@@ -40,3 +40,12 @@
     justify-content: center;
     align-items: center;
 }
+
+.buttons > .btn {
+    opacity: 0.3;
+    transition: 0.3s;
+}
+
+.buttons > .btn:hover {
+    opacity: 0.8;
+}

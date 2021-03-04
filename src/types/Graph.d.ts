@@ -14,6 +14,7 @@ interface Graph {
 
     // Runtime
     zoom?: [ [Date, Date] | undefined, [ unknown, unknown ] | undefined ];
+    activeTraces: Trace['id'][];
 }
 
 interface Trace {

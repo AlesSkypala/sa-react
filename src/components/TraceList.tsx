@@ -3,7 +3,7 @@ import { AutoSizer, List, ListRowProps } from 'react-virtualized';
 import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHdd } from '@fortawesome/free-solid-svg-icons';
+import { faCheckSquare, faHdd, faSquare } from '@fortawesome/free-solid-svg-icons';
 
 import './TraceList.css';
 // import { withHotKeys } from 'react-hotkeys';
@@ -37,7 +37,9 @@ const buttons: { label: string, action: TraceAction }[][] = [
 class TraceList
     extends React.PureComponent<Props, State> {
     public state: State = {
-        sources: []
+        sources: [],
+        active: undefined,
+        numero_uno_in_italia: 0,
     };
     
     private listRef = React.createRef<HTMLDivElement>();
@@ -48,6 +50,7 @@ class TraceList
     traceClicked = (e: React.MouseEvent<HTMLLIElement>) => {
         const id = e.currentTarget.dataset.id as Trace['id'];
         this.props.onSelect(id);
+        this.setState({ active: id, numero_uno_in_italia: (this.state.numero_uno_in_italia + 1) % 2 });
         this.listRef.current?.focus();
     }
 
@@ -94,10 +97,13 @@ class TraceList
                 key={props.key}
                 data-id={t.id}
                 style={props.style}
-                className={`trace-row ${this.props.selected.indexOf(t.id) >= 0 ? 'active' : ''}`}
+                className={`trace-row ${this.state.active === t.id ? 'active' : ''}`}
                 onClick={this.traceClicked}
             >
-                <span className='trace-row-title'>{t.title}</span> {this.hasLdevMaps(t) ? (<button className='btn ldev' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faHdd} /></button>) : undefined}
+                <span className='btn-select mr-1'>
+                    <FontAwesomeIcon icon={this.props.activeTraces.indexOf(t.id) >= 0 ? faCheckSquare : faSquare} />
+                </span>
+                <span className='trace-row-title'>{t.title}</span> {this.hasLdevMaps(t) ? (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faHdd} /></button>) : undefined}
             </li>
         );
     }
@@ -124,6 +130,12 @@ class TraceList
                                 rowHeight={35}
                                 rowCount={this.props.traces.length}
                                 rowRenderer={this.rowRenderer}
+                                active={this.props.activeTraces}
+                                lol={this.state.numero_uno_in_italia}
+                                // Before anyone accuses me of the terrible crimes I might have commited
+                                // in former Yugoslavia, just let me state that this is a necessity of
+                                // react-virtualized in order to redraw the list in cases where changes
+                                // occur a level deeper than just the passed props above
                             />
                         )}
                     </AutoSizer>
@@ -135,7 +147,7 @@ class TraceList
 
 export interface Props {
     traces: Trace[];
-    selected: Trace['id'][];
+    activeTraces: Trace['id'][];
 
     onSelect(id: Trace['id']): void;
     onAction(action: TraceAction): void;
@@ -143,6 +155,8 @@ export interface Props {
 
 export interface State {
     sources: DataSource[];
+    active: Trace['id'] | undefined;
+    numero_uno_in_italia: number;
 }
 
 export default TraceList;

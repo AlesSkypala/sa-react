@@ -132,19 +132,24 @@ class InfoModal
         };
     });
 
-    private okClicked = () => this.resolve(this.props.args.isGraph ? {
-        id: 0,
+    private okClicked = () => {
+        const traces = this.generateTraces();
 
-        title: this.state.title,
-        xLabel: this.state.xLabel, 
-        yLabel: this.state.yLabel,
+        this.resolve(this.props.args.isGraph ? {
+            id: 0,
 
-        xRange: [
-            Deserialization.dateToTimestamp(this.state.startDate),
-            Deserialization.dateToTimestamp(this.state.endDate)
-        ],
-        traces: this.generateTraces(),
-    } as Graph : this.generateTraces());
+            title: this.state.title,
+            xLabel: this.state.xLabel, 
+            yLabel: this.state.yLabel,
+
+            xRange: [
+                Deserialization.dateToTimestamp(this.state.startDate),
+                Deserialization.dateToTimestamp(this.state.endDate)
+            ],
+            traces,
+            activeTraces: traces.map(t => t.id),
+        } as Graph : traces);
+    }
     private cancelClicked = () => this.resolve(undefined);
 
     protected renderFooter(): JSX.Element {

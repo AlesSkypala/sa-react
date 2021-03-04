@@ -1,12 +1,17 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as React from 'react';
-import { faPlus, faUnlock, faLock } from '@fortawesome/free-solid-svg-icons';
-import { Nav, NavItem, NavLink } from 'react-bootstrap';
+import { faPlus, faUnlock, faLock, faGripVertical } from '@fortawesome/free-solid-svg-icons';
+import { Dropdown, Nav, NavItem, NavLink } from 'react-bootstrap';
 
 import './Header.css';
 
 class HeaderComponent
     extends React.Component<Props, State> {
+
+    onSelectLayout = (key: unknown) => {
+        this.props.onLayout && this.props.onLayout(key as LayoutType);
+    };
+
     public render() {
         return (
             <header className="main-header">
@@ -31,9 +36,16 @@ class HeaderComponent
                                     
                                 </NavLink>
                             </NavItem>
-                            <li className='nav-item' title="">
-                                
-                            </li>
+                            <Dropdown as={NavItem} onSelect={this.onSelectLayout}>
+                                <Dropdown.Toggle as={NavLink} title='Odemknout/zamknout rozvržení' className='text-white'>
+                                    <FontAwesomeIcon color='white' icon={faGripVertical} />
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu>
+                                    <Dropdown.Item eventKey='vertical'>Vertikálně</Dropdown.Item>
+                                    <Dropdown.Item eventKey='horizontal'>Horizontálně</Dropdown.Item>
+                                    <Dropdown.Item eventKey='freeform'>Odemknout</Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>
                         </Nav>
                     </div>
                 </nav>
@@ -48,7 +60,10 @@ export interface Props {
 
     onAddGraph?(): void;
     onToggleLock?(): void;
+    onLayout?(type: LayoutType): void;
 }
+
+export type LayoutType = 'horizontal' | 'vertical' | 'freeform';
 
 export interface State {
 }

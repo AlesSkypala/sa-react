@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faWrench } from '@fortawesome/free-solid-svg-icons';
 import * as React from 'react';
 import debounce from 'lodash.debounce';
 import { transfer } from 'comlink';
@@ -8,6 +8,7 @@ import { Spinner } from 'react-bootstrap';
 
 import './Graph.css';
 import { GraphExtents } from '../plotting';
+import { AppEvents } from '../services';
 
 class GraphComponent
     extends React.Component<GraphProps, State> {
@@ -28,10 +29,9 @@ class GraphComponent
         const n = performance.now();
         
         this.setState({ rendering: true });
-        const trace_ptrs = this.traces.map(t => t.ptr);
+        const trace_ptrs = this.traces.filter(t => this.props.activeTraces.indexOf(t.id) >= 0).map(t => t.ptr);
         await plotWorker.clearChart(this.rendererUid);
         await plotWorker.renderTraces(this.rendererUid, trace_ptrs);
-        console.log(`rendered ${this.traces.length} traces with the total of ${24 * 60 * this.traces.length} points in ${(performance.now() - n)}`);
 
         this.traces.length > 0 && this.setState({ rendering: false });
     }
@@ -39,6 +39,7 @@ class GraphComponent
     public async componentDidMount() {
         this.componentDidUpdate({ ...this.props, traces: [] });
         window.addEventListener('resize', this.debounceResize);
+        AppEvents.onRelayout.on(this.onLayoutChange);
 
         const canvas = this.canvasRef.current;
 
@@ -60,8 +61,13 @@ class GraphComponent
         }
     }
 
+    onLayoutChange = async () => {
+        await this.updateSize();
+    }
+
     public async componentWillUnmount() {
         window.removeEventListener('resize', this.debounceResize);
+        AppEvents.onRelayout.remove(this.onLayoutChange);
         this.rendererUid && await plotWorker.disposeOffscreen(this.rendererUid);
     }
 
@@ -92,9 +98,14 @@ class GraphComponent
         if (this.props.layoutLocked !== prevProps.layoutLocked && this.props.layoutLocked) {
             await this.updateSize();
         }
+
+        if (this.props.activeTraces !== prevProps.activeTraces) {
+            await this.redrawGraph();
+        }
     }
 
     private onRemove = () => this.props.onRemove && this.props.onRemove(this.props.id);
+    private onEdit   = () => this.props.onEdit && this.props.onEdit(this.props.id);
 
     private prevWidth = 0;
     private prevHeight = 0;
@@ -121,9 +132,10 @@ class GraphComponent
         return (
             <div className={`graph ${this.props.focused ? 'active' : ''}`}>
                 <div className='text-center position-relative'>
-                    <h1 className='w-100 text-center'>{title}</h1>
-                    <div style={{ right: 0, top: 0 }} className='position-absolute buttons'>
-                        <button className='btn btn-lg' onClick={this.onRemove}><FontAwesomeIcon icon={faTrash} /></button>
+                    <h4 className='mt-1 w-100 text-center'>{title}</h4>
+                    <div style={{ right: 0, top: 0, bottom: 0 }} className='d-flex align-items-center position-absolute buttons'>
+                        <button className='btn btn-sm' onClick={this.onEdit}><FontAwesomeIcon icon={faWrench} /></button>
+                        <button className='btn btn-sm' onClick={this.onRemove}><FontAwesomeIcon icon={faTrash} /></button>
                     </div>
                 </div>
                 <div className='graph-content' ref={this.contentRef}>
@@ -146,6 +158,7 @@ extends Graph {
     layoutLocked: boolean;
 
     onZoomUpdated?(id: Graph['id'], zoom: Graph['zoom']): void;
+    onEdit?(id: Graph['id']): void;
     onRemove?(id: Graph['id']): void;
 }
 
