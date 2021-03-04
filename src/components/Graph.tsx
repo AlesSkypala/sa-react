@@ -23,15 +23,15 @@ class GraphComponent
     private rendererUid: string | undefined;
     private traces: { id: Trace['id'], ptr: number }[] = [];
 
+    private extents: Omit<GraphExtents, 'free'> = { x_start: 0, x_end: 0, y_start: 0, y_end: 0 };
+
     redrawGraph = async () => {
         if (!this.rendererUid) return;
-
-        const n = performance.now();
         
         this.setState({ rendering: true });
         const trace_ptrs = this.traces.filter(t => this.props.activeTraces.indexOf(t.id) >= 0).map(t => t.ptr);
         await plotWorker.clearChart(this.rendererUid);
-        await plotWorker.renderTraces(this.rendererUid, trace_ptrs);
+        await plotWorker.renderTraces(this.rendererUid, trace_ptrs.map(p => ({ ptr: p, color: [0,0,0] })));
 
         this.traces.length > 0 && this.setState({ rendering: false });
     }
@@ -49,11 +49,16 @@ class GraphComponent
             this.rendererUid = await plotWorker.createOffscreen(
                 transfer(offscreen, [ offscreen ]),
                 this.props.xType ?? 'datetime',
-                {
+                this.extents = {
                     x_start: 0,
                     x_end: 1e10,
                     y_start: 0,
                     y_end: 1e3
+                },
+                {
+                    margin: 5,
+                    x_label_space: 24,
+                    y_label_space: 60,
                 }
             );
     
@@ -89,7 +94,7 @@ class GraphComponent
 
                 const { x_start, x_end, y_start, y_end } = await plotWorker.getExtentRecommendation(this.traces.map(l => l.ptr));
                 this.rendererUid && plotWorker.callRendererFunc(this.rendererUid, 'set_extents', [
-                    { x_start, x_end, y_start, y_end } as GraphExtents
+                    this.extents = { x_start, x_end, y_start, y_end } as GraphExtents
                 ]);
                 await this.redrawGraph();
             }

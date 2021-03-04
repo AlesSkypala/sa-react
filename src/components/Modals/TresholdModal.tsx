@@ -19,9 +19,14 @@ class TresholdModal extends ModalComponent<number, Args, State> {
         this.setState({ val: Number.parseFloat(event.currentTarget.value) });
     }
 
+    onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        this.okClicked();
+    }
+
     protected renderBody(): JSX.Element {
         return (
-            <Form>
+            <Form onSubmit={this.onSubmit}>
                 <Form.Group>
                     <Form.Label>Hodnota:</Form.Label>
                     <Form.Control placeholder="Hledat..." type="number" value={this.state.val} onChange={this.onChange} />

@@ -19,7 +19,7 @@ class GraphContainerComponent
                             layout={this.props.layout}
                             isResizable={!this.props.locked}
                             isDraggable={!this.props.locked}
-                            useCSSTransforms={false}
+                            useCSSTransforms
 
                             cols={Cols}
                             maxRows={Rows}

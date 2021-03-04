@@ -11,16 +11,28 @@ import('../plotting').then(wasm => plotting = wasm);
 
 type Extents = Pick<GraphExtents, 'x_start' | 'x_end' | 'y_start' | 'y_end'>;
 // eslint-disable-next-line @typescript-eslint/ban-types
-type PickFuncs<T> = { [k in keyof T]: T[k] extends Function ? T[k] : never };
+type PickFuncs<T> = Pick<T, ({ [k in keyof T]: T[k] extends Function ? k : never })[keyof T]>;
+
 
 export class PlotWorkerProxy {
     private renderers: { [key: string]: OffscreenGraphRenderer } = {};
     private traceData: TraceData[] = [];
 
-    public createOffscreen(canvas: OffscreenCanvas, xType: string, extents: Extents): string {
+    public createOffscreen(canvas: OffscreenCanvas, xType: string, extents: Extents, style: { margin: number, x_label_space: number, y_label_space: number }): string {
         const uid = uuid.v4();
         
-        this.renderers[uid] = new plotting.OffscreenGraphRenderer(canvas, xType, extents.x_start, extents.x_end, extents.y_start, extents.y_end);
+        this.renderers[uid] = new plotting.OffscreenGraphRenderer(
+            canvas,
+            xType,
+            extents.x_start,
+            extents.x_end,
+            extents.y_start,
+            extents.y_end,
+
+            style.margin,
+            style.x_label_space,
+            style.y_label_space
+        );
 
         return uid;
     }
@@ -63,13 +75,13 @@ export class PlotWorkerProxy {
         }
     }
 
-    public async renderTraces(uid: string, traces: number[]) {
+    public async renderTraces(uid: string, traces: { ptr: number, color: [ number, number, number ] } []) {
         const renderer = this.renderers[uid];
         
         renderer.clear();
         renderer.draw_chart();
-        for (const ptr of traces) {
-            renderer.draw_trace(ptr);
+        for (const trace of traces) {
+            renderer.draw_trace(trace.ptr);
         }
     }
 

@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { Button, Col, ModalTitle, Row, Form } from 'react-bootstrap';
+import { Button, ModalTitle, Form } from 'react-bootstrap';
 import { ModalComponent } from '.';
 
 class GraphEditModal extends ModalComponent<EditResult, Args, State> {
@@ -26,25 +26,25 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
         );
     }
 
+    
+    private onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); this.okClicked(); }
     private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
     protected renderBody(): JSX.Element {
         return (
-            <Row>
-                <Col>
-                    <Form.Group>
-                        <Form.Label>Název grafu</Form.Label>
-                        <Form.Control name='title' value={this.state.title} onChange={this.onFormChange}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Popis osy x</Form.Label>
-                        <Form.Control name='xLabel' value={this.state.xLabel} onChange={this.onFormChange}></Form.Control>
-                    </Form.Group>
-                    <Form.Group>
-                        <Form.Label>Popis osy y</Form.Label>
-                        <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
-                    </Form.Group>
-                </Col>
-            </Row>
+            <Form onSubmit={e => e.preventDefault()}>
+                <Form.Group>
+                    <Form.Label>Název grafu</Form.Label>
+                    <Form.Control name='title' value={this.state.title} onChange={this.onFormChange}></Form.Control>
+                </Form.Group>
+                <Form.Group>
+                    <Form.Label>Popis osy x</Form.Label>
+                    <Form.Control name='xLabel' value={this.state.xLabel} onChange={this.onFormChange}></Form.Control>
+                </Form.Group>
+                <Form.Group>
+                    <Form.Label>Popis osy y</Form.Label>
+                    <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
+                </Form.Group>
+            </Form>
         );
     }
 

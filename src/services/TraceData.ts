@@ -1,6 +1,6 @@
 import { default as DataService } from './data';
 // import sg from 'ml-savitzky-golay-generalized';
-import type { GraphExtents, GraphRenderer } from '../plotting';
+import type { GraphExtents } from '../plotting';
 
 type Plotting = typeof import('../plotting');
 
@@ -20,10 +20,6 @@ class TraceData {
 
     public isZero(): boolean {
         return plotting.is_zero(this.dataPtr);
-    }
-
-    public render(renderer: GraphRenderer) {
-        renderer.draw_trace(this.dataPtr);
     }
 
     public treshold(tres: number): boolean {

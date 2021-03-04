@@ -300,9 +300,11 @@ class App extends React.Component<Record<string, never>, AppState> {
 
         if (layout.length <= 0) return;
         if (layout.length == 1) {
-            this.setState({ layout: [
+            const nLayout = [
                 { ...layout[0], x: 0, y: 0, w: 12, h: 12 }
-            ]});
+            ];
+            this.setState({ layout: nLayout });
+            this.emitRelayoutEvent(type, nLayout);
             return;
         }
 

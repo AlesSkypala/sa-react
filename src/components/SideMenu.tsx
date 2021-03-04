@@ -18,12 +18,6 @@ class SideMenuComponent
                 <section className='sidebar'>
                     {selectedGraph ? (
                         <>
-                            {/* <ul className="sidebar-menu"><li className="header">VLASTNOSTI</li></ul>
-                            <Form style={{ color: 'white' }}>
-                                <Form.Group><Form.Label>Název:</Form.Label><Form.Control name='title'  value={selectedGraph.title}  onChange={this.onPropertyChange} /></Form.Group>
-                                <Form.Group><Form.Label>Osa x:</Form.Label><Form.Control name='xLabel' value={selectedGraph.xLabel} onChange={this.onPropertyChange} /></Form.Group>
-                                <Form.Group><Form.Label>Osa y:</Form.Label><Form.Control name='yLabel' value={selectedGraph.yLabel} onChange={this.onPropertyChange} /></Form.Group>
-                            </Form> */}
                             <ul className="sidebar-menu">
                                 <li className="header d-flex align-items-center pr-1 py-0">
                                 KŘIVKY
