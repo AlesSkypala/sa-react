@@ -135,20 +135,32 @@ class InfoModal
     private okClicked = () => {
         const traces = this.generateTraces();
 
-        this.resolve(this.props.args.isGraph ? {
-            id: 0,
+        if (this.props.args.isGraph) {
+            const graph: Graph = {
+                id: 0,
+    
+                title: this.state.title,
+                xLabel: this.state.xLabel, 
+                yLabel: this.state.yLabel,
 
-            title: this.state.title,
-            xLabel: this.state.xLabel, 
-            yLabel: this.state.yLabel,
+                style: {
+                    margin: 5,
+                    xLabelSpace: 24,
+                    yLabelSpace: 60,
+                },
+    
+                xRange: [
+                    Deserialization.dateToTimestamp(this.state.startDate),
+                    Deserialization.dateToTimestamp(this.state.endDate)
+                ],
+                traces,
+                activeTraces: traces.map(t => t.id)
+            };
 
-            xRange: [
-                Deserialization.dateToTimestamp(this.state.startDate),
-                Deserialization.dateToTimestamp(this.state.endDate)
-            ],
-            traces,
-            activeTraces: traces.map(t => t.id),
-        } as Graph : traces);
+            this.props.onClose(graph);
+        } else {
+            this.props.onClose(traces);
+        }
     }
     private cancelClicked = () => this.resolve(undefined);
 

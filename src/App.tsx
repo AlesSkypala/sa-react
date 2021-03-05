@@ -276,7 +276,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         }
         graph.activeTraces = newSel;
     }
-    onZoomUpdated = (id: number, zoom: [[Date, Date], [unknown, unknown]]): void => {
+    onZoomUpdated = (id: number, zoom: Graph['zoom']): void => {
         const graph = this.state.graphs.find(g => g.id === id);
         if (!graph) return;
 
@@ -285,7 +285,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
     zoomSync = (zoom: Graph['zoom']): void => {
         for (const graph of this.state.graphs) {
-            graph.zoom = zoom ? [...zoom] : [undefined, undefined];
+            graph.zoom = zoom ? [...zoom] : undefined;
         }
 
         this.forceUpdate();

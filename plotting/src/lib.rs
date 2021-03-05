@@ -109,7 +109,7 @@ impl OffscreenGraphRenderer {
     }
 
     pub fn draw_trace(&mut self, trace_ptr: usize) {
-        if let Option::Some(_) = &self.root {
+        if self.root.is_some() {
             let mut chart = self.build_cartesian();
         
             chart.configure_mesh();
@@ -118,7 +118,6 @@ impl OffscreenGraphRenderer {
             unsafe {
                 color = &utils::DATA[trace_ptr].color;
             }
-            
 
             (*self.backend).borrow_mut().draw_path(utils::TraceIterator::new(trace_ptr, self.x_range.start, self.x_range.end).map(
                 |(x,y)| chart.backend_coord(&(x, y))
@@ -131,7 +130,7 @@ impl OffscreenGraphRenderer {
     }
 
     pub fn draw_chart(&mut self) {
-        if let Option::Some(_) = &self.root {
+        if self.root.is_some() {
             let mut chart = self.build_cartesian();
             
             let mut mesh = chart.configure_mesh();

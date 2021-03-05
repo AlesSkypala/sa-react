@@ -5,6 +5,12 @@ interface Graph {
     title: string;
     xLabel: string;
     yLabel: string;
+
+    style: {
+        margin: number;
+        xLabelSpace: number;
+        yLabelSpace: number;
+    }
     margin?: 0 | 1 | 2 | 3;
 
     // Functionality
@@ -13,7 +19,7 @@ interface Graph {
     traces: Trace[];
 
     // Runtime
-    zoom?: [ [Date, Date] | undefined, [ unknown, unknown ] | undefined ];
+    zoom?: [ unknown, unknown, number, number ];
     activeTraces: Trace['id'][];
 }
 
