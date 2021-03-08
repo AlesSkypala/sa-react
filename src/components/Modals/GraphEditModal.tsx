@@ -31,10 +31,10 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
     private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
     protected renderBody(): JSX.Element {
         return (
-            <Form onSubmit={e => e.preventDefault()}>
+            <Form onSubmit={this.onFormSubmit}>
                 <Form.Group>
                     <Form.Label>Název grafu</Form.Label>
-                    <Form.Control name='title' value={this.state.title} onChange={this.onFormChange}></Form.Control>
+                    <Form.Control name='title'  value={this.state.title}  onChange={this.onFormChange}></Form.Control>
                 </Form.Group>
                 <Form.Group>
                     <Form.Label>Popis osy x</Form.Label>
@@ -44,6 +44,7 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
                     <Form.Label>Popis osy y</Form.Label>
                     <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
                 </Form.Group>
+                <Form.Control type="submit" hidden />
             </Form>
         );
     }

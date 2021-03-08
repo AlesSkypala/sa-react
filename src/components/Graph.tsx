@@ -50,7 +50,7 @@ class GraphComponent
     
             this.rendererUid = await plotWorker.createOffscreen(
                 transfer(offscreen, [ offscreen ]),
-                this.props.xType ?? 'datetime',
+                this.props.xType,
                 zoomToExtent((this.props.zoom ?? [ 0, 1e10, 0, 1e3 ]) as number[]),
                 {
                     margin: this.props.style.margin,

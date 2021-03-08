@@ -1,4 +1,4 @@
-interface Graph {
+interface Graph<T extends XType = XType> {
     id: number;
 
     // Appearance
@@ -9,12 +9,12 @@ interface Graph {
     style: GraphStyle;
 
     // Functionality
-    xType?: string;
-    xRange: [ unknown, unknown ];
+    xType: T;
+    xRange: [ XTypeTypes[T], XTypeTypes[T] ];
     traces: Trace[];
 
     // Runtime
-    zoom?: [ unknown, unknown, number, number ];
+    zoom?: [ XTypeTypes[T], XTypeTypes[T], number, number ];
     activeTraces: Trace['id'][];
 }
 
@@ -37,6 +37,19 @@ interface Trace {
 interface TraceStyle {
     color: [number, number, number];
     width: number;
+}
+
+type DateTimeType = number;
+type XType = keyof XTypeTypes;
+type XTypeTypes = {
+    datetime: DateTimeType,
+    bool: boolean,
+    byte: number,
+    float: number,
+    short: number,
+    int: number,
+    ushort: number,
+    uint: number,
 }
 
 type TraceAction = 'sel-unq' | 'sel-all' | 'inv' | 'des' | 'tres' |

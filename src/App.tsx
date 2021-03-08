@@ -348,8 +348,6 @@ class App extends React.Component<Record<string, never>, AppState> {
                         });
                     }
 
-
-                    console.log(nLayout);
                     this.setState({ layout: nLayout });
                     this.emitRelayoutEvent(type, nLayout);
                 }

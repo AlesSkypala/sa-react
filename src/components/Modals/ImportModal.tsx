@@ -82,42 +82,45 @@ class InfoModal
         const { isGraph } = this.props.args;
         
         return (
-            <Row>
-                <Col style={{ minHeight: '400px' }}>
-                    <SourceTree
-                        sources={this.state.sources}
-                        onChange={this.onCheck}
-                    />
-                </Col>
-                {isGraph ? (
-                    <Col>
-                        <Form.Group>
-                            <Form.Label>Název grafu</Form.Label>
-                            <Form.Control name='title' value={this.state.title} onChange={this.onFormChange}></Form.Control>
-                        </Form.Group>
-                        <Form.Group>
-                            <Form.Label>Popis osy x</Form.Label>
-                            <Form.Control name='xLabel' value={this.state.xLabel} onChange={this.onFormChange}></Form.Control>
-                        </Form.Group>
-                        <Form.Group>
-                            <Form.Label>Popis osy y</Form.Label>
-                            <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
-                        </Form.Group>
-                        <Form.Group>
-                            <Form.Label>Rozmezí</Form.Label>
-                            <Form.Control name='timeRange' readOnly autoComplete='off' value={`${moment(this.state.startDate).format(dateFormat)} - ${moment(this.state.endDate).format(dateFormat)}`}></Form.Control>
-                            <DateTimeRange
-                                minDate={this.state.minDate}
-                                maxDate={this.state.maxDate}
-                                from={this.state.startDate}
-                                to={this.state.endDate}
-
-                                onChange={this.onRangeChange}
-                            />
-                        </Form.Group>
+            <Form onSubmit={this.onSubmit}>
+                <Row>
+                    <Col style={{ minHeight: '400px' }}>
+                        <SourceTree
+                            sources={this.state.sources}
+                            onChange={this.onCheck}
+                        />
                     </Col>
-                ) : undefined}
-            </Row>
+                    {isGraph ? (
+                        <Col>
+                            <Form.Group>
+                                <Form.Label>Název grafu</Form.Label>
+                                <Form.Control name='title' value={this.state.title} onChange={this.onFormChange}></Form.Control>
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label>Popis osy x</Form.Label>
+                                <Form.Control name='xLabel' value={this.state.xLabel} onChange={this.onFormChange}></Form.Control>
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label>Popis osy y</Form.Label>
+                                <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
+                            </Form.Group>
+                            <Form.Group>
+                                <Form.Label>Rozmezí</Form.Label>
+                                <Form.Control name='timeRange' readOnly autoComplete='off' value={`${moment(this.state.startDate).format(dateFormat)} - ${moment(this.state.endDate).format(dateFormat)}`}></Form.Control>
+                                <DateTimeRange
+                                    minDate={this.state.minDate}
+                                    maxDate={this.state.maxDate}
+                                    from={this.state.startDate}
+                                    to={this.state.endDate}
+
+                                    onChange={this.onRangeChange}
+                                />
+                            </Form.Group>
+                        </Col>
+                    ) : undefined}
+                </Row>
+                <Form.Control type='submit' hidden disabled={this.state.selected.length <= 0} />
+            </Form>
         );
     }
 
@@ -143,6 +146,10 @@ class InfoModal
                 xLabel: this.state.xLabel, 
                 yLabel: this.state.yLabel,
 
+                // !
+                // TODO: this must be reworked to take into account the real xtype of selected traces
+                xType: 'datetime',
+
                 style: {
                     margin: 5,
                     xLabelSpace: 24,
@@ -162,7 +169,8 @@ class InfoModal
             this.props.onClose(traces);
         }
     }
-    private cancelClicked = () => this.resolve(undefined);
+    private cancelClicked = (e: React.MouseEvent) => { e.preventDefault(); this.resolve(undefined); }
+    private onSubmit = (e: React.FormEvent) => { e.preventDefault(); this.okClicked(); }
 
     protected renderFooter(): JSX.Element {
         const { isGraph } = this.props.args;
