@@ -113,7 +113,6 @@ class GraphComponent
         }
 
         if (this.props.zoom !== prevProps.zoom && this.props.zoom && this.rendererUid) {
-            console.log('yo');
             await plotWorker.callRendererFunc(this.rendererUid, 'set_extents', [ zoomToExtent(this.props.zoom as number[]) as GraphExtents ]);
             await this.redrawGraph();
         } else if (this.props.activeTraces !== prevProps.activeTraces) {
@@ -167,17 +166,45 @@ class GraphComponent
 
     private downPos?: [number, number] = undefined;
     private canvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        e.preventDefault();
-        this.downPos = this.positionInGraphSpace(e);
+        if (this.props.threshold) {
+            if (!this.guiCanvasRef.current) return;
+            const { margin, xLabelSpace, yLabelSpace } = this.props.style;
+
+            const pos = this.positionInGraphSpace(e);
+            const zoom = this.props.zoom as number[] | undefined;
+            const area = [
+                this.guiCanvasRef.current.width - 2 * margin  - yLabelSpace,
+                this.guiCanvasRef.current.height - 2 * margin - xLabelSpace
+            ];
+
+            if (!pos || !zoom) return;
+
+            const yVal = zoom[3] - (pos[1] / area[1]) * (zoom[3] - zoom[2]);
+
+            this.props.onThreshold && this.props.onThreshold(yVal);
+        } else {
+            e.preventDefault();
+            this.downPos = this.positionInGraphSpace(e);
+        }
     };
 
     private canvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const canvas = this.guiCanvasRef.current?.getContext('2d');
-        if (this.downPos && canvas) {
-            const pos = this.positionInGraphSpace(e);
+        if (!canvas) return;
+        const pos = this.positionInGraphSpace(e);
+        const { margin, yLabelSpace } = this.props.style;
+
+        if (this.props.threshold) {
+            if (!pos) return;
+
+            canvas.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height);
+            canvas.beginPath();
+            canvas.moveTo(margin + yLabelSpace, pos[1] + margin);
+            canvas.lineTo(canvas.canvas.width - margin - 1, pos[1] + margin);
+            canvas.stroke();
+        } else if (this.downPos) {
 
             if (pos) {
-                const { margin, yLabelSpace } = this.props.style;
 
                 const rect = {
                     x: Math.min(pos[0], this.downPos[0]) + margin + yLabelSpace,
@@ -225,12 +252,12 @@ class GraphComponent
                 }
             }
 
-            const ctx = this.guiCanvasRef.current?.getContext('2d');
-            if (ctx) {
-                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            }
-
             this.downPos = undefined;
+        }
+
+        const ctx = this.guiCanvasRef.current?.getContext('2d');
+        if (ctx) {
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
         }
     };
     private canvasMouseLeave = () => {
@@ -285,10 +312,12 @@ export interface GraphProps
 extends Graph {
     focused?: boolean;
     layoutLocked: boolean;
+    threshold?: boolean;
 
     onZoomUpdated?(id: Graph['id'], zoom: Graph['zoom']): void;
     onEdit?(id: Graph['id']): void;
     onRemove?(id: Graph['id']): void;
+    onThreshold?(val: unknown): void;
 }
 
 export interface State {

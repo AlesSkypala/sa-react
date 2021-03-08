@@ -9,25 +9,25 @@ pub fn set_panic_hook() {
     console_error_panic_hook::set_once();
 }
 
-use plotters::prelude::RGBColor;
-use wasm_bindgen::prelude::*;
-use lazy_static::lazy_static;
-use std::collections::{HashMap, hash_map::DefaultHasher};
 use core::convert::TryInto;
+use lazy_static::lazy_static;
+use plotters::prelude::RGBColor;
+use std::collections::{hash_map::DefaultHasher, HashMap};
 use std::hash::Hasher;
+use wasm_bindgen::prelude::*;
 
 pub struct SerializedData {
     pub x_type: String,
     pub y_type: String,
     pub color: RGBColor,
-    pub data: Box<[u8]>
+    pub data: Box<[u8]>,
 }
 
 // impl SerializedData {
 //     pub fn window()
 // }
 
-pub static mut DATA: Vec<SerializedData> = vec!();
+pub static mut DATA: Vec<SerializedData> = vec![];
 
 lazy_static! {
     static ref TYPE_SIZES: HashMap<&'static str, usize> = [
@@ -42,7 +42,10 @@ lazy_static! {
         ("ulong", 8),
         ("float", 4),
         ("double", 8),
-    ].iter().cloned().collect();
+    ]
+    .iter()
+    .cloned()
+    .collect();
 }
 
 #[wasm_bindgen]
@@ -56,7 +59,7 @@ pub fn malloc_data(data: Box<[u8]>, id: &str, x_type: &str, y_type: &str) -> usi
             data,
             color: RGBColor(hash as u8, (hash >> 8) as u8, (hash >> 16) as u8),
             x_type: x_type.into(),
-            y_type: y_type.into()
+            y_type: y_type.into(),
         });
         DATA.len() - 1
     }
@@ -69,15 +72,15 @@ pub fn is_zero(data_ptr: usize) -> bool {
 
         let (x_size, y_size) = (
             TYPE_SIZES.get(&data.x_type[..]).expect("Unknown X type."),
-            TYPE_SIZES.get(&data.y_type[..]).expect("Unknown Y type.")
+            TYPE_SIZES.get(&data.y_type[..]).expect("Unknown Y type."),
         );
 
         let comp = match &data.y_type[..] {
             "int" => |x| i32::from_le_bytes(x) != 0,
             "float" => |x| f32::from_le_bytes(x) != 0.0,
-            _ => panic!("unknown type")
+            _ => panic!("unknown type"),
         };
-        
+
         let data = &data.data;
         let mut pos = 0;
         while pos < data.len() {
@@ -98,19 +101,19 @@ pub fn is_zero(data_ptr: usize) -> bool {
 pub fn is_zero_data(data: &[u8], x_type: &str, y_type: &str) -> bool {
     let (x_size, y_size) = (
         TYPE_SIZES.get(x_type).expect("Unknown X type."),
-        TYPE_SIZES.get(y_type).expect("Unknown Y type.")
+        TYPE_SIZES.get(y_type).expect("Unknown Y type."),
     );
 
     let comp = match y_type {
         "int" => |x| i32::from_le_bytes(x) != 0,
         "float" => |x| f32::from_le_bytes(x) != 0.0,
-        _ => panic!("unknown type")
+        _ => panic!("unknown type"),
     };
 
     let mut pos = 0;
     while pos < data.len() {
         pos += x_size;
-        
+
         if comp(data[pos..(pos + y_size)].try_into().unwrap()) {
             return false;
         }
@@ -128,15 +131,15 @@ pub fn treshold(data_ptr: usize, tres: f32) -> bool {
 
         let (x_size, y_size) = (
             TYPE_SIZES.get(&data.x_type[..]).expect("Unknown X type."),
-            TYPE_SIZES.get(&data.y_type[..]).expect("Unknown Y type.")
+            TYPE_SIZES.get(&data.y_type[..]).expect("Unknown Y type."),
         );
 
         let comp = match &data.y_type[..] {
             "int" => |x, tres| i32::from_le_bytes(x) > (tres as i32),
             "float" => |x, tres| f32::from_le_bytes(x) > tres,
-            _ => panic!("unknown type")
+            _ => panic!("unknown type"),
         };
-        
+
         let data = &data.data;
         let mut pos = 0;
         while pos < data.len() {
@@ -157,19 +160,19 @@ pub fn treshold(data_ptr: usize, tres: f32) -> bool {
 pub fn treshold_data(data: &[u8], x_type: &str, y_type: &str, tres: f32) -> bool {
     let (x_size, y_size) = (
         TYPE_SIZES.get(x_type).expect("Unknown X type."),
-        TYPE_SIZES.get(y_type).expect("Unknown Y type.")
+        TYPE_SIZES.get(y_type).expect("Unknown Y type."),
     );
 
     let comp = match y_type {
         "int" => |x, tres| i32::from_le_bytes(x) > (tres as i32),
         "float" => |x, tres| f32::from_le_bytes(x) > tres,
-        _ => panic!("unknown type")
+        _ => panic!("unknown type"),
     };
 
     let mut pos = 0;
     while pos < data.len() {
         pos += x_size;
-        
+
         if comp(data[pos..(pos + y_size)].try_into().unwrap(), tres) {
             return true;
         }
@@ -208,14 +211,14 @@ impl GraphExtents {
         self.y_end = self.y_end.max(b.y_end);
 
         self
-    }    
+    }
 }
 
 #[allow(dead_code)]
 #[wasm_bindgen]
 pub fn recommend_range(data_ptr: usize, overhang: f32) -> GraphExtents {
     let overhang = overhang + 1.0;
-    
+
     unsafe {
         let data = &DATA[data_ptr];
         let x_size = *TYPE_SIZES.get(&data.x_type[..]).unwrap();
@@ -229,12 +232,17 @@ pub fn recommend_range(data_ptr: usize, overhang: f32) -> GraphExtents {
         let data = &data.data;
         let last_idx = data.len() - x_size - y_size;
 
-        let (x_start, x_end) = (x_parser(&data[0..x_size]), x_parser(&data[last_idx..(last_idx + x_size)]));
+        let (x_start, x_end) = (
+            x_parser(&data[0..x_size]),
+            x_parser(&data[last_idx..(last_idx + x_size)]),
+        );
 
-        let y_iter = (x_size..data.len()).step_by(x_size + y_size).map(|i| y_parser(&data[i..(i+y_size)]));
+        let y_iter = (x_size..data.len())
+            .step_by(x_size + y_size)
+            .map(|i| y_parser(&data[i..(i + y_size)]));
 
         let y_start = y_iter.clone().fold(f32::INFINITY, |a, b| a.min(b));
-        let y_end   = y_iter.fold(f32::NEG_INFINITY, |a, b| a.max(b));
+        let y_end = y_iter.fold(f32::NEG_INFINITY, |a, b| a.max(b));
 
         let over_width = (x_end - x_start) * overhang;
         let over_height = (y_end - y_start) * overhang;
@@ -251,15 +259,18 @@ pub fn recommend_range(data_ptr: usize, overhang: f32) -> GraphExtents {
 
 #[wasm_bindgen]
 pub fn recommend_range_all(data_ptrs: &[usize], overhang: f32) -> GraphExtents {
-    data_ptrs.iter().map(|p| recommend_range(*p, overhang)).fold(
-        GraphExtents {
-            x_start: f32::INFINITY,
-            y_start: f32::INFINITY,
-            x_end: f32::NEG_INFINITY,
-            y_end: f32::NEG_INFINITY
-        },
-        |a, b| a.outer(b)
-    )
+    data_ptrs
+        .iter()
+        .map(|p| recommend_range(*p, overhang))
+        .fold(
+            GraphExtents {
+                x_start: f32::INFINITY,
+                y_start: f32::INFINITY,
+                x_end: f32::NEG_INFINITY,
+                y_end: f32::NEG_INFINITY,
+            },
+            |a, b| a.outer(b),
+        )
 }
 
 pub struct TraceIterator {
@@ -293,7 +304,9 @@ impl TraceIterator {
                 let x = x_parse(&data.data[i..(i + x_size)]);
 
                 let x_next = if i + x_size + y_size < len {
-                    Option::Some(x_parse(&data.data[(i + x_size + y_size)..(i + 2 * x_size + y_size)]))
+                    Option::Some(x_parse(
+                        &data.data[(i + x_size + y_size)..(i + 2 * x_size + y_size)],
+                    ))
                 } else {
                     Option::None
                 };
@@ -301,12 +314,14 @@ impl TraceIterator {
                 if x >= from || (x_next.is_some() && x_next.unwrap() >= from) {
                     idx = i;
                     end = i;
-                    
+
                     for j in (i..len).step_by(x_size + y_size) {
                         let x = x_parse(&data.data[j..(j + x_size)]);
-        
+
                         let x_next = if j + x_size + y_size < len {
-                            Option::Some(x_parse(&data.data[(j + x_size + y_size)..(j + 2 * x_size + y_size)]))
+                            Option::Some(x_parse(
+                                &data.data[(j + x_size + y_size)..(j + 2 * x_size + y_size)],
+                            ))
                         } else {
                             Option::None
                         };
@@ -321,7 +336,7 @@ impl TraceIterator {
                             }
                         }
                     }
-                    
+
                     break;
                 }
             }
@@ -373,7 +388,7 @@ impl TraceIterator {
 
 impl Iterator for TraceIterator {
     type Item = (f32, f32);
-    
+
     fn next(&mut self) -> std::option::Option<<Self as std::iter::Iterator>::Item> {
         if self.idx < self.end {
             unsafe {
@@ -383,7 +398,7 @@ impl Iterator for TraceIterator {
 
                 Option::Some((
                     (self.x_parse)(&data[idx..(idx + self.x_size)]),
-                    (self.y_parse)(&data[(idx + self.x_size)..self.idx])
+                    (self.y_parse)(&data[(idx + self.x_size)..self.idx]),
                 ))
             }
         } else {

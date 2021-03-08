@@ -1,6 +1,6 @@
 import React from 'react';
 import { GraphContainer, Header, SideMenu, ContainerLayout, GraphComponent } from './components';
-import { ModalPortal, ImportModal, TraceSearchModal, TresholdModal, GraphEditModal } from './components/Modals';
+import { ModalPortal, ImportModal, TraceSearchModal, GraphEditModal } from './components/Modals';
 import { AppEvents, DataService, DialogService } from './services';
 
 import './App.css';
@@ -14,6 +14,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     public state: AppState = {
         locked: true,
         focused: -1,
+        threshold: false,
 
         layoutType: 'vertical',
 
@@ -177,7 +178,8 @@ class App extends React.Component<Record<string, never>, AppState> {
                 }, { traces: graph.traces });
                 break;
             case 'tres':
-                DialogService.open(TresholdModal, val => this.selectAboveTreshold(val), {});
+                this.setState({ threshold: true });
+                // DialogService.open(TresholdModal, val => this.selectAboveTreshold(val), {});
                 break;
 
             case 'sel-all':
@@ -290,6 +292,11 @@ class App extends React.Component<Record<string, never>, AppState> {
 
         this.forceUpdate();
     };
+    onThresholdSelected = (val: unknown) => {
+        if (!this.state.threshold) return;
+        this.selectAboveTreshold(val as number);
+        this.setState({ threshold: false });
+    }
     
     emitRelayoutEvent = debounce((type: LayoutType, layout: ContainerLayout) => AppEvents.onRelayout.emit({ type, layout }), 300);
     onLayoutChange = (type: LayoutType, layout?: ContainerLayout) => {
@@ -381,9 +388,11 @@ class App extends React.Component<Record<string, never>, AppState> {
                                 {...g}
                                 focused={g.id === this.state.focused}
                                 layoutLocked={this.state.locked}
+                                threshold={this.state.threshold}
                                 onEdit={this.onEditGraph}
                                 onRemove={this.onRemoveGraph}
                                 onZoomUpdated={this.onZoomUpdated}
+                                onThreshold={this.onThresholdSelected}
                             />
                         </div>
                     ))}
@@ -398,6 +407,7 @@ class App extends React.Component<Record<string, never>, AppState> {
 export interface AppState {
     locked: boolean;
     focused: Graph['id'];
+    threshold: boolean;
 
     graphs: Graph[];
     layout: ContainerLayout;

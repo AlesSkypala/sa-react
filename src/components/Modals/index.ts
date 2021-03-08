@@ -8,5 +8,4 @@ export { default as InfoModal } from './InfoModal';
 export { default as ConfirmModal } from './ConfirmationModal';
 export type { Args as ConfirmArgs } from './ConfirmationModal';
 export { default as TraceSearchModal } from './TraceSearchModal';
-export { default as TresholdModal } from './TresholdModal';
 export { default as GraphEditModal } from './GraphEditModal';

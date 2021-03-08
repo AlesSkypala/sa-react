@@ -6,12 +6,7 @@ interface Graph {
     xLabel: string;
     yLabel: string;
 
-    style: {
-        margin: number;
-        xLabelSpace: number;
-        yLabelSpace: number;
-    }
-    margin?: 0 | 1 | 2 | 3;
+    style: GraphStyle;
 
     // Functionality
     xType?: string;
@@ -23,12 +18,25 @@ interface Graph {
     activeTraces: Trace['id'][];
 }
 
+interface GraphStyle {
+    margin: number;
+    xLabelSpace: number;
+    yLabelSpace: number;
+}
+
 interface Trace {
     id: string;
     title: string;
+
+    style?: TraceStyle;
     
     filtering?: 'sg';
     pipeline: NodeDescriptor;
+}
+
+interface TraceStyle {
+    color: [number, number, number];
+    width: number;
 }
 
 type TraceAction = 'sel-unq' | 'sel-all' | 'inv' | 'des' | 'tres' |

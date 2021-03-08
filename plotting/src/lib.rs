@@ -1,13 +1,13 @@
 pub mod utils;
 
-use std::rc::Rc;
-use std::cell::RefCell;
-use wasm_bindgen::prelude::*;
-use plotters::coord::{{ Shift, types::RangedCoordf32 }};
+use plotters::coord::{types::RangedCoordf32, Shift};
 use plotters::prelude::*;
-use plotters_canvas::{{ OffscreenCanvasBackend }};
+use plotters_canvas::OffscreenCanvasBackend;
+use std::cell::RefCell;
 use std::ops::Range;
-use web_sys::{{ OffscreenCanvas }};
+use std::rc::Rc;
+use wasm_bindgen::prelude::*;
+use web_sys::OffscreenCanvas;
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -16,7 +16,7 @@ use web_sys::{{ OffscreenCanvas }};
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 #[wasm_bindgen]
-extern {
+extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
 
@@ -39,10 +39,22 @@ pub struct OffscreenGraphRenderer {
 
 #[wasm_bindgen]
 impl OffscreenGraphRenderer {
-
     #[wasm_bindgen(constructor)]
-    pub fn new(elem: OffscreenCanvas, x_type: &str, x_from: f32, x_to: f32, y_from: f32, y_to: f32, margin: u32, x_label_space: u32, y_label_space: u32) -> Self {
-        let canvas = Rc::new(RefCell::new(OffscreenCanvasBackend::new(elem.clone()).expect("Couldn't create a backend from canvas.")));
+    pub fn new(
+        elem: OffscreenCanvas,
+        x_type: &str,
+        x_from: f32,
+        x_to: f32,
+        y_from: f32,
+        y_to: f32,
+        margin: u32,
+        x_label_space: u32,
+        y_label_space: u32,
+    ) -> Self {
+        let canvas = Rc::new(RefCell::new(
+            OffscreenCanvasBackend::new(elem.clone())
+                .expect("Couldn't create a backend from canvas."),
+        ));
 
         Self {
             root: Option::Some((&canvas).into()),
@@ -95,7 +107,9 @@ impl OffscreenGraphRenderer {
         self.y_label_space = space;
     }
 
-    fn build_cartesian<'a>(&'a self) -> ChartContext<'a, OffscreenCanvasBackend, Cartesian2d<RangedCoordf32, RangedCoordf32>> {
+    fn build_cartesian<'a>(
+        &'a self,
+    ) -> ChartContext<'a, OffscreenCanvasBackend, Cartesian2d<RangedCoordf32, RangedCoordf32>> {
         if let Option::Some(root) = &self.root {
             ChartBuilder::on(&root)
                 .margin(self.margin)
@@ -111,7 +125,6 @@ impl OffscreenGraphRenderer {
     pub fn draw_trace(&mut self, trace_ptr: usize) {
         if self.root.is_some() {
             let mut chart = self.build_cartesian();
-        
             chart.configure_mesh();
 
             let color;
@@ -119,20 +132,26 @@ impl OffscreenGraphRenderer {
                 color = &utils::DATA[trace_ptr].color;
             }
 
-            (*self.backend).borrow_mut().draw_path(utils::TraceIterator::new(trace_ptr, self.x_range.start, self.x_range.end).map(
-                |(x,y)| chart.backend_coord(&(x, y))
-            ), color).expect("Failed to draw a trace");
+            (*self.backend)
+                .borrow_mut()
+                .draw_path(
+                    utils::TraceIterator::new(trace_ptr, self.x_range.start, self.x_range.end)
+                        .map(|(x, y)| chart.backend_coord(&(x, y))),
+                    color,
+                )
+                .expect("Failed to draw a trace");
         }
     }
 
     fn date_formatter(date: &f32) -> String {
-        chrono::NaiveDateTime::from_timestamp(* date as i64, 0u32).format("%d.%m. %H:%M").to_string()
+        chrono::NaiveDateTime::from_timestamp(*date as i64, 0u32)
+            .format("%d.%m. %H:%M")
+            .to_string()
     }
 
     pub fn draw_chart(&mut self) {
         if self.root.is_some() {
             let mut chart = self.build_cartesian();
-            
             let mut mesh = chart.configure_mesh();
 
             if self.x_type == "datetime" {
