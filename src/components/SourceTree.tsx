@@ -32,29 +32,29 @@ class SourceTree
                 children: s.datasets.map(d => {
                     const id = `${s.id}:${d.id}`;
 
-                    if (d.variants?.length) {
-                        for (const variant of d.variants) {
-                            map[`${id}:${variant}`] = {
-                                type: 'data',
-                                dataset: {
-                                    source: d.source,
-                                    id: d.id,
-                                    variant,
-                                }
-                            };
-                        }
+                    // if (d.variants?.length) {
+                    //     for (const variant of d.variants) {
+                    //         map[`${id}:${variant}`] = {
+                    //             type: 'data',
+                    //             dataset: {
+                    //                 source: d.source,
+                    //                 id: d.id,
+                    //                 variant,
+                    //             }
+                    //         };
+                    //     }
 
-                        return {
-                            id,
-                            name: d.name,
-                            level: 1,
-                            children: d.variants.map(v => ({
-                                id: `${id}:${v}`,
-                                name: v,
-                                level: 2,
-                            })),
-                        };
-                    }
+                    //     return {
+                    //         id,
+                    //         name: d.name,
+                    //         level: 1,
+                    //         children: d.variants.map(v => ({
+                    //             id: `${id}:${v}`,
+                    //             name: v,
+                    //             level: 2,
+                    //         })),
+                    //     };
+                    // }
                     
                     map[id] = {
                         type: 'data',

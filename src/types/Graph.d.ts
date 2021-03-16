@@ -10,11 +10,11 @@ interface Graph<T extends XType = XType> {
 
     // Functionality
     xType: T;
-    xRange: [ XTypeTypes[T], XTypeTypes[T] ];
+    xRange: [ XTypeTypeMap[T], XTypeTypeMap[T] ];
     traces: Trace[];
 
     // Runtime
-    zoom?: [ XTypeTypes[T], XTypeTypes[T], number, number ];
+    zoom?: [ XTypeTypeMap[T], XTypeTypeMap[T], number, number ];
     activeTraces: Trace['id'][];
 }
 
@@ -40,8 +40,8 @@ interface TraceStyle {
 }
 
 type DateTimeType = number;
-type XType = keyof XTypeTypes;
-type XTypeTypes = {
+type XType = keyof XTypeTypeMap;
+type XTypeTypeMap = {
     datetime: DateTimeType,
     bool: boolean,
     byte: number,

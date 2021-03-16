@@ -15,7 +15,8 @@ extends Identified {
 
     availableXRange: [ unknown, unknown ];
 
-    variants?: string[];
+    // variants?: string[];
+    variantCount: number;
 }
 
 interface LdevInfo

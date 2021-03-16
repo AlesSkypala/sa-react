@@ -1,11 +1,13 @@
 
 import * as React from 'react';
-import { Button, Col, ModalTitle, Row, Form } from 'react-bootstrap';
+import { Button, Col, ModalTitle, Row, Form, Spinner, ButtonGroup } from 'react-bootstrap';
 import { ModalComponent } from '.';
 import { DataService, Deserialization } from '../../services';
 import { default as moment } from 'moment';
-import SourceTree from '../SourceTree';
 import DateTimeRange from '../DateTimeRange';
+import { Props } from './ModalComponent';
+
+import './ImportModal.css';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
@@ -15,15 +17,12 @@ class InfoModal
         title: 'Nový graf',
         xLabel: 'osa x',
         yLabel: 'osa y',
-
-        startDate: new Date(),
-        endDate: new Date(),
-
-        minDate: new Date(),
-        maxDate: new Date(),
-
-        selected: [],
     };
+
+    constructor(props: Props<ImportResult, Args> | Readonly<Props<ImportResult, Args>>) {
+        super(props);
+        this.size = 'xl';
+    }
 
     public componentDidMount(): void {
         DataService.getSources().then(this.loadTraces);
@@ -45,95 +44,141 @@ class InfoModal
         );
     }
 
-    private onCheck = (selected: DataNodeDescriptor[]) => {
-        let additional: Pick<State, 'minDate' | 'maxDate' | 'startDate' | 'endDate'> = {
-            minDate: this.state.minDate,
-            maxDate: this.state.maxDate,
-            startDate: this.state.startDate,
-            endDate: this.state.endDate,
-        };
-        
-        if (this.state.selected.length <= 0 && selected.length > 0) {
-            const min = Deserialization.parseTimestamp(Math.max(...selected.map(t => this.sourceMap[`${t.dataset.source}:${t.dataset.id}`].availableXRange[0] as number)));
-            const max = Deserialization.parseTimestamp(Math.min(...selected.map(t => this.sourceMap[`${t.dataset.source}:${t.dataset.id}`].availableXRange[1] as number)));
-
-            additional = {
-                minDate: min,
-                maxDate: max,
-                startDate: min,
-                endDate: max,
-            };
-        } else if (selected.length <= 0) {
-            additional = { maxDate: new Date(), minDate:  new Date(), startDate:  new Date(), endDate:  new Date() };
-        }
-
-        this.setState({ ...additional, selected });
-    }
-    private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
+    // private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
     private onRangeChange = (start: Date, end: Date) => {
-        this.setState({ startDate: start, endDate: end });
+        if (this.state.selectedSource) {
+            this.setState({
+                selectedRange: [
+                    Deserialization.dateToTimestamp(start) as XTypeTypeMap[XType],
+                    Deserialization.dateToTimestamp(end) as XTypeTypeMap[XType],
+                ]
+            });
+        }
+    }
+
+    onSourceSelected = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        e.preventDefault();
+        const selectedSource = this.state.sources?.find(s => s.id === e.currentTarget.value);
+
+        if (selectedSource !== this.state.selectedSource) {
+            const additional: Pick<State, 'availableRange' | 'selectedRange'> = { availableRange: undefined, selectedRange: undefined };
+
+            if (selectedSource) {
+                additional.availableRange = [
+                    selectedSource.datasets.reduce((val, set) => Math.max(set.availableXRange[0] as number, val), 0) as XTypeTypeMap[XType],
+                    selectedSource.datasets.reduce((val, set) => Math.max(set.availableXRange[1] as number, val), 0) as XTypeTypeMap[XType],
+                ];
+            }
+
+            this.setState({ ...additional, selectedSource, selectedTraces: undefined });
+        }
+    }
+
+    onSetSelected = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        if (this.state.selectedSource) {
+            const selected = Array.from(e.currentTarget.selectedOptions, i => this.state.selectedSource?.datasets.find(ds => ds.id === i.value)).filter(v => !!v) as Dataset[];
+            this.setState({ selectedTraces: selected });
+        }
+    }
+
+    onRangeButton = (e: React.MouseEvent<HTMLButtonElement>) => {
+        if (!this.state.availableRange) return;
+
+        this.setState({
+            selectedRange: [
+                Math.max(
+                    (this.state.availableRange[1] as number) - parseInt(e.currentTarget.dataset.range ?? '0'),
+                    this.state.availableRange[0] as number
+                ),
+                this.state.availableRange[1]
+            ]
+        });
+    };
+    getRangeString = () => {
+        if (!this.state.selectedRange) return 'Nezvoleno';
+
+        const [from, to] = this.state.selectedRange as [number, number];
+
+        return `${moment(Deserialization.parseTimestamp(from)).format(dateFormat)} - ${moment(Deserialization.parseTimestamp(to)).format(dateFormat)}`;
     }
 
     protected renderBody(): JSX.Element {
         if (!this.state.sources) {
-            return <p className='text-center'>Načítám křivky...</p>;
+            return (
+                <>
+                    <p className='text-center'>Načítám křivky...</p>
+                    <div className='text-center my-3'><Spinner animation='border' variant='primary' /></div>
+                </>
+            );
         }
 
         const { isGraph } = this.props.args;
-        
+        const { availableRange, selectedRange, selectedSource, selectedTraces } = this.state;
+        const timeDisabled = !this.state.selectedSource;
+        const setsDisabled = !this.state.selectedRange;
+        const now = new Date();
+        const defaultRange: [Date,Date] = [ now, now ];
+
         return (
             <Form onSubmit={this.onSubmit}>
-                <Row>
-                    <Col style={{ minHeight: '400px' }}>
-                        <SourceTree
-                            sources={this.state.sources}
-                            onChange={this.onCheck}
-                        />
-                    </Col>
-                    {isGraph ? (
-                        <Col>
-                            <Form.Group>
-                                <Form.Label>Název grafu</Form.Label>
-                                <Form.Control name='title' value={this.state.title} onChange={this.onFormChange}></Form.Control>
-                            </Form.Group>
-                            <Form.Group>
-                                <Form.Label>Popis osy x</Form.Label>
-                                <Form.Control name='xLabel' value={this.state.xLabel} onChange={this.onFormChange}></Form.Control>
-                            </Form.Group>
-                            <Form.Group>
-                                <Form.Label>Popis osy y</Form.Label>
-                                <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
-                            </Form.Group>
-                            <Form.Group>
-                                <Form.Label>Rozmezí</Form.Label>
-                                <Form.Control name='timeRange' readOnly autoComplete='off' value={`${moment(this.state.startDate).format(dateFormat)} - ${moment(this.state.endDate).format(dateFormat)}`}></Form.Control>
-                                <DateTimeRange
-                                    minDate={this.state.minDate}
-                                    maxDate={this.state.maxDate}
-                                    from={this.state.startDate}
-                                    to={this.state.endDate}
+                <Row className='separated'>
+                    <Form.Group as={Col} className='d-flex flex-column'>
+                        <Form.Label>Zdroj dat</Form.Label>
+                        <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100'>
+                            {this.state.sources.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </Form.Control>
+                    </Form.Group>
+                    <Form.Group as={Col} className='d-flex flex-column'>
+                        <Form.Label>Rozmezí</Form.Label>
+                        <Form.Control name='timeRange' readOnly autoComplete='off' value={this.getRangeString()}></Form.Control>
+                        <ButtonGroup className='my-2'>
+                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={24 * 3600}>Den</Button>
+                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={7 * 24 * 3600}>Týden</Button>
+                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={4 * 7 * 24 * 3600}>Měsíc</Button>
+                        </ButtonGroup>
+                        <DateTimeRange
+                            bounds={(availableRange?.map(v => Deserialization.parseTimestamp(v as number)) as ([Date, Date] | undefined)) ?? defaultRange}
+                            value={selectedRange?.map(v => Deserialization.parseTimestamp(v as number)) as ([Date, Date] | undefined)}
 
-                                    onChange={this.onRangeChange}
-                                />
-                            </Form.Group>
-                        </Col>
-                    ) : undefined}
+                            disabled={timeDisabled}
+                            onChange={this.onRangeChange}
+                        />
+                    </Form.Group>
+                    <Form.Group as={Col} className='d-flex flex-column'>
+                        <Form.Label>Datasety</Form.Label>
+                        <Form.Control as='select' multiple onChange={this.onSetSelected} disabled={setsDisabled} className='h-100' >
+                            {selectedSource && (selectedRange ? selectedSource.datasets.filter(ds => ds.availableXRange[1] as number > selectedRange[0] && ds.availableXRange[0] as number < selectedRange[1]) : selectedSource.datasets).map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </Form.Control>
+                    </Form.Group>
+                    <Col>
+                        <Form.Group>
+                            <Form.Label>Počet křivek</Form.Label>
+                            <Form.Control readOnly value={selectedTraces?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
+                        </Form.Group>
+                    </Col>
                 </Row>
-                <Form.Control type='submit' hidden disabled={this.state.selected.length <= 0} />
             </Form>
         );
     }
 
-    private generateTraces = (): Trace[] => this.state.selected.flatMap(s => {
-        const dId = `${s.dataset.source}:${s.dataset.id}`;
-        const set = this.sourceMap[dId];
-
+    private generateTraces = (): Trace[] => this.state.selectedTraces?.map(dataset => {
+        // if (dataset.variantCount)
         return {
-            id: s.dataset.variant ? `${dId}:${s.dataset.variant}` : dId,
-            title: s.dataset.variant ? `${set.name} (${s.dataset.variant})` : set.name,
-            pipeline: s,
+            id: `${dataset.source}:${dataset.id}`,
+            title: dataset.name,
+            pipeline: {
+                type: 'data',
+                dataset: {
+                    source: dataset.source,
+                    id: dataset.id,
+                }
+            },
         };
-    });
+    }) ?? [];
 
     private okClicked = () => {
         const traces = this.generateTraces();
@@ -141,9 +186,9 @@ class InfoModal
         if (this.props.args.isGraph) {
             const graph: Graph = {
                 id: 0,
-    
-                title: this.state.title,
-                xLabel: this.state.xLabel, 
+
+                title:  this.state.title,
+                xLabel: this.state.xLabel,
                 yLabel: this.state.yLabel,
 
                 // !
@@ -155,11 +200,8 @@ class InfoModal
                     xLabelSpace: 24,
                     yLabelSpace: 60,
                 },
-    
-                xRange: [
-                    Deserialization.dateToTimestamp(this.state.startDate),
-                    Deserialization.dateToTimestamp(this.state.endDate)
-                ],
+
+                xRange: [...(this.state.selectedRange as Graph['xRange'])],
                 traces,
                 activeTraces: traces.map(t => t.id)
             };
@@ -177,11 +219,11 @@ class InfoModal
 
         return (
             <>
-                <Button variant='primary' onClick={this.okClicked} disabled={this.state.selected.length <= 0}>
+                <Button variant='primary' onClick={this.okClicked} disabled={!(this.state.selectedTraces?.length ?? false)}>
                     {isGraph ? 'Přidat' : 'Importovat'}
                 </Button>
                 <Button variant='secondary' onClick={this.cancelClicked}>
-                Zrušit
+                    Zrušit
                 </Button>
             </>
         );
@@ -194,17 +236,16 @@ export interface Args {
 
 interface State {
     sources?: DataSource[];
-    selected: DataNodeDescriptor[];
+
+    selectedSource?: DataSource;
+    selectedTraces?: Dataset[];
 
     title: Graph['title'],
     xLabel: Graph['xLabel'],
     yLabel: Graph['yLabel'],
 
-    minDate: Date,
-    maxDate: Date,
-
-    startDate: Date,
-    endDate: Date,
+    availableRange?: Graph['xRange'],
+    selectedRange?: Graph['xRange'],
 }
 
 export type ImportResult = Graph | Trace[];

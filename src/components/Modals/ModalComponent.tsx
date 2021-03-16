@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { Modal, ModalBody, ModalFooter } from 'react-bootstrap';
+import { Modal, ModalBody, ModalFooter, ModalProps } from 'react-bootstrap';
 import ModalHeader from 'react-bootstrap/ModalHeader';
 
 abstract class ModalComponent<R, T = unknown, S = unknown>
     extends React.Component<Props<R, T>, S> {
+    
+    protected size: ModalProps['size'] = 'lg';
 
     protected abstract renderHeader(): React.ReactNode;
     protected abstract renderBody(): React.ReactNode;
@@ -11,13 +13,14 @@ abstract class ModalComponent<R, T = unknown, S = unknown>
 
     private onHide = () => this.resolve(undefined);
 
+
     protected resolve(result?: R) {
         this.props.onClose && this.props.onClose(result);
     }
 
     public render() {
         return (
-            <Modal size='lg' show onHide={this.onHide}>
+            <Modal size={this.size} show onHide={this.onHide}>
                 <ModalHeader closeButton>
                     {this.renderHeader()}
                 </ModalHeader>

@@ -1,0 +1,7 @@
+.row.separated > .col {
+    border-right: solid 1px lightgray;
+}
+
+.row.separated > .col:last-child {
+    border-right: none;
+}
