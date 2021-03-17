@@ -39,15 +39,11 @@ class DateTimeRange
             date.setDate(to.getDate());
             this.props.onChange(from, minDate && maxDate ? clamp(date, minDate, maxDate) : date);
         }
-
-        console.log(date);
     };
 
     public render() {
         const [ from, to ] = this.props.value ?? [ undefined, undefined ];
         const [ minDate, maxDate ] = this.props.bounds ?? [ undefined, undefined ];
-
-        console.log(this.props.bounds);
 
         return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

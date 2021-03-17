@@ -55,6 +55,20 @@ class Data {
             }
         )).json();
     }
+
+    public getTraceVariants = async (dataset: { source: string, id: string }): Promise<string[]> => {
+        const { source, id } = dataset;
+
+        return await (await fetch(
+            this.getApiPath('data', source, id, 'variants'),
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                method: 'get'
+            }
+        )).json();
+    }
   
     public getTraceData = async (from: any, to: any, traces: Trace[]): Promise<TraceData[]> => {
   

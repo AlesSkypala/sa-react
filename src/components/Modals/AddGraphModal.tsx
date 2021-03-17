@@ -7,7 +7,7 @@ import { default as moment } from 'moment';
 import DateTimeRange from '../DateTimeRange';
 import { Props } from './ModalComponent';
 
-import './ImportModal.css';
+import './AddGraphModal.css';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
@@ -38,9 +38,8 @@ class InfoModal
     }
 
     protected renderHeader(): JSX.Element {
-        const { isGraph } = this.props.args;
         return (
-            <ModalTitle>{isGraph ? 'Přidat graf' : 'Importovat křivku'}</ModalTitle>
+            <ModalTitle>Přidat graf</ModalTitle>
         );
     }
 
@@ -112,7 +111,6 @@ class InfoModal
             );
         }
 
-        const { isGraph } = this.props.args;
         const { availableRange, selectedRange, selectedSource, selectedTraces } = this.state;
         const timeDisabled = !this.state.selectedSource;
         const setsDisabled = !this.state.selectedRange;
@@ -120,7 +118,7 @@ class InfoModal
         const defaultRange: [Date,Date] = [ now, now ];
 
         return (
-            <Form onSubmit={this.onSubmit}>
+            <Form>
                 <Row className='separated'>
                     <Form.Group as={Col} className='d-flex flex-column'>
                         <Form.Label>Zdroj dat</Form.Label>
@@ -165,26 +163,78 @@ class InfoModal
         );
     }
 
-    private generateTraces = (): Trace[] => this.state.selectedTraces?.map(dataset => {
-        // if (dataset.variantCount)
-        return {
-            id: `${dataset.source}:${dataset.id}`,
-            title: dataset.name,
-            pipeline: {
-                type: 'data',
-                dataset: {
-                    source: dataset.source,
-                    id: dataset.id,
+    private generateTraces = async (dataset: Dataset): Promise<Trace[]> => {
+        if (dataset.variantCount <= 1) {
+            return [
+                {
+                    id: `${dataset.source}:${dataset.id}`,
+                    title: dataset.name,
+                    pipeline: {
+                        type: 'data',
+                        dataset: {
+                            source: dataset.source,
+                            id: dataset.id,
+                        }
+                    },
                 }
+            ];
+        }
+
+        const variants: string[] = await DataService.getTraceVariants(dataset);
+
+        return variants.map(v => (
+            {
+                id: `${dataset.source}:${dataset.id}:${v}`,
+                title: v,
+                pipeline: {
+                    type: 'data',
+                    dataset: {
+                        source: dataset.source,
+                        id: dataset.id,
+                        variant: v,
+                    }
+                },
+            }
+        ));
+    }
+
+    private singleClicked = async () => {
+        if (!this.state.selectedTraces || this.state.selectedTraces.length <= 0) return;
+
+        const traces = (await Promise.all(this.state.selectedTraces.map(this.generateTraces))).flatMap(t => t);
+
+        const graph: Graph = {
+            id: 0,
+
+            title:  this.state.title,
+            xLabel: this.state.xLabel,
+            yLabel: this.state.yLabel,
+
+            // !
+            // TODO: this must be reworked to take into account the real xtype of selected traces
+            xType: 'datetime',
+
+            style: {
+                margin: 5,
+                xLabelSpace: 24,
+                yLabelSpace: 60,
             },
+
+            xRange: [...(this.state.selectedRange as Graph['xRange'])],
+            traces,
+            activeTraces: traces.map(t => t.id)
         };
-    }) ?? [];
 
-    private okClicked = () => {
-        const traces = this.generateTraces();
+        this.props.onClose([ graph ]);
+    }
 
-        if (this.props.args.isGraph) {
-            const graph: Graph = {
+    private multiClicked = async () => {
+        if (!this.state.selectedTraces || this.state.selectedTraces.length <= 0) return;
+
+        const graphs = this.state.selectedTraces.map(async (dataset): Promise<Graph> => {
+            const traces = await this.generateTraces(dataset);
+            
+            return {
                 id: 0,
 
                 title:  this.state.title,
@@ -205,22 +255,23 @@ class InfoModal
                 traces,
                 activeTraces: traces.map(t => t.id)
             };
+        });
 
-            this.props.onClose(graph);
-        } else {
-            this.props.onClose(traces);
-        }
+        this.props.onClose(await Promise.all(graphs));
     }
+
     private cancelClicked = (e: React.MouseEvent) => { e.preventDefault(); this.resolve(undefined); }
-    private onSubmit = (e: React.FormEvent) => { e.preventDefault(); this.okClicked(); }
 
     protected renderFooter(): JSX.Element {
-        const { isGraph } = this.props.args;
+        const { selectedTraces } = this.state;
 
         return (
             <>
-                <Button variant='primary' onClick={this.okClicked} disabled={!(this.state.selectedTraces?.length ?? false)}>
-                    {isGraph ? 'Přidat' : 'Importovat'}
+                <Button variant='primary' onClick={this.multiClicked} disabled={!selectedTraces || selectedTraces.length < 2}>
+                    Přidat zvlášť
+                </Button>
+                <Button variant='primary' onClick={this.singleClicked} disabled={!selectedTraces || selectedTraces.length < 1}>
+                    Přidat
                 </Button>
                 <Button variant='secondary' onClick={this.cancelClicked}>
                     Zrušit
@@ -231,7 +282,7 @@ class InfoModal
 }
 
 export interface Args {
-    isGraph: boolean;
+
 }
 
 interface State {
@@ -248,6 +299,6 @@ interface State {
     selectedRange?: Graph['xRange'],
 }
 
-export type ImportResult = Graph | Trace[];
+export type ImportResult = Graph[];
 
 export default InfoModal;

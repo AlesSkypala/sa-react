@@ -43,7 +43,6 @@ type DateTimeType = number;
 type XType = keyof XTypeTypeMap;
 type XTypeTypeMap = {
     datetime: DateTimeType,
-    bool: boolean,
     byte: number,
     float: number,
     short: number,

@@ -1,6 +1,6 @@
 import React from 'react';
 import { GraphContainer, Header, SideMenu, ContainerLayout, GraphComponent } from './components';
-import { ModalPortal, ImportModal, TraceSearchModal, GraphEditModal } from './components/Modals';
+import { ModalPortal, AddGraphModal, TraceSearchModal, GraphEditModal } from './components/Modals';
 import { AppEvents, DataService, DialogService } from './services';
 
 import './App.css';
@@ -23,27 +23,35 @@ class App extends React.Component<Record<string, never>, AppState> {
     };
 
     toggleLock = (): void => this.setState({ locked: !this.state.locked });
-    addGraph = (): void => DialogService.open(ImportModal, this.onAddGraph, { isGraph: true });
-    onTraceAddClick = (): void => DialogService.open(ImportModal, this.onAddTraces, { isGraph: false });
+    addGraph = (): void => DialogService.open(AddGraphModal, this.onAddGraphs, {});
+    onTraceAddClick = (): void => {
+        // DialogService.open(ImportModal, this.onAddTraces, { isGraph: false });
+    }
 
-    onAddGraph = (result: Graph): void => {
+    onAddGraphs = (result: Graph[]): void => {
         if (!result) { return; }
 
         const { graphs } = this.state;
 
-        result.id = graphs.length > 0 ? Math.max(...graphs.map(g => g.id)) + 1 : 0;
+        let max = graphs.length > 0 ? Math.max(...graphs.map(g => g.id)) + 1 : 0;
+        for (const g of result) { g.id = max++; } // distribute unique IDs
+
+        const newlayout = [
+            ...this.state.layout,
+            ...result.map(r => (
+                {
+                    i: String(r.id), x: 0, y: 0, w: 12, h: 6
+                }
+            ))
+        ];
+
         this.setState({
-            graphs: [...graphs, result],
+            graphs: [...graphs, ...result],
         });
 
         this.onLayoutChange(
             this.state.layoutType,
-            [
-                ...this.state.layout,
-                {
-                    i: String(result.id), x: 0, y: 0, w: 12, h: 6
-                }
-            ]
+            newlayout,
         );
     }
 
@@ -321,7 +329,7 @@ class App extends React.Component<Record<string, never>, AppState> {
                 {
                     const mSize = Math.max(1, Math.floor(12 / layout.length));
                     const remSize = Math.max(1, 12 - mSize * (layout.length - 1));
-                    
+
                     const nLayout: ContainerLayout = [
                         {
                             ...layout[0],
