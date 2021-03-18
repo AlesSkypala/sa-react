@@ -5,12 +5,19 @@ import debounce from 'lodash.debounce';
 import { transfer } from 'comlink';
 import { plotWorker } from '..';
 import { Spinner } from 'react-bootstrap';
+import { Menu, useContextMenu, Submenu, Item, ItemParams } from 'react-contexify';
 
 import './Graph.css';
 import { GraphExtents } from '../plotting';
 import { AppEvents } from '../services';
+import { createPortal } from 'react-dom';
 
 const zoomToExtent = (zoom: number[]) => ({ x_start: zoom[0], x_end: zoom[1], y_start: zoom[2], y_end: zoom[3] });
+
+function MenuPortal({ children }: { children: React.ReactNode }) {
+    const elem = document.getElementById('context-menu');
+    return elem ? createPortal(children, elem) : <>{children}</>;
+}
 
 class GraphComponent
     extends React.Component<GraphProps, State> {
@@ -270,9 +277,19 @@ class GraphComponent
         const { x_start, x_end, y_start, y_end } = await plotWorker.getExtentRecommendation(this.traces.map(l => l.ptr));
         this.props.onZoomUpdated && this.props.onZoomUpdated(this.props.id, [ x_start, x_end, y_start, y_end ]);
     }
+    private onClone = ({ data }: ItemParams<unknown, 'active' | 'all'>) => {
+        this.props.onClone && this.props.onClone(this.props.id, data === 'active');
+    }
 
     public render() {
         const { title, traces } = this.props;
+
+        const menuShow = useContextMenu({ id: `graph-${this.props.id}-menu` }).show;
+
+        const onContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+            e.preventDefault();
+            menuShow(e);
+        };
 
         return (
             <div className={`graph ${this.props.focused ? 'active' : ''}`}>
@@ -296,7 +313,16 @@ class GraphComponent
                         onMouseMove={this.canvasMouseMove}
                         onMouseLeave={this.canvasMouseLeave}
                         onDoubleClick={this.canvasDoubleClick}
+                        onContextMenu={onContextMenu}
                     />
+                    <MenuPortal>
+                        <Menu id={`graph-${this.props.id}-menu`}>
+                            <Submenu label="Clone Chart">
+                                <Item onClick={this.onClone} data='all' data-clone="all">Clone All Series</Item>
+                                <Item onClick={this.onClone} data='active' data-clone="active" disabled={this.props.activeTraces.length <= 0}>Clone Active Series</Item>
+                            </Submenu>
+                        </Menu>
+                    </MenuPortal>
                 </div>
                 {!this.props.layoutLocked ? (
                     <div className='graph-resize-overlay'><h3>Graf se překreslí po uzamknutí rozložení...</h3></div>
@@ -318,6 +344,7 @@ extends Graph {
     onEdit?(id: Graph['id']): void;
     onRemove?(id: Graph['id']): void;
     onThreshold?(val: unknown): void;
+    onClone?(id: Graph['id'], active: boolean): void;
 }
 
 export interface State {

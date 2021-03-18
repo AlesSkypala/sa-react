@@ -11,6 +11,7 @@ import './assets/fonts.css';
 import './assets/custom.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-virtualized/styles.css';
+import 'react-contexify/dist/ReactContexify.css';
 
 export const plotWorker = wrap<PlotWorkerProxy>(new PlotWorker());
 

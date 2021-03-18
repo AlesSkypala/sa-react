@@ -9,6 +9,7 @@ import { GlobalHotKeys } from 'react-hotkeys';
 import { plotWorker } from '.';
 import { LayoutType } from './components/Header';
 import debounce from 'lodash.debounce';
+import produce from 'immer';
 
 class App extends React.Component<Record<string, never>, AppState> {
     public state: AppState = {
@@ -305,6 +306,26 @@ class App extends React.Component<Record<string, never>, AppState> {
         this.selectAboveTreshold(val as number);
         this.setState({ threshold: false });
     }
+    onClone = (id: Graph['id'], active: boolean) => {
+        const graph = this.state.graphs.find(g => g.id === id);
+        if (!graph) return;
+
+        this.onAddGraphs([
+            {
+                ...graph,
+                xRange: [ ...graph.xRange],
+                zoom: graph.zoom ? [ ...graph.zoom ] : undefined,
+                activeTraces: [ ...graph.activeTraces ],
+                traces: (active ? graph.traces.filter(g => graph.activeTraces.includes(g.id)) : graph.traces)
+                    .map(t => ({ ...t, pipeline: { ...t.pipeline }})),
+            },
+            // produce(graph, next => {
+            //     if (active) {
+            //         next.traces = next.traces.filter(t => next.activeTraces.includes(t.id));
+            //     }
+            // })
+        ]);
+    }
     
     emitRelayoutEvent = debounce((type: LayoutType, layout: ContainerLayout) => AppEvents.onRelayout.emit({ type, layout }), 300);
     onLayoutChange = (type: LayoutType, layout?: ContainerLayout) => {
@@ -399,11 +420,13 @@ class App extends React.Component<Record<string, never>, AppState> {
                                 onRemove={this.onRemoveGraph}
                                 onZoomUpdated={this.onZoomUpdated}
                                 onThreshold={this.onThresholdSelected}
+                                onClone={this.onClone}
                             />
                         </div>
                     ))}
                 </GraphContainer>
                 <ModalPortal />
+                <div id="context-menu"></div>
                 <GlobalHotKeys keyMap={{ SEL_ALL: 'ctrl+a', SEL_INV: 'ctrl+i', DEL_TRACE: 'del' }} handlers={{ DEL_TRACE: () => this.onTraceAction('del-sel'), SEL_ALL: () => this.onTraceAction('sel-all'), SEL_INV: () => this.onTraceAction('inv') }} />
             </>
         );
