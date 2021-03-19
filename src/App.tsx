@@ -1,66 +1,33 @@
 import React from 'react';
-import { GraphContainer, Header, SideMenu, ContainerLayout, GraphComponent } from './components';
-import { ModalPortal, AddGraphModal, TraceSearchModal, GraphEditModal } from './components/Modals';
-import { AppEvents, DataService, DialogService } from './services';
+import { GraphContainer, Header, SideMenu, GraphComponent } from './components';
+import { ModalPortal, AddGraphModal, TraceSearchModal, GraphEditModal, ConfirmModal } from './components/Modals';
+import { DataService } from './services';
 
 import './App.css';
 import { Md5 } from 'ts-md5';
 import { GlobalHotKeys } from 'react-hotkeys';
 import { plotWorker } from '.';
-import { LayoutType } from './components/Header';
-import debounce from 'lodash.debounce';
-import produce from 'immer';
+import { connect } from 'react-redux';
+import { open_modal, add_graphs, remove_graphs, ReduxProps } from './redux';
 
-class App extends React.Component<Record<string, never>, AppState> {
+class App extends React.Component<AppProps, AppState> {
     public state: AppState = {
         locked: true,
         focused: -1,
         threshold: false,
-
-        layoutType: 'vertical',
-
-        graphs: [],
-        layout: [],
     };
 
     toggleLock = (): void => this.setState({ locked: !this.state.locked });
-    addGraph = (): void => DialogService.open(AddGraphModal, this.onAddGraphs, {});
+    addGraph = () => this.props.open_modal({ type: AddGraphModal, resolve: res => res && this.props.add_graphs(res), args: {} });
     onTraceAddClick = (): void => {
         // DialogService.open(ImportModal, this.onAddTraces, { isGraph: false });
-    }
-
-    onAddGraphs = (result: Graph[]): void => {
-        if (!result) { return; }
-
-        const { graphs } = this.state;
-
-        let max = graphs.length > 0 ? Math.max(...graphs.map(g => g.id)) + 1 : 0;
-        for (const g of result) { g.id = max++; } // distribute unique IDs
-
-        const newlayout = [
-            ...this.state.layout,
-            ...result.map(r => (
-                {
-                    i: String(r.id), x: 0, y: 0, w: 12, h: 6
-                }
-            ))
-        ];
-
-        this.setState({
-            graphs: [...graphs, ...result],
-        });
-
-        this.onLayoutChange(
-            this.state.layoutType,
-            newlayout,
-        );
     }
 
     onAddTraces = (result: Trace[]): void => {
         if (!result || !Array.isArray(result)) {
             return;
         }
-        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        const graph = this.props.graphs.find(g => g.id === this.state.focused);
 
         if (graph) {
             graph.traces = [...graph.traces, ...result];
@@ -68,29 +35,30 @@ class App extends React.Component<Record<string, never>, AppState> {
         }
     }
 
-    onRelayout = (layout: ContainerLayout): void => this.setState({ layout });
+    // onRelayout = (layout: ContainerLayout): void => this.setState({ layout });
     focusGraph = (e: React.MouseEvent<HTMLDivElement>): void => {
         const graphId = e.currentTarget.dataset.graph as string;
 
         this.setState({ focused: Number.parseInt(graphId) });
     }
-    onRemoveGraph = (id: number): void => DialogService.openConfirmation(
-        {
-            title: `Smazat graf ${this.state.graphs.find(g => g.id === id)?.title || 'unkown'}`,
+    onRemoveGraph = (id: number) => this.props.open_modal({
+        type: ConfirmModal,
+        args: {
+            title: `Smazat graf ${this.props.graphs.find(g => g.id === id)?.title || 'unkown'}`,
             body: 'Opravdu chcete tento graf smazat?',
             okColor: 'danger',
         },
-        res => {
+        resolve: (res) => {
             if (res) {
-                this.setState({ graphs: [...this.state.graphs.filter(g => g.id !== id)] });
-                this.onLayoutChange(this.state.layoutType, this.state.layout.filter(l => l.i !== String(id)));
+                // this.setState({ graphs: [...this.props.graphs.filter(g => g.id !== id)] });
+                // this.onLayoutChange(this.state.layoutType, this.state.layout.filter(l => l.i !== String(id)));
             }
         }
-    );
-    onEditGraph = (id: number): void => DialogService.open(
-        GraphEditModal,
-        (edit) => {
-            const graph = this.state.graphs.find(g => g.id === id);
+    });
+    onEditGraph = (id: number) => this.props.open_modal({
+        type: GraphEditModal,
+        resolve: (edit) => {
+            const graph = this.props.graphs.find(g => g.id === id);
             
             if (edit && graph) {
                 Object.assign(graph, edit);
@@ -98,11 +66,11 @@ class App extends React.Component<Record<string, never>, AppState> {
             }
         },
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        { graph: this.state.graphs.find(g => g.id === id)! }
-    );
+        args: { graph: this.props.graphs.find(g => g.id === id)! }
+    });
 
     filterZero = async (): Promise<void> => {
-        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        const graph = this.props.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
         const remaining: Trace[] = [];
@@ -119,7 +87,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     filterCurves = async (): Promise<void> => {
-        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        const graph = this.props.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
         // const filtered = graph.traces.filter(t => this.state.selectedTraces.indexOf(t.id) >= 0).map(t => ({ ...t, filtering: 'sg' } as Trace));
@@ -128,7 +96,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     selectAboveTreshold = async (treshold: number): Promise<void> => {
-        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        const graph = this.props.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
         const select: Trace['id'][] = [];
@@ -145,7 +113,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     createCommonTrace = (idPrefix: 'avg' | 'sum', titlePrefix: string): void => {
-        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        const graph = this.props.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
         const selected = graph.traces.filter(t => graph.activeTraces.indexOf(t.id) >= 0);
@@ -169,7 +137,7 @@ class App extends React.Component<Record<string, never>, AppState> {
     }
 
     onTraceAction = (action: TraceAction): void => {
-        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        const graph = this.props.graphs.find(g => g.id === this.state.focused);
 
         if (!graph) return;
 
@@ -181,10 +149,14 @@ class App extends React.Component<Record<string, never>, AppState> {
                 this.selectUnique();
                 break;
             case 'search':
-                DialogService.open(TraceSearchModal, traces => {
-                    if (traces) { graph.activeTraces = traces; }
-                    this.forceUpdate();
-                }, { traces: graph.traces });
+                this.props.open_modal({
+                    type: TraceSearchModal,
+                    args: { traces: graph.traces },
+                    resolve: (traces: string[] | undefined) => {
+                        // if (traces) { graph.activeTraces = traces; }
+                        this.forceUpdate();
+                    }
+                });
                 break;
             case 'tres':
                 this.setState({ threshold: true });
@@ -242,7 +214,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         }
     };
     onTraceSelect = (id: string): void => {
-        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        const graph = this.props.graphs.find(g => g.id === this.state.focused);
 
         if (!graph) {
             return;
@@ -258,7 +230,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         this.forceUpdate();
     };
     onGraphPropChange = (key: keyof Graph, value: Graph[keyof Graph]): void => {
-        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        const graph = this.props.graphs.find(g => g.id === this.state.focused);
 
         if (graph) {
             graph[key] = value as never;
@@ -266,7 +238,7 @@ class App extends React.Component<Record<string, never>, AppState> {
         }
     };
     selectUnique = (): void => {
-        const graph = this.state.graphs.find(g => g.id === this.state.focused);
+        const graph = this.props.graphs.find(g => g.id === this.state.focused);
         if (!graph) return;
 
         const hashes = graph.traces.map(t => DataService.getTraceHash(t));
@@ -288,14 +260,14 @@ class App extends React.Component<Record<string, never>, AppState> {
         graph.activeTraces = newSel;
     }
     onZoomUpdated = (id: number, zoom: Graph['zoom']): void => {
-        const graph = this.state.graphs.find(g => g.id === id);
+        const graph = this.props.graphs.find(g => g.id === id);
         if (!graph) return;
 
         graph.zoom = zoom;
         this.forceUpdate();
     }
     zoomSync = (zoom: Graph['zoom']): void => {
-        for (const graph of this.state.graphs) {
+        for (const graph of this.props.graphs) {
             graph.zoom = zoom ? [...zoom] : undefined;
         }
 
@@ -307,10 +279,10 @@ class App extends React.Component<Record<string, never>, AppState> {
         this.setState({ threshold: false });
     }
     onClone = (id: Graph['id'], active: boolean) => {
-        const graph = this.state.graphs.find(g => g.id === id);
+        const graph = this.props.graphs.find(g => g.id === id);
         if (!graph) return;
 
-        this.onAddGraphs([
+        this.props.add_graphs([
             {
                 ...graph,
                 xRange: [ ...graph.xRange],
@@ -318,71 +290,9 @@ class App extends React.Component<Record<string, never>, AppState> {
                 activeTraces: [ ...graph.activeTraces ],
                 traces: (active ? graph.traces.filter(g => graph.activeTraces.includes(g.id)) : graph.traces)
                     .map(t => ({ ...t, pipeline: { ...t.pipeline }})),
-            },
-            // produce(graph, next => {
-            //     if (active) {
-            //         next.traces = next.traces.filter(t => next.activeTraces.includes(t.id));
-            //     }
-            // })
+            }
         ]);
     }
-    
-    emitRelayoutEvent = debounce((type: LayoutType, layout: ContainerLayout) => AppEvents.onRelayout.emit({ type, layout }), 300);
-    onLayoutChange = (type: LayoutType, layout?: ContainerLayout) => {
-        
-        if (!layout) layout = this.state.layout;
-
-        this.setState({ layoutType: type });
-
-        if (layout.length <= 0) return;
-        if (layout.length == 1) {
-            const nLayout = [
-                { ...layout[0], x: 0, y: 0, w: 12, h: 12 }
-            ];
-            this.setState({ layout: nLayout });
-            this.emitRelayoutEvent(type, nLayout);
-            return;
-        }
-
-        switch (type) {
-            case 'horizontal':
-            case 'vertical':
-                {
-                    const mSize = Math.max(1, Math.floor(12 / layout.length));
-                    const remSize = Math.max(1, 12 - mSize * (layout.length - 1));
-
-                    const nLayout: ContainerLayout = [
-                        {
-                            ...layout[0],
-                            ...(type === 'horizontal' ? { h: 12, w: remSize } : { w: 12, h: remSize }),
-                            x: 0,
-                            y: 0,
-                        }
-                    ];
-
-                    for (let i = 1; i < layout.length; ++i) {
-                        nLayout.push({
-                            ...layout[i],
-                            ...(type === 'horizontal' ? {
-                                h: 12,
-                                w: mSize,
-                                y: 0,
-                                x: remSize + (i - 1) * mSize
-                            } : {
-                                w: 12,
-                                h: mSize,
-                                x: 0,
-                                y: remSize + (i - 1) * mSize
-                            })
-                        });
-                    }
-
-                    this.setState({ layout: nLayout });
-                    this.emitRelayoutEvent(type, nLayout);
-                }
-                break;
-        }
-    };
 
     public render(): React.ReactNode {
         return (
@@ -391,21 +301,21 @@ class App extends React.Component<Record<string, never>, AppState> {
                     layoutUnlocked={!this.state.locked}
                     onToggleLock={this.toggleLock}
                     onAddGraph={this.addGraph}
-                    onLayout={this.onLayoutChange}
+                    // onLayout={this.onLayoutChange}
                 />
                 <SideMenu
-                    selectedGraph={this.state.graphs.find(g => g.id === this.state.focused)}
+                    selectedGraph={this.props.graphs.find(g => g.id === this.state.focused)}
                     onGraphPropChange={this.onGraphPropChange}
                     onTraceAction={this.onTraceAction}
                     onTraceSelect={this.onTraceSelect}
                     onTraceAddClick={this.onTraceAddClick}
                 />
                 <GraphContainer
-                    layout={this.state.layout}
+                    layout={this.props.layout}
                     locked={this.state.locked}
-                    onLayoutChange={this.onRelayout}
+                    // onLayoutChange={this.onRelayout}
                 >
-                    {this.state.graphs.map(g => (
+                    {this.props.graphs.map(g => (
                         <div
                             key={g.id}
                             data-graph={g.id}
@@ -437,10 +347,19 @@ export interface AppState {
     locked: boolean;
     focused: Graph['id'];
     threshold: boolean;
-
-    graphs: Graph[];
-    layout: ContainerLayout;
-    layoutType: LayoutType;
 }
 
-export default App;
+const stateProps = (state: RootStore) => ({
+    graphs: state.graphs.items,
+    layout: state.graphs.layout,
+});
+
+const dispatchProps = {
+    add_graphs,
+    remove_graphs,
+    open_modal,
+};
+
+export type AppProps = ReduxProps<typeof stateProps, typeof dispatchProps>;
+
+export default connect(stateProps, dispatchProps)(App);

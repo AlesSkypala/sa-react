@@ -9,7 +9,7 @@ class HeaderComponent
     extends React.Component<Props, State> {
 
     onSelectLayout = (key: unknown) => {
-        this.props.onLayout && this.props.onLayout(key as LayoutType);
+        this.props.onLayout && this.props.onLayout(key as StackingType);
     };
 
     public render() {
@@ -60,10 +60,8 @@ export interface Props {
 
     onAddGraph?(): void;
     onToggleLock?(): void;
-    onLayout?(type: LayoutType): void;
+    onLayout?(type: StackingType): void;
 }
-
-export type LayoutType = 'horizontal' | 'vertical' | 'freeform';
 
 export interface State {
 }

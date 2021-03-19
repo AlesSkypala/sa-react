@@ -14,6 +14,9 @@ declare module 'ml-savitzky-golay-generalized' {
 
 }
 
+type RootStore = import('../redux/store').RootStore;
+type RootDispatch = import('../redux/store').RootDispatch;
+
 declare module 'worker-loader!*' {
     class WebpackWorker extends Worker {
         constructor();

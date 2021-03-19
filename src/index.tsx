@@ -5,10 +5,15 @@ import reportWebVitals from './reportWebVitals';
 import { PlotWorker, PlotWorkerProxy } from './workers';
 import { wrap } from 'comlink';
 
+import { Provider } from 'react-redux';
+import store from './redux/store';
+
+// Cringe
 import './assets/AdminLTE.min.css';
 import './assets/skin-blue.min.css';
 import './assets/fonts.css';
 import './assets/custom.css';
+// Lib CSS dependencies
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-virtualized/styles.css';
 import 'react-contexify/dist/ReactContexify.css';
@@ -16,7 +21,9 @@ import 'react-contexify/dist/ReactContexify.css';
 export const plotWorker = wrap<PlotWorkerProxy>(new PlotWorker());
 
 ReactDOM.render(
-    <App />,
+    <Provider store={store}>
+        <App />
+    </Provider>,
     document.getElementById('root')
 );
 

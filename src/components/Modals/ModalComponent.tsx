@@ -2,8 +2,8 @@ import * as React from 'react';
 import { Modal, ModalBody, ModalFooter, ModalProps } from 'react-bootstrap';
 import ModalHeader from 'react-bootstrap/ModalHeader';
 
-abstract class ModalComponent<R, T = unknown, S = unknown>
-    extends React.Component<Props<R, T>, S> {
+abstract class ModalComponent<Result, Args = unknown, State = unknown>
+    extends React.Component<Props<Result, Args>, State> {
     
     protected size: ModalProps['size'] = 'lg';
 
@@ -14,7 +14,7 @@ abstract class ModalComponent<R, T = unknown, S = unknown>
     private onHide = () => this.resolve(undefined);
 
 
-    protected resolve(result?: R) {
+    protected resolve(result?: Result) {
         this.props.onClose && this.props.onClose(result);
     }
 
@@ -34,6 +34,8 @@ abstract class ModalComponent<R, T = unknown, S = unknown>
         );
     }
 }
+
+// export type ModalConstructor<T extends ModalComponent<unknown>> = T extends ModalComponent<infer Result, infer Args> ? new (props: Props<Result, Args>) => T : never;
 
 export interface Props<R, T> {
     onClose(result?: R): void;
