@@ -1,21 +1,34 @@
-import { connect } from 'react-redux';
 import * as React from 'react';
+import { DialogService } from '../../services';
 import ModalComponent from './ModalComponent';
-import { close_modal } from '../../redux/modals';
 
 class ModalPortal
-    extends React.Component<Props> {
+    extends React.Component<Props, State> {
+    public state: State = {};
+
+    public componentDidMount() {
+        DialogService.onOpen.on(this.onOpen);
+    }
+
+    public componentWillUnmount() {
+        DialogService.onOpen.remove(this.onOpen);
+    }
+
+    private onOpen = (args: {type: typeof ModalComponent, resolve: ((result: never) => void), args: unknown }) => {
+        this.setState(args);
+    };
 
     private onClose = (res?: unknown) => {
-        this.props.onClose && this.props.onClose(res);
+        this.state.resolve && this.state.resolve(res);
+        this.setState({ type: undefined, args: undefined, resolve: undefined });
     }
 
     public render() {
-        const Type = this.props.type;
+        const Type = this.state.type;
 
         if (Type) {
             return (
-                <Type args={this.props.args} onClose={this.onClose} />
+                <Type args={this.state.args} onClose={this.onClose} />
             );
         }
 
@@ -24,19 +37,12 @@ class ModalPortal
 }
 
 export interface Props {
-    type?: typeof ModalComponent;
-    args?: unknown;
-
-    onClose(res?: unknown): void;
 }
 
+export interface State {
+    type?: typeof ModalComponent;
+    resolve?(result: unknown): void;
+    args?: unknown;
+}
 
-export default connect(
-    (state: RootStore) => ({
-        type: state.modals.modal?.type,
-        args: state.modals.modal?.args
-    }),
-    (dispatch: RootDispatch) => ({
-        onClose: (res?: unknown) => dispatch(close_modal(res)),
-    })
-)(ModalPortal);
+export default ModalPortal;

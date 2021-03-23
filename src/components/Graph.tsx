@@ -11,6 +11,8 @@ import './Graph.css';
 import { GraphExtents } from '../plotting';
 import { AppEvents } from '../services';
 import { createPortal } from 'react-dom';
+import { connect } from 'react-redux';
+import { ReduxProps, graph_threshold_select } from '../redux';
 
 const zoomToExtent = (zoom: number[]) => ({ x_start: zoom[0], x_end: zoom[1], y_start: zoom[2], y_end: zoom[3] });
 
@@ -20,7 +22,7 @@ function MenuPortal({ children }: { children: React.ReactNode }) {
 }
 
 class GraphComponent
-    extends React.Component<GraphProps, State> {
+    extends React.Component<Props, State> {
 
     public state: State = {
         revision: 0,
@@ -89,7 +91,7 @@ class GraphComponent
         this.rendererUid && await plotWorker.disposeOffscreen(this.rendererUid);
     }
 
-    public async componentDidUpdate(prevProps: GraphProps) {
+    public async componentDidUpdate(prevProps: Props) {
         if (this.props.traces !== prevProps.traces) {
             const newTraces: Trace[] = this.props.traces.filter(t => prevProps.traces.indexOf(t) < 0);
             const removedTraces: Trace[] = prevProps.traces.filter(t => this.props.traces.indexOf(t) < 0);
@@ -188,7 +190,7 @@ class GraphComponent
 
             const yVal = zoom[3] - (pos[1] / area[1]) * (zoom[3] - zoom[2]);
 
-            this.props.onThreshold && this.props.onThreshold(yVal);
+            this.props.graph_threshold_select({ id: this.props.id, threshold: yVal });
         } else {
             e.preventDefault();
             this.downPos = this.positionInGraphSpace(e);
@@ -334,22 +336,25 @@ class GraphComponent
     }
 }
 
-export interface GraphProps
-extends Graph {
+const stateProps = (state: RootStore) => ({ threshold: state.graphs.threshold });
+
+const dispatchProps = {
+    graph_threshold_select
+};
+
+type Props = ReduxProps<typeof stateProps, typeof dispatchProps> & Graph & {
     focused?: boolean;
     layoutLocked: boolean;
-    threshold?: boolean;
 
     onZoomUpdated?(id: Graph['id'], zoom: Graph['zoom']): void;
     onEdit?(id: Graph['id']): void;
     onRemove?(id: Graph['id']): void;
-    onThreshold?(val: unknown): void;
     onClone?(id: Graph['id'], active: boolean): void;
 }
 
-export interface State {
+type State = {
     revision: number;
     rendering: boolean;
 }
 
-export default GraphComponent;
+export default connect(stateProps, dispatchProps)(GraphComponent);
