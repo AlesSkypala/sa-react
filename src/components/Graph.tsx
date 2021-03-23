@@ -9,10 +9,11 @@ import { Menu, useContextMenu, Submenu, Item, ItemParams } from 'react-contexify
 
 import './Graph.css';
 import { GraphExtents } from '../plotting';
-import { AppEvents } from '../services';
+import { AppEvents, DialogService } from '../services';
 import { createPortal } from 'react-dom';
 import { connect } from 'react-redux';
-import { ReduxProps, graph_threshold_select } from '../redux';
+import { ReduxProps, graph_threshold_select, clone_graph, remove_graphs, edit_graph, DispatchProps } from '../redux';
+import { ConfirmModal, GraphEditModal } from './Modals';
 
 const zoomToExtent = (zoom: number[]) => ({ x_start: zoom[0], x_end: zoom[1], y_start: zoom[2], y_end: zoom[3] });
 
@@ -112,7 +113,7 @@ class GraphComponent
                     await this.redrawGraph();
                 } else {
                     const { x_start, x_end, y_start, y_end } = await plotWorker.getExtentRecommendation(this.traces.map(l => l.ptr));
-                    this.props.onZoomUpdated && this.props.onZoomUpdated(this.props.id, [ x_start, x_end, y_start, y_end ]);
+                    this.props.edit_graph({ id: this.props.id, zoom: [ x_start, x_end, y_start, y_end ] });
                 }
             }
         }
@@ -129,8 +130,22 @@ class GraphComponent
         }
     }
 
-    private onRemove = () => this.props.onRemove && this.props.onRemove(this.props.id);
-    private onEdit   = () => this.props.onEdit && this.props.onEdit(this.props.id);
+    private onRemove = () =>
+        DialogService.open(
+            ConfirmModal,
+            res => res && this.props.remove_graphs(this.props.id),
+            {
+                title: `Smazat graf ${this.props.title}`,
+                body: 'Opravdu chcete tento graf smazat?',
+                okColor: 'danger',
+            },
+        );
+    private onEdit = () =>
+        DialogService.open(
+            GraphEditModal,
+            edit => edit && this.props.edit_graph({ ...edit, id: this.props.id }),
+            { graph: this.props as Graph }
+        );
 
     private prevWidth = 0;
     private prevHeight = 0;
@@ -252,12 +267,12 @@ class GraphComponent
                         1.0 - (Math.min(this.downPos[1], pos[1]) / area[1])
                     ];
 
-                    this.props.onZoomUpdated && this.props.onZoomUpdated(this.props.id, [
+                    this.props.edit_graph({ id: this.props.id, zoom: [
                         zoom[0] + relXS * (zoom[1] - zoom[0]),
                         zoom[0] + relXE * (zoom[1] - zoom[0]),
                         zoom[2] + relYS * (zoom[3] - zoom[2]),
                         zoom[2] + relYE * (zoom[3] - zoom[2])
-                    ]);
+                    ] });
                 }
             }
 
@@ -277,10 +292,10 @@ class GraphComponent
     }
     private canvasDoubleClick = async () => {
         const { x_start, x_end, y_start, y_end } = await plotWorker.getExtentRecommendation(this.traces.map(l => l.ptr));
-        this.props.onZoomUpdated && this.props.onZoomUpdated(this.props.id, [ x_start, x_end, y_start, y_end ]);
+        this.props.edit_graph({ id: this.props.id, zoom: [ x_start, x_end, y_start, y_end ] });
     }
     private onClone = ({ data }: ItemParams<unknown, 'active' | 'all'>) => {
-        this.props.onClone && this.props.onClone(this.props.id, data === 'active');
+        this.props.clone_graph({ id: this.props.id, activeOnly: data === 'active' });
     }
 
     public render() {
@@ -336,20 +351,24 @@ class GraphComponent
     }
 }
 
-const stateProps = (state: RootStore) => ({ threshold: state.graphs.threshold });
+const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({ ...(state.graphs.items.find(g => g.id === props.id)!), threshold: state.graphs.threshold });
 
 const dispatchProps = {
-    graph_threshold_select
+    graph_threshold_select,
+    clone_graph,
+    remove_graphs,
+    edit_graph,
 };
 
-type Props = ReduxProps<typeof stateProps, typeof dispatchProps> & Graph & {
+type Props = DispatchProps<typeof dispatchProps> & Graph & {
     focused?: boolean;
     layoutLocked: boolean;
+    threshold: boolean;
 
-    onZoomUpdated?(id: Graph['id'], zoom: Graph['zoom']): void;
-    onEdit?(id: Graph['id']): void;
-    onRemove?(id: Graph['id']): void;
-    onClone?(id: Graph['id'], active: boolean): void;
+    // onZoomUpdated?(id: Graph['id'], zoom: Graph['zoom']): void;
+    // onEdit?(id: Graph['id']): void;
+    // onRemove?(id: Graph['id']): void;
+    // onClone?(id: Graph['id'], active: boolean): void;
 }
 
 type State = {

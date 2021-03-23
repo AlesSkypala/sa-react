@@ -6,13 +6,30 @@ import { Button } from 'react-bootstrap';
 import './SideMenu.css';
 import TraceList from './TraceList';
 import { connect } from 'react-redux';
-import { ReduxProps, graph_action } from '../redux';
+import { ReduxProps, graph_action, edit_graph } from '../redux';
 
 class SideMenuComponent
     extends React.Component<Props, State> {
-    onPropertyChange = ({ currentTarget: { name, value } }: React.ChangeEvent<HTMLInputElement>) => this.props.onGraphPropChange(name as keyof Graph, value);
 
     onAction = (action: TraceAction) => this.props.graph_action({ id: this.props.selectedGraph?.id ?? -1, action});
+    onTraceSelect = (id: Trace['id']) => {
+        if (this.props.selectedGraph) {
+            const active = [ ...this.props.selectedGraph.activeTraces ];
+
+            const idx = active.indexOf(id);
+
+            if (idx >= 0) {
+                active.splice(idx, 1);
+            } else {
+                active.push(id);
+            }
+
+            this.props.edit_graph({
+                id: this.props.selectedGraph.id,
+                activeTraces: active,
+            });
+        }
+    };
 
     public render() {
         const { selectedGraph } = this.props;
@@ -39,7 +56,7 @@ class SideMenuComponent
                                 traces={selectedGraph.traces}
                                 activeTraces={selectedGraph.activeTraces}
 
-                                onSelect={this.props.onTraceSelect}
+                                onSelect={this.onTraceSelect}
                                 onAction={this.onAction}
                             />
                         </>
@@ -56,14 +73,13 @@ class SideMenuComponent
 }
 
 const dispatchProps = {
-    graph_action
+    graph_action,
+    edit_graph,
 };
 
 type Props = ReduxProps<() => unknown, typeof dispatchProps> & {
     selectedGraph?: Graph;
 
-    onGraphPropChange<T extends keyof Graph>(key: T, value: Graph[T]): void;
-    onTraceSelect(id: Trace['id']): void;
     onTraceAddClick(): void;
 }
 

@@ -47,32 +47,7 @@ class App extends React.Component<AppProps, AppState> {
         const graphId = e.currentTarget.dataset.graph as string;
 
         this.setState({ focused: Number.parseInt(graphId) });
-    }
-    onRemoveGraph = (id: number) => 
-        DialogService.open(
-            ConfirmModal,
-            res => res && this.props.remove_graphs(id),
-            {
-                title: `Smazat graf ${this.props.graphs.find(g => g.id === id)?.title || 'unkown'}`,
-                body: 'Opravdu chcete tento graf smazat?',
-                okColor: 'danger',
-            },
-        );
-
-    onEditGraph = (id: number) =>
-        DialogService.open(
-            GraphEditModal,
-            edit => {
-                const graph = this.props.graphs.find(g => g.id === id);
-                
-                if (edit && graph) {
-                    Object.assign(graph, edit);
-                    this.forceUpdate();
-                }
-            },
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            { graph: this.props.graphs.find(g => g.id === id)! }
-        );
+    }   
 
     onTraceSelect = (id: string): void => {
         const graph = this.props.graphs.find(g => g.id === this.state.focused);
@@ -137,8 +112,6 @@ class App extends React.Component<AppProps, AppState> {
                 />
                 <SideMenu
                     selectedGraph={this.props.graphs.find(g => g.id === this.state.focused)}
-                    onGraphPropChange={this.onGraphPropChange}
-                    onTraceSelect={this.onTraceSelect}
                     onTraceAddClick={this.onTraceAddClick}
                 />
                 <GraphContainer
@@ -153,13 +126,9 @@ class App extends React.Component<AppProps, AppState> {
                             onClick={this.focusGraph}
                         >
                             <GraphComponent
-                                {...g}
+                                id={g.id}
                                 focused={g.id === this.state.focused}
                                 layoutLocked={this.state.locked}
-                                onEdit={this.onEditGraph}
-                                onRemove={this.onRemoveGraph}
-                                onZoomUpdated={this.onZoomUpdated}
-                                onClone={this.onClone}
                             />
                         </div>
                     ))}
