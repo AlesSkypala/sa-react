@@ -8,13 +8,14 @@ import DateTimeRange from '../DateTimeRange';
 import { Props } from './ModalComponent';
 
 import './AddGraphModal.css';
+import { t } from '../../locale';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
 class InfoModal
     extends ModalComponent<ImportResult, Args, State> {
     public state: State = {
-        title: 'Nový graf',
+        title: t('graph.new'),
         xLabel: 'osa x',
         yLabel: 'osa y',
     };
@@ -39,7 +40,7 @@ class InfoModal
 
     protected renderHeader(): JSX.Element {
         return (
-            <ModalTitle>Přidat graf</ModalTitle>
+            <ModalTitle>{t('modals.addGraph.title')}</ModalTitle>
         );
     }
 
@@ -94,7 +95,7 @@ class InfoModal
         });
     };
     getRangeString = () => {
-        if (!this.state.selectedRange) return 'Nezvoleno';
+        if (!this.state.selectedRange) return t('modals.addGraph.noRange');
 
         const [from, to] = this.state.selectedRange as [number, number];
 
@@ -105,7 +106,7 @@ class InfoModal
         if (!this.state.sources) {
             return (
                 <>
-                    <p className='text-center'>Načítám křivky...</p>
+                    <p className='text-center'>{t('modals.addGraph.loading')}...</p>
                     <div className='text-center my-3'><Spinner animation='border' variant='primary' /></div>
                 </>
             );
@@ -121,7 +122,7 @@ class InfoModal
             <Form>
                 <Row className='separated'>
                     <Form.Group as={Col} className='d-flex flex-column'>
-                        <Form.Label>Zdroj dat</Form.Label>
+                        <Form.Label>{t('modals.addGraph.source')}</Form.Label>
                         <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100'>
                             {this.state.sources.map(s => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
@@ -129,12 +130,12 @@ class InfoModal
                         </Form.Control>
                     </Form.Group>
                     <Form.Group as={Col} className='d-flex flex-column'>
-                        <Form.Label>Rozmezí</Form.Label>
+                        <Form.Label>{t('modals.addGraph.range')}</Form.Label>
                         <Form.Control name='timeRange' readOnly autoComplete='off' value={this.getRangeString()}></Form.Control>
                         <ButtonGroup className='my-2'>
-                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={24 * 3600}>Den</Button>
-                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={7 * 24 * 3600}>Týden</Button>
-                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={4 * 7 * 24 * 3600}>Měsíc</Button>
+                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={24 * 3600}>{t('modals.addGraph.day')}</Button>
+                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={7 * 24 * 3600}>{t('modals.addGraph.week')}</Button>
+                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={4 * 7 * 24 * 3600}>{t('modals.addGraph.month')}</Button>
                         </ButtonGroup>
                         <DateTimeRange
                             bounds={(availableRange?.map(v => Deserialization.parseTimestamp(v as number)) as ([Date, Date] | undefined)) ?? defaultRange}
@@ -145,7 +146,7 @@ class InfoModal
                         />
                     </Form.Group>
                     <Form.Group as={Col} className='d-flex flex-column'>
-                        <Form.Label>Datasety</Form.Label>
+                        <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
                         <Form.Control as='select' multiple onChange={this.onSetSelected} disabled={setsDisabled} className='h-100' >
                             {selectedSource && (selectedRange ? selectedSource.datasets.filter(ds => ds.availableXRange[1] as number > selectedRange[0] && ds.availableXRange[0] as number < selectedRange[1]) : selectedSource.datasets).map(s => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
@@ -154,7 +155,7 @@ class InfoModal
                     </Form.Group>
                     <Col>
                         <Form.Group>
-                            <Form.Label>Počet křivek</Form.Label>
+                            <Form.Label>{t('modals.addGraph.traceCount')}</Form.Label>
                             <Form.Control readOnly value={selectedTraces?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
                         </Form.Group>
                     </Col>
@@ -268,13 +269,13 @@ class InfoModal
         return (
             <>
                 <Button variant='primary' onClick={this.multiClicked} disabled={!selectedTraces || selectedTraces.length < 2}>
-                    Přidat zvlášť
+                    {t('modals.add')}
                 </Button>
-                <Button variant='primary' onClick={this.singleClicked} disabled={!selectedTraces || selectedTraces.length < 1}>
+                {/* <Button variant='primary' onClick={this.singleClicked} disabled={!selectedTraces || selectedTraces.length < 1}>
                     Přidat
-                </Button>
+                </Button> */}
                 <Button variant='secondary' onClick={this.cancelClicked}>
-                    Zrušit
+                    {t('modals.cancel')}
                 </Button>
             </>
         );

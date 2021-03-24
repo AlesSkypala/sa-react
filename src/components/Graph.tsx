@@ -14,6 +14,7 @@ import { createPortal } from 'react-dom';
 import { connect } from 'react-redux';
 import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, DispatchProps } from '../redux';
 import { ConfirmModal, GraphEditModal } from './Modals';
+import { t } from '../locale';
 
 const zoomToExtent = (zoom: number[]) => ({ x_start: zoom[0], x_end: zoom[1], y_start: zoom[2], y_end: zoom[3] });
 
@@ -135,8 +136,8 @@ class GraphComponent
             ConfirmModal,
             res => res && this.props.remove_graphs(this.props.id),
             {
-                title: `Smazat graf ${this.props.title}`,
-                body: 'Opravdu chcete tento graf smazat?',
+                title: t('modals.removeGraph.title', { name: this.props.title }),
+                body: t('modals.removeGraph.body'),
                 okColor: 'danger',
             },
         );
@@ -318,7 +319,7 @@ class GraphComponent
                     </div>
                 </div>
                 <div className='graph-content'>
-                    {traces.length <= 0 && (<div>Graf nemá žádné křivky</div>)}
+                    {traces.length <= 0 && (<div>{t('graph.noTraces')}</div>)}
                     <canvas
                         ref={this.canvasRef}
                         hidden={traces.length <= 0}
@@ -335,14 +336,14 @@ class GraphComponent
                     <MenuPortal>
                         <Menu id={`graph-${this.props.id}-menu`}>
                             <Submenu label="Clone Chart">
-                                <Item onClick={this.onClone} data='all' data-clone="all">Clone All Series</Item>
-                                <Item onClick={this.onClone} data='active' data-clone="active" disabled={this.props.activeTraces.length <= 0}>Clone Active Series</Item>
+                                <Item onClick={this.onClone} data='all' data-clone="all">{t('graph.cloneAll')}</Item>
+                                <Item onClick={this.onClone} data='active' data-clone="active" disabled={this.props.activeTraces.length <= 0}>{t('graph.cloneActive')}</Item>
                             </Submenu>
                         </Menu>
                     </MenuPortal>
                 </div>
                 {!this.props.layoutLocked ? (
-                    <div className='graph-resize-overlay'><h3>Graf se překreslí po uzamknutí rozložení...</h3></div>
+                    <div className='graph-resize-overlay'><h3>{t('graph.redrawNotice')}...</h3></div>
                 ) : (this.state.rendering && (
                     <div className='graph-resize-overlay'><Spinner animation='border' variant='light' /></div>
                 ))}

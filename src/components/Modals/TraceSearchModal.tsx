@@ -3,6 +3,7 @@ import * as React from 'react';
 import { Button, ModalTitle } from 'react-bootstrap';
 import { Form } from 'react-bootstrap';
 import { ModalComponent } from '.';
+import { t } from '../../locale';
 
 class TraceSearchModal
     extends ModalComponent<Trace['id'][], Args, State> {
@@ -13,7 +14,7 @@ class TraceSearchModal
 
     protected renderHeader(): JSX.Element {
         return (
-            <ModalTitle>Vyhledat křivky</ModalTitle>
+            <ModalTitle>{t('modals.traceSearch.title')}</ModalTitle>
         );
     }
 
@@ -36,7 +37,7 @@ class TraceSearchModal
         return (
             <Form>
                 <Form.Group>
-                    <Form.Label>Hledaný výraz</Form.Label>
+                    <Form.Label>{t('modals.traceSearch.term')}</Form.Label>
                     <Form.Control placeholder="Hledat..." type="text" value={this.state.search} onChange={this.onChange} />
                 </Form.Group>
                 <ul>
@@ -55,10 +56,10 @@ class TraceSearchModal
         return (
             <>
                 <Button variant='primary' onClick={this.okClicked}>
-                Zvolit
+                    {t('modals.ok')}
                 </Button>
                 <Button variant='secondary' onClick={this.cancelClicked}>
-                Zrušit
+                    {t('modals.back')}
                 </Button>
             </>
         );

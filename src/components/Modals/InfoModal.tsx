@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { Button, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
+import { t } from '../../locale';
 
 class InfoModal
     extends ModalComponent<void, Args> {
@@ -17,7 +18,7 @@ class InfoModal
     protected renderFooter(): JSX.Element {
         return (
             <Button variant='primary' onClick={this.okClicked}>
-                {this.props.args.okButton || 'OK'}
+                {this.props.args.okButton || t('modals.ok')}
             </Button>
         );
     }

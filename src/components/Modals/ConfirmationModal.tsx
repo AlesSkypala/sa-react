@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { Button, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
+import { t } from '../../locale';
 
 class ConfirmationModal
     extends ModalComponent<boolean, Args> {
@@ -21,10 +22,10 @@ class ConfirmationModal
         return (
             <>
                 <Button variant={okColor || 'primary'} onClick={this.okClicked}>
-                    {okTitle || 'OK'}
+                    {okTitle || t('modals.ok')}
                 </Button>
                 <Button variant={cancelColor || 'secondary'} onClick={this.cancelClicked}>
-                    {cancelTitle || 'Zrušit'}
+                    {cancelTitle || t('modals.cancel')}
                 </Button>
             </>
         );

@@ -7,6 +7,7 @@ import './SideMenu.css';
 import TraceList from './TraceList';
 import { connect } from 'react-redux';
 import { ReduxProps, graph_action, edit_graph } from '../redux';
+import { t } from '../locale';
 
 class SideMenuComponent
     extends React.Component<Props, State> {
@@ -41,7 +42,7 @@ class SideMenuComponent
                         <>
                             <ul className="sidebar-menu">
                                 <li className="header d-flex align-items-center pr-1 py-0">
-                                KŘIVKY
+                                    {t('sidemenu.traces').toUpperCase()}
                                     <Button
                                         variant='link'
                                         className='btn-menu active text-secondary'
@@ -62,7 +63,7 @@ class SideMenuComponent
                         </>
                     ) : (
                         <ul className='sidebar-menu'>
-                            <li className='header'>VYBERTE GRAF</li>
+                            <li className='header'>{t('sidemenu.choose').toUpperCase()}</li>
                         </ul>
                     )}
                     {this.props.children}

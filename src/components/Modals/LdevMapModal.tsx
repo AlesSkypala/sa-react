@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { Button, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
+import { t } from '../../locale';
 import { DataService } from '../../services';
 
 class LdevMapModal
@@ -17,7 +18,7 @@ class LdevMapModal
 
     protected renderHeader(): JSX.Element {
         return (
-            <ModalTitle>LDEV Mapa</ModalTitle>
+            <ModalTitle>{t('modals.ldevMap.title')}</ModalTitle>
         );
     }
 
@@ -30,7 +31,7 @@ class LdevMapModal
 
         if (!ldevInfo) {
             return (
-                <div>Načítám LDEV...</div>
+                <div>{t('modals.ldevMap.loading')}...</div>
             );
         }
 
@@ -74,7 +75,7 @@ class LdevMapModal
     protected renderFooter(): JSX.Element {
         return (
             <Button variant='primary' onClick={this.okClicked}>
-            Zavřít
+                {t('modals.back')}
             </Button>
         );
     }

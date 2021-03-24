@@ -2,10 +2,11 @@
 import * as React from 'react';
 import { Button, ModalTitle, Form } from 'react-bootstrap';
 import { ModalComponent } from '.';
+import { t } from '../../locale';
 
 class GraphEditModal extends ModalComponent<EditResult, Args, State> {
     public state: State = {
-        title: 'Nový graf',
+        title: t('graph.new'),
         xLabel: 'osa x',
         yLabel: 'osa y',
     };
@@ -22,7 +23,7 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
 
     protected renderHeader(): JSX.Element {
         return (
-            <ModalTitle>Upravit graf</ModalTitle>
+            <ModalTitle>{t('modals.editGraph.title', { name: this.state.title })}</ModalTitle>
         );
     }
 
@@ -33,15 +34,15 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
         return (
             <Form onSubmit={this.onFormSubmit}>
                 <Form.Group>
-                    <Form.Label>Název grafu</Form.Label>
+                    <Form.Label>{t('graph.title')}</Form.Label>
                     <Form.Control name='title'  value={this.state.title}  onChange={this.onFormChange}></Form.Control>
                 </Form.Group>
                 <Form.Group>
-                    <Form.Label>Popis osy x</Form.Label>
+                    <Form.Label>{t('graph.xLabel')}</Form.Label>
                     <Form.Control name='xLabel' value={this.state.xLabel} onChange={this.onFormChange}></Form.Control>
                 </Form.Group>
                 <Form.Group>
-                    <Form.Label>Popis osy y</Form.Label>
+                    <Form.Label>{t('graph.yLabel')}</Form.Label>
                     <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
                 </Form.Group>
                 <Form.Control type="submit" hidden />
@@ -56,10 +57,10 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
         return (
             <>
                 <Button variant='primary' onClick={this.okClicked}>
-                Uložit
+                    {t('modals.save')}
                 </Button>
                 <Button variant='secondary' onClick={this.cancelClicked}>
-                Zrušit
+                    {t('modals.cancel')}
                 </Button>
             </>
         );
