@@ -35,12 +35,12 @@ const relayout = ({ layout, items, stacking }: SliceStateDraft<typeof graphsSlic
 
     const [ fSize, size, position ] = horizontal ? [
         // Horizontal
-        { w: 12, h: remSize }, { w: 12, h: mSize },
-        (i: number) => ({ x: 0, y: Math.min(i, 1) * remSize + Math.max(i - 1, 0) * mSize }),
-    ] : [
-        // Vertical
         { w: remSize, h: 12 }, { w: mSize, h: 12 },
         (i: number) => ({ x: Math.min(i, 1) * remSize + Math.max(i - 1, 0) * mSize, y: 0 }),
+    ] : [
+        // Vertical
+        { w: 12, h: remSize }, { w: 12, h: mSize },
+        (i: number) => ({ x: 0, y: Math.min(i, 1) * remSize + Math.max(i - 1, 0) * mSize }),
     ];
     
     return items.map((g, i) => ({
@@ -73,9 +73,9 @@ export const graph_threshold_select = createAsyncThunk(
 
         const fits_thresh = await plotWorker.treshold_by_id(graph.traces.map(t => t.id), payload.threshold) as boolean[];
 
-        dispatch(graphsSlice.actions.set_active_traces({
+        dispatch(graphsSlice.actions.edit_graph({
             id: payload.id,
-            traces: graph.traces.filter((t, idx) => fits_thresh[idx]).map(t => t.id)
+            activeTraces: graph.traces.filter((t, idx) => fits_thresh[idx]).map(t => t.id)
         }));
 
         dispatch(graphsSlice.actions.toggle_threshold(false));
@@ -89,7 +89,7 @@ export const graphsSlice = createSlice({
     initialState: {
         items: [] as Readonly<Graph>[],
         layout: [] as Readonly<Layout>[],
-        stacking: 'horizontal' as StackingType,
+        stacking: 'vertical' as StackingType,
         threshold: false,
     },
     reducers: {
@@ -125,14 +125,6 @@ export const graphsSlice = createSlice({
             }
         },
 
-        set_active_traces: (state, action: PayloadAction<{ id: Graph['id'], traces: Trace['id'][] }>) => {
-            const graph = state.items.find(g => g.id === action.payload.id);
-
-            if (graph) {
-                graph.activeTraces = action.payload.traces ?? [];
-            }
-        },
-
         toggle_threshold: (state, action: PayloadAction<boolean>) => {
             state.threshold = action.payload;
         },
@@ -148,7 +140,18 @@ export const graphsSlice = createSlice({
                 state.items.push(clone);
             }
         },
+
+        set_layout: (state, action: PayloadAction<Layout[]>) => {
+            state.layout = action.payload;
+        },
+
+        set_stacking: (state, action: PayloadAction<StackingType>) => {
+            state.stacking = action.payload;
+            state.layout = relayout(state);
+            emitRelayoutEvent(state.stacking, state.layout);
+        },
     },
+    
     extraReducers: builder => {
         builder.addCase(graph_action.fulfilled, (state, action) => {
             const payload = action.payload;
@@ -167,6 +170,10 @@ export const graphsSlice = createSlice({
 });
 
 export type GraphsState = SliceStateDraft<typeof graphsSlice>;
-export const { add_graphs, remove_graphs, set_active_traces, clone_graph, edit_graph } = graphsSlice.actions;
+export const {
+    add_graphs, remove_graphs,
+    clone_graph, edit_graph,
+    set_layout, set_stacking,
+} = graphsSlice.actions;
 
 export default graphsSlice.reducer;

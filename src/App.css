@@ -8,3 +8,7 @@
 #context-menu > div {
     z-index: 1000;
 }
+
+body { 
+    background-color: #ecf0f5 !important;
+}

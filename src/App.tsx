@@ -1,11 +1,8 @@
 import React from 'react';
 import { GraphContainer, Header, SideMenu, GraphComponent } from './components';
-import { ModalPortal, AddGraphModal, GraphEditModal, ConfirmModal } from './components/Modals';
-import { DialogService } from './services';
+import { ModalPortal } from './components/Modals';
 
 import './App.css';
-import { GlobalHotKeys } from 'react-hotkeys';
-import { plotWorker } from '.';
 import { connect } from 'react-redux';
 import { add_graphs, remove_graphs, graph_action, ReduxProps } from './redux';
 
@@ -13,16 +10,9 @@ class App extends React.Component<AppProps, AppState> {
     public state: AppState = {
         locked: true,
         focused: -1,
-        threshold: false,
     };
 
     toggleLock = (): void => this.setState({ locked: !this.state.locked });
-    addGraph = () => 
-        DialogService.open(
-            AddGraphModal,
-            res => res && this.props.add_graphs(res),
-            {}
-        );
 
     onTraceAddClick = (): void => {
         // TODO:
@@ -42,63 +32,10 @@ class App extends React.Component<AppProps, AppState> {
         }
     }
 
-    // onRelayout = (layout: ContainerLayout): void => this.setState({ layout });
     focusGraph = (e: React.MouseEvent<HTMLDivElement>): void => {
         const graphId = e.currentTarget.dataset.graph as string;
 
         this.setState({ focused: Number.parseInt(graphId) });
-    }   
-
-    onTraceSelect = (id: string): void => {
-        const graph = this.props.graphs.find(g => g.id === this.state.focused);
-
-        if (!graph) {
-            return;
-        }
-
-        // const idx = graph.activeTraces.indexOf(id);
-
-        // if (idx < 0) {
-        //     graph.activeTraces = [ ...graph.activeTraces, id ];
-        // } else {
-        //     graph.activeTraces = [ ...graph.activeTraces.slice(0, idx), ...graph.activeTraces.slice(idx + 1) ];
-        // }
-        // this.forceUpdate();
-    };
-    onGraphPropChange = (key: keyof Graph, value: Graph[keyof Graph]): void => {
-        const graph = this.props.graphs.find(g => g.id === this.state.focused);
-
-        if (graph) {
-            // graph[key] = value as never;
-            this.forceUpdate();
-        }
-    };
-    onZoomUpdated = (id: number, zoom: Graph['zoom']): void => {
-        const graph = this.props.graphs.find(g => g.id === id);
-        if (!graph) return;
-
-        // graph.zoom = zoom;
-        // this.forceUpdate();
-    }
-    // onThresholdSelected = (val: unknown) => {
-    //     if (!this.state.threshold) return;
-    //     this.selectAboveTreshold(val as number);
-    //     this.setState({ threshold: false });
-    // }
-    onClone = (id: Graph['id'], active: boolean) => {
-        const graph = this.props.graphs.find(g => g.id === id);
-        if (!graph) return;
-
-        this.props.add_graphs([
-            {
-                ...graph,
-                xRange: [ ...graph.xRange],
-                zoom: graph.zoom ? [ ...graph.zoom ] : undefined,
-                activeTraces: [ ...graph.activeTraces ],
-                traces: (active ? graph.traces.filter(g => graph.activeTraces.includes(g.id)) : graph.traces)
-                    .map(t => ({ ...t, pipeline: { ...t.pipeline }})),
-            }
-        ]);
     }
 
     public render(): React.ReactNode {
@@ -107,18 +44,12 @@ class App extends React.Component<AppProps, AppState> {
                 <Header
                     layoutUnlocked={!this.state.locked}
                     onToggleLock={this.toggleLock}
-                    onAddGraph={this.addGraph}
-                    // onLayout={this.onLayoutChange}
                 />
                 <SideMenu
                     selectedGraph={this.props.graphs.find(g => g.id === this.state.focused)}
                     onTraceAddClick={this.onTraceAddClick}
                 />
-                <GraphContainer
-                    layout={this.props.layout}
-                    locked={this.state.locked}
-                    // onLayoutChange={this.onRelayout}
-                >
+                <GraphContainer locked={this.state.locked}>
                     {this.props.graphs.map(g => (
                         <div
                             key={g.id}
@@ -144,12 +75,10 @@ class App extends React.Component<AppProps, AppState> {
 export interface AppState {
     locked: boolean;
     focused: Graph['id'];
-    threshold: boolean;
 }
 
 const stateProps = (state: RootStore) => ({
     graphs: state.graphs.items,
-    layout: state.graphs.layout,
 });
 
 const dispatchProps = {

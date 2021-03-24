@@ -12,7 +12,7 @@ import { GraphExtents } from '../plotting';
 import { AppEvents, DialogService } from '../services';
 import { createPortal } from 'react-dom';
 import { connect } from 'react-redux';
-import { ReduxProps, graph_threshold_select, clone_graph, remove_graphs, edit_graph, DispatchProps } from '../redux';
+import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, DispatchProps } from '../redux';
 import { ConfirmModal, GraphEditModal } from './Modals';
 
 const zoomToExtent = (zoom: number[]) => ({ x_start: zoom[0], x_end: zoom[1], y_start: zoom[2], y_end: zoom[3] });
@@ -351,6 +351,7 @@ class GraphComponent
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({ ...(state.graphs.items.find(g => g.id === props.id)!), threshold: state.graphs.threshold });
 
 const dispatchProps = {
@@ -364,11 +365,6 @@ type Props = DispatchProps<typeof dispatchProps> & Graph & {
     focused?: boolean;
     layoutLocked: boolean;
     threshold: boolean;
-
-    // onZoomUpdated?(id: Graph['id'], zoom: Graph['zoom']): void;
-    // onEdit?(id: Graph['id']): void;
-    // onRemove?(id: Graph['id']): void;
-    // onClone?(id: Graph['id'], active: boolean): void;
 }
 
 type State = {

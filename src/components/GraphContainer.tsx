@@ -1,18 +1,23 @@
 import * as React from 'react';
-import { default as Grid, Layout } from 'react-grid-layout';
+import { default as Grid } from 'react-grid-layout';
+import { AutoSizer } from 'react-virtualized';
+import { connect, ReduxProps, set_layout } from '../redux';
 
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { AutoSizer } from 'react-virtualized';
 
 const Cols = 12, Rows = 12;
 const MarginX = 2, MarginY = 2;
 
 class GraphContainerComponent
     extends React.Component<Props, State> {
+    onLayoutChange = (layout: Grid.Layout[]) => {
+        this.props.set_layout(layout);
+    }
+
     public render() {
         return (
-            <div className='content-wrapper' style={{overflowY: 'hidden'}}>
+            <div className='content-wrapper'>
                 <AutoSizer>
                     {({ height, width}) => (
                         <Grid
@@ -30,7 +35,7 @@ class GraphContainerComponent
                             compactType={'vertical'}
 
                             draggableHandle=".graph"
-                            onLayoutChange={this.props.onLayoutChange}
+                            onLayoutChange={this.onLayoutChange}
                         >
                             {this.props.children}
                         </Grid>
@@ -41,16 +46,19 @@ class GraphContainerComponent
     }
 }
 
-export interface Props {
-    layout?: ContainerLayout;
+const dispatchProps = {
+    set_layout,
+};
+
+const storeProps = (store: RootStore) => ({
+    layout: store.graphs.layout,
+});
+
+type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {
     locked?: boolean;
+    children?: React.ReactNode;
+};
 
-    onLayoutChange?(layout: ContainerLayout): void;
-}
+interface State { }
 
-export interface State {
-}
-
-export type ContainerLayout = Layout[];
-
-export default GraphContainerComponent;
+export default connect(storeProps, dispatchProps)(GraphContainerComponent);
