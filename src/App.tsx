@@ -5,6 +5,7 @@ import { ModalPortal } from './components/Modals';
 import './App.css';
 import { connect } from 'react-redux';
 import { add_graphs, remove_graphs, graph_action, ReduxProps } from './redux';
+import { GlobalHotKeys } from 'react-hotkeys';
 
 class App extends React.Component<AppProps, AppState> {
     public state: AppState = {
@@ -39,6 +40,9 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     public render(): React.ReactNode {
+        // const graph = this.props.graphs.find(g => g.id === this.state.focused);
+        const makeAction = (action: TraceAction) => () => this.props.graph_action({ id: this.state.focused, action });
+
         return (
             <>
                 <Header
@@ -66,7 +70,14 @@ class App extends React.Component<AppProps, AppState> {
                 </GraphContainer>
                 <ModalPortal />
                 <div id="context-menu"></div>
-                {/* <GlobalHotKeys keyMap={{ SEL_ALL: 'ctrl+a', SEL_INV: 'ctrl+i', DEL_TRACE: 'del' }} handlers={{ DEL_TRACE: () => this.onTraceAction('del-sel'), SEL_ALL: () => this.onTraceAction('sel-all'), SEL_INV: () => this.onTraceAction('inv') }} /> */}
+                <GlobalHotKeys
+                    keyMap={{ SEL_ALL: 'ctrl+a', SEL_INV: 'ctrl+i', DEL_TRACE: 'del' }}
+                    handlers={{
+                        DEL_TRACE: makeAction('del-sel'),
+                        SEL_ALL:   makeAction('sel-all'),
+                        SEL_INV:   makeAction('inv')
+                    }}
+                />
             </>
         );
     }
