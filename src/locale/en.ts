@@ -62,7 +62,12 @@ const en_lang = {
         ldevMap: {
             title: 'LDEV Map',
             loading: 'Loading the LDEV',
-        }
+        },
+
+        traceSearch: {
+            title: 'Search traces',
+            term: 'Search term',
+        },
     }
 };
 
