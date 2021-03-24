@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { Button, Col, ModalTitle, Row, Form, Spinner, ButtonGroup } from 'react-bootstrap';
+import { Button, Col, ModalTitle, Row, Form, Spinner, ButtonGroup, Dropdown } from 'react-bootstrap';
 import { ModalComponent } from '.';
 import { DataService, Deserialization } from '../../services';
 import { default as moment } from 'moment';
@@ -265,15 +265,19 @@ class InfoModal
 
     protected renderFooter(): JSX.Element {
         const { selectedTraces } = this.state;
+        const addDisabled = !selectedTraces || selectedTraces.length < 1;
 
         return (
             <>
-                <Button variant='primary' onClick={this.multiClicked} disabled={!selectedTraces || selectedTraces.length < 2}>
-                    {t('modals.add')}
-                </Button>
-                {/* <Button variant='primary' onClick={this.singleClicked} disabled={!selectedTraces || selectedTraces.length < 1}>
-                    Přidat
-                </Button> */}
+                <Dropdown as={ButtonGroup}>
+                    <Button variant='primary' onClick={this.multiClicked} disabled={addDisabled}>
+                        {t('modals.add')}
+                    </Button>
+                    <Dropdown.Toggle split variant='primary' disabled={addDisabled} />
+                    <Dropdown.Menu>
+                        <Dropdown.Item onClick={this.singleClicked}>{t('modals.addGraph.singleGraph')}</Dropdown.Item>
+                    </Dropdown.Menu>
+                </Dropdown>
                 <Button variant='secondary' onClick={this.cancelClicked}>
                     {t('modals.cancel')}
                 </Button>

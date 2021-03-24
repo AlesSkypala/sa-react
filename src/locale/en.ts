@@ -45,6 +45,8 @@ const en_lang = {
             datasets: 'Datasets',
             traceCount: 'Trace count',
 
+            singleGraph: 'As a single graph',
+
             day: 'Day',
             week: 'Week',
             month: 'Month',
