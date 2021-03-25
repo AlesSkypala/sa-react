@@ -1,10 +1,10 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as React from 'react';
-import { faPlus, faUnlock, faLock, faGripVertical } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faUnlock, faLock, faGripVertical, faMinusSquare } from '@fortawesome/free-solid-svg-icons';
 import { Dropdown, Nav, NavItem, NavLink } from 'react-bootstrap';
-import { connect, DispatchProps, set_stacking, add_graphs } from '../redux';
+import { connect,  set_stacking, add_graphs, ReduxProps, remove_graphs } from '../redux';
 import { DialogService } from '../services';
-import { AddGraphModal } from './Modals';
+import { AddGraphModal, ConfirmModal } from './Modals';
 import { t } from '../locale';
 
 import './Header.css';
@@ -23,6 +23,17 @@ class HeaderComponent
         this.props.set_stacking(key as StackingType);
     };
 
+    clearAll = () =>
+        this.props.graphIds.length > 0 && DialogService.open(
+            ConfirmModal,
+            res => res && this.props.remove_graphs(this.props.graphIds),
+            {
+                title: t('modals.removeGraphs.title'),
+                body: t('modals.removeGraphs.body', { count: this.props.graphIds.length }),
+                okColor: 'danger',
+            },
+        );
+
     public render() {
         return (
             <header className="main-header">
@@ -39,6 +50,11 @@ class HeaderComponent
                             <NavItem>
                                 <NavLink title={t('header.addGraph')} onClick={this.addGraph}>
                                     <FontAwesomeIcon color='white' icon={faPlus} />
+                                </NavLink>
+                            </NavItem>
+                            <NavItem>
+                                <NavLink title={t('header.removeGraphs')} onClick={this.clearAll} disabled={this.props.graphIds.length <= 0}>
+                                    <FontAwesomeIcon color='white' icon={faMinusSquare} />
                                 </NavLink>
                             </NavItem>
                             <NavItem>
@@ -69,13 +85,18 @@ class HeaderComponent
 const dispatchProps = {
     set_stacking,
     add_graphs,
+    remove_graphs,
 };
 
-type Props = DispatchProps<typeof dispatchProps> & {
+const storeProps = (store: RootStore) => ({
+    graphIds: store.graphs.items.map(g => g.id),
+});
+
+type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {
     layoutUnlocked?: boolean;
     onToggleLock?(): void;
 }
 
 interface State { }
 
-export default connect(undefined, dispatchProps)(HeaderComponent);
+export default connect(storeProps, dispatchProps)(HeaderComponent);

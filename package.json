@@ -27,6 +27,7 @@
     "comlink": "^4.3.0",
     "customize-cra": "^1.0.0",
     "i18next": "^20.0.0",
+    "i18next-intervalplural-postprocessor": "^3.0.0",
     "immer": "^8.0.2",
     "lodash.debounce": "^4.0.8",
     "ml-savitzky-golay-generalized": "^2.0.3",

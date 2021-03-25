@@ -6,11 +6,27 @@ import './App.css';
 import { connect } from 'react-redux';
 import { add_graphs, remove_graphs, graph_action, ReduxProps } from './redux';
 import { GlobalHotKeys } from 'react-hotkeys';
+import { t } from './locale';
 
 class App extends React.Component<AppProps, AppState> {
     public state: AppState = {
         locked: true,
         focused: -1,
+    };
+
+    public componentDidMount() {
+        window.addEventListener('beforeunload', this.handleUnload);
+    }
+    
+    public componentWillUnmount() {
+        window.removeEventListener('beforeunload', this.handleUnload);
+    }
+
+    handleUnload = (e: BeforeUnloadEvent) => {
+        if (this.props.graphs.length > 0) {
+            e.preventDefault();
+            e.returnValue = t('unsavedWork');
+        }
     };
 
     toggleLock = (): void => this.setState({ locked: !this.state.locked });

@@ -1,6 +1,9 @@
 const en_lang = {
+    unsavedWork: 'You have unsaved work. Are you sure you want to leave?',
+
     header: {
         addGraph: 'Add a graph',
+        removeGraphs: 'Remove all graphs',
         toggleLock: 'Lock/unlock the layout',
     },
 
@@ -59,6 +62,12 @@ const en_lang = {
         removeGraph: {
             title: 'Delete the graph {{name}}',
             body: 'Do you really want to remove this graph?'
+        },
+
+        removeGraphs: {
+            title: 'Delete all graphs',
+            body: 'Do you really want to remove the graph?',
+            body_plural: 'Do you really want to remove all {{count}} graphs?',
         },
 
         ldevMap: {
