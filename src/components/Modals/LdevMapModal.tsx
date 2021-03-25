@@ -12,7 +12,7 @@ class LdevMapModal
     };
 
     public componentDidMount() {
-        const { source, ldev } = this.props.args;
+        const { source, ldev } = this.props;
         DataService.getLdevMap(source, ldev).then(ldevInfo => this.setState({ ldevInfo }));
     }
 

@@ -16,7 +16,17 @@ class HeaderComponent
         DialogService.open(
             AddGraphModal,
             res => res && this.props.add_graphs(res),
-            {}
+            {
+                ranges: this.props.graphs.reduce((v, next) => {
+                    const [ from, to ] = next.xRange;
+
+                    if (v.findIndex(i => i[0] === from && i[1] === to) < 0) {
+                        v.push([ from, to ]);
+                    }
+
+                    return v;
+                }, [] as Graph['xRange'][])
+            }
         );
 
     onSelectLayout = (key: unknown) => {
@@ -89,6 +99,7 @@ const dispatchProps = {
 };
 
 const storeProps = (store: RootStore) => ({
+    graphs: store.graphs.items,
     graphIds: store.graphs.items.map(g => g.id),
 });
 

@@ -21,8 +21,11 @@ const en_lang = {
     graph: {
         new: 'New graph',
         title: 'Graph title',
-        xLabel: 'X axis label',
-        yLabel: 'Y axis label',
+        xLabel: 'x axis label',
+        yLabel: 'y axis label',
+
+        xAxis: 'x axis',
+        yAxis: 'y axis',
 
         noTraces: 'No active traces',
         redrawNotice: 'The graph will be rerendered after you lock the layout',
@@ -53,6 +56,10 @@ const en_lang = {
             day: 'Day',
             week: 'Week',
             month: 'Month',
+            quarter: 'Quarter',
+            halfYear: 'Half year',
+            year: 'Year',
+            copy: 'Copy existing',
         },
 
         editGraph: {

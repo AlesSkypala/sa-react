@@ -28,7 +28,7 @@ class ModalPortal
 
         if (Type) {
             return (
-                <Type args={this.state.args} onClose={this.onClose} />
+                <Type {...this.state.args} onClose={this.onClose} />
             );
         }
 

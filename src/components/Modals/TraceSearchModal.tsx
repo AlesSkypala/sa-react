@@ -28,7 +28,7 @@ class TraceSearchModal
         this.searchPromise.then(() => {
             this.setState({ found: [] });
             this.searchPromise = (async () => 
-                this.setState({ found: this.props.args.traces.filter(t => t.title.toLowerCase().indexOf(val.toLowerCase()) >= 0) })
+                this.setState({ found: this.props.traces.filter(t => t.title.toLowerCase().indexOf(val.toLowerCase()) >= 0) })
             )();
         });
     }

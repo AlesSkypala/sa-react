@@ -8,17 +8,17 @@ class InfoModal
     extends ModalComponent<void, Args> {
     protected renderHeader(): JSX.Element {
         return (
-            <ModalTitle>{this.props.args.title}</ModalTitle>
+            <ModalTitle>{this.props.title}</ModalTitle>
         );
     }
     protected renderBody(): JSX.Element {
-        return this.props.args.body as JSX.Element;
+        return this.props.body as JSX.Element;
     }
     private okClicked = () => this.resolve(undefined);
     protected renderFooter(): JSX.Element {
         return (
             <Button variant='primary' onClick={this.okClicked}>
-                {this.props.args.okButton || t('modals.ok')}
+                {this.props.okButton || t('modals.ok')}
             </Button>
         );
     }

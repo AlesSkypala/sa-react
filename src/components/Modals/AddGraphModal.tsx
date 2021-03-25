@@ -9,6 +9,7 @@ import { Props } from './ModalComponent';
 
 import './AddGraphModal.css';
 import { t } from '../../locale';
+import { connect } from '../../redux';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
@@ -16,8 +17,8 @@ class InfoModal
     extends ModalComponent<ImportResult, Args, State> {
     public state: State = {
         title: t('graph.new'),
-        xLabel: 'osa x',
-        yLabel: 'osa y',
+        xLabel: t('graph.xAxis'),
+        yLabel: t('graph.yAxis'),
     };
 
     constructor(props: Props<ImportResult, Args> | Readonly<Props<ImportResult, Args>>) {
@@ -84,15 +85,26 @@ class InfoModal
     onRangeButton = (e: React.MouseEvent<HTMLButtonElement>) => {
         if (!this.state.availableRange) return;
 
-        this.setState({
-            selectedRange: [
-                Math.max(
-                    (this.state.availableRange[1] as number) - parseInt(e.currentTarget.dataset.range ?? '0'),
-                    this.state.availableRange[0] as number
-                ),
-                this.state.availableRange[1]
-            ]
-        });
+        const { from, to, range } = e.currentTarget.dataset;
+
+        if (from && to) {
+            this.setState({
+                selectedRange: [
+                    parseInt(from),
+                    parseInt(to),
+                ]
+            });
+        } else if (range) {
+            this.setState({
+                selectedRange: [
+                    Math.max(
+                        (this.state.availableRange[1] as number) - parseInt(range),
+                        this.state.availableRange[0] as number
+                    ),
+                    this.state.availableRange[1]
+                ]
+            });
+        }
     };
     getRangeString = () => {
         if (!this.state.selectedRange) return t('modals.addGraph.noRange');
@@ -117,6 +129,7 @@ class InfoModal
         const setsDisabled = !this.state.selectedRange;
         const now = new Date();
         const defaultRange: [Date,Date] = [ now, now ];
+        const existingRanges = this.props.ranges; // this.props.existingGraphs ?? [];
 
         return (
             <Form>
@@ -132,11 +145,27 @@ class InfoModal
                     <Form.Group as={Col} className='d-flex flex-column'>
                         <Form.Label>{t('modals.addGraph.range')}</Form.Label>
                         <Form.Control name='timeRange' readOnly autoComplete='off' value={this.getRangeString()}></Form.Control>
-                        <ButtonGroup className='my-2'>
+                        <Dropdown as={ButtonGroup} className='my-2'>
                             <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={24 * 3600}>{t('modals.addGraph.day')}</Button>
                             <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={7 * 24 * 3600}>{t('modals.addGraph.week')}</Button>
                             <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={4 * 7 * 24 * 3600}>{t('modals.addGraph.month')}</Button>
-                        </ButtonGroup>
+                            
+                            <Dropdown.Toggle disabled={timeDisabled} />
+                            <Dropdown.Menu>
+                                <Dropdown.Item onClick={this.onRangeButton} data-range={91 * 24 * 3600}>{t('modals.addGraph.quarter')}</Dropdown.Item>
+                                <Dropdown.Item onClick={this.onRangeButton} data-range={183 * 24 * 3600}>{t('modals.addGraph.halfYear')}</Dropdown.Item>
+                                <Dropdown.Item onClick={this.onRangeButton} data-range={365 * 24 * 3600}>{t('modals.addGraph.year')}</Dropdown.Item>
+                                {existingRanges.length > 0 && (
+                                    <>
+                                        <Dropdown.Divider />
+                                        <Dropdown.ItemText>{t('modals.addGraph.copy')}</Dropdown.ItemText>
+                                        {existingRanges.map((val, idx) => (
+                                            <Dropdown.Item key={idx} data-from={val[0]} data-to={val[1]} onClick={this.onRangeButton}>{idx}</Dropdown.Item>
+                                        ))}
+                                    </>
+                                )}
+                            </Dropdown.Menu>
+                        </Dropdown>
                         <DateTimeRange
                             bounds={(availableRange?.map(v => Deserialization.parseTimestamp(v as number)) as ([Date, Date] | undefined)) ?? defaultRange}
                             value={selectedRange?.map(v => Deserialization.parseTimestamp(v as number)) as ([Date, Date] | undefined)}
@@ -287,7 +316,7 @@ class InfoModal
 }
 
 export interface Args {
-
+    ranges: Graph['xRange'][];
 }
 
 interface State {

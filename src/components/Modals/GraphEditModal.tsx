@@ -12,7 +12,7 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
     };
 
     public componentDidMount(): void {
-        const { graph } = this.props.args;
+        const { graph } = this.props;
 
         this.setState({
             title: graph.title,
