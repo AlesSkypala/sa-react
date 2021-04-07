@@ -66,8 +66,8 @@ class InfoModal
 
             if (selectedSource) {
                 additional.availableRange = [
-                    selectedSource.datasets.reduce((val, set) => Math.max(set.availableXRange[0] as number, val), 0) as XTypeTypeMap[XType],
-                    selectedSource.datasets.reduce((val, set) => Math.max(set.availableXRange[1] as number, val), 0) as XTypeTypeMap[XType],
+                    selectedSource.datasets.reduce((val, set) => Math.max(set.dataRange[0][0] as number, val), 0) as XTypeTypeMap[XType],
+                    selectedSource.datasets.reduce((val, set) => Math.max(set.dataRange[set.dataRange.length - 1][1] as number, val), 0) as XTypeTypeMap[XType],
                 ];
             }
 
@@ -177,7 +177,7 @@ class InfoModal
                     <Form.Group as={Col} className='d-flex flex-column'>
                         <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
                         <Form.Control as='select' multiple onChange={this.onSetSelected} disabled={setsDisabled} className='h-100' >
-                            {selectedSource && (selectedRange ? selectedSource.datasets.filter(ds => ds.availableXRange[1] as number > selectedRange[0] && ds.availableXRange[0] as number < selectedRange[1]) : selectedSource.datasets).map(s => (
+                            {selectedSource && (selectedRange ? selectedSource.datasets.filter(ds => ds.dataRange[ds.dataRange.length - 1][1] as number > selectedRange[0] && ds.dataRange[0][0] as number < selectedRange[1]) : selectedSource.datasets).map(s => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                         </Form.Control>
