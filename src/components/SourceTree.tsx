@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faAngleRight, faAngleDown, faSquare, faMinusSquare, faCheckSquare } from '@fortawesome/free-solid-svg-icons';
 
 import './SourceTree.css';
+import { t } from '../locale';
 
 class SourceTree
     extends React.PureComponent<Props, State> {
@@ -62,7 +63,7 @@ class SourceTree
                     };
                     return {
                         id,
-                        name: d.name,
+                        name: t('datasets.name.' + d.id, d.id),
                         level: 1,
                     };
                 })

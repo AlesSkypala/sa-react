@@ -1,13 +1,13 @@
 interface DataSource
 extends Identified {
+    name: string;
+    type: string;
     datasets: Dataset[];
     features: string[];
 }
 
 interface Dataset
 extends Identified {
-    description: string;
-
     source: string;
 
     xType: string;

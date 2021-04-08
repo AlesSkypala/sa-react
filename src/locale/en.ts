@@ -1,3 +1,5 @@
+import * as hp from './en_hp';
+
 const en_lang = {
     unsavedWork: 'You have unsaved work. Are you sure you want to leave?',
 
@@ -50,6 +52,7 @@ const en_lang = {
             range: 'Time range',
             datasets: 'Datasets',
             traceCount: 'Trace count',
+            description: 'Description',
 
             singleGraph: 'As a single graph',
 
@@ -85,6 +88,29 @@ const en_lang = {
         traceSearch: {
             title: 'Search traces',
             term: 'Search term',
+        },
+    },
+
+    datasets: {
+        titles: {
+            hp: hp.titles,
+            dummy: {
+                testset: 'Test set',
+                zeros: 'Zeros',
+                peak: 'Single peak',
+                dense: 'Dense set',
+                extradense: 'Extremely dense set',
+            },
+        },
+        descriptions: {
+            hp: hp.descriptions,
+            dummy: {
+                testset: 'Contains random points.',
+                zeros: 'Contains only zeros.',
+                peak: 'Contains a single gaussian peak at the center of the graph.',
+                dense: 'Dense random dataset.',
+                extradense: 'Even denser random dataset',
+            },
         },
     }
 };

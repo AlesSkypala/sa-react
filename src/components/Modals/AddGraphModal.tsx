@@ -9,7 +9,7 @@ import { Props } from './ModalComponent';
 
 import './AddGraphModal.css';
 import { t } from '../../locale';
-import { connect } from '../../redux';
+// import { connect } from '../../redux';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
@@ -43,6 +43,27 @@ class InfoModal
         return (
             <ModalTitle>{t('modals.addGraph.title')}</ModalTitle>
         );
+    }
+
+    getTitle = (sourceType: DataSource['type'], id: Trace['id']) => {
+        if (sourceType === 'hp') {
+            let match;
+
+            if ((match = id.match(/([\w_]+_MPU)-(\d+)$/))) {
+                return t(`datasets.titles.hp.${match[1]}`, id, { val: match[2] });
+            }
+        }
+        
+        return t(`datasets.titles.${sourceType}.${id}`, id);
+    }
+
+    getDescription = (sourceType: DataSource['type'], id: Trace['id']) => {
+        const result = t(`datasets.descriptions.${sourceType}.${id}`, '');
+
+        if (result !== '')
+            return result;
+        else
+            return undefined;
     }
 
     // private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
@@ -125,8 +146,8 @@ class InfoModal
         }
 
         const { availableRange, selectedRange, selectedSource, selectedTraces } = this.state;
-        const timeDisabled = !this.state.selectedSource;
-        const setsDisabled = !this.state.selectedRange;
+        const timeDisabled = !selectedSource;
+        const setsDisabled = !selectedRange;
         const now = new Date();
         const defaultRange: [Date,Date] = [ now, now ];
         const existingRanges = this.props.ranges; // this.props.existingGraphs ?? [];
@@ -178,7 +199,7 @@ class InfoModal
                         <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
                         <Form.Control as='select' multiple onChange={this.onSetSelected} disabled={setsDisabled} className='h-100' >
                             {selectedSource && (selectedRange ? selectedSource.datasets.filter(ds => ds.dataRange[ds.dataRange.length - 1][1] as number > selectedRange[0] && ds.dataRange[0][0] as number < selectedRange[1]) : selectedSource.datasets).map(s => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
+                                <option key={s.id} value={s.id}>{this.getTitle(selectedSource.type, s.id)}</option>
                             ))}
                         </Form.Control>
                     </Form.Group>
@@ -186,6 +207,12 @@ class InfoModal
                         <Form.Group>
                             <Form.Label>{t('modals.addGraph.traceCount')}</Form.Label>
                             <Form.Control readOnly value={selectedTraces?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
+                        </Form.Group>
+                        <Form.Group>
+                            <Form.Label>{t('modals.addGraph.description')}</Form.Label>
+                            {selectedSource && selectedTraces?.map(t => [ t.id, this.getDescription(selectedSource.type, t.id) ]).filter(t => t[1]).map(t => (
+                                <Form.Text key={t[0]}>{t[1]}</Form.Text>
+                            ))}
                         </Form.Group>
                     </Col>
                 </Row>
@@ -198,7 +225,8 @@ class InfoModal
             return [
                 {
                     id: `${dataset.source}:${dataset.id}`,
-                    title: dataset.name,
+
+                    title: this.getTitle(this.state.selectedSource?.type ?? '', dataset.id),
                     pipeline: {
                         type: 'data',
                         dataset: {
