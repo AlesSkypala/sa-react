@@ -41,7 +41,7 @@ class TraceList
         active: undefined,
         numero_uno_in_italia: 0,
     };
-    
+
     private listRef = React.createRef<HTMLDivElement>();
     public componentDidMount() {
         DataService.getSources().then(sources => this.setState({ sources }));
@@ -50,7 +50,7 @@ class TraceList
     traceClicked = (e: React.MouseEvent<HTMLLIElement>) => {
         const id = e.currentTarget.dataset.id as Trace['id'];
         this.props.onSelect(id);
-        this.setState({ active: id, numero_uno_in_italia: (this.state.numero_uno_in_italia + 1) % 2 });
+        this.setState({ active: id, numero_uno_in_italia: (this.state.numero_uno_in_italia + 1) % 420 });
         this.listRef.current?.focus();
     }
 
@@ -80,10 +80,10 @@ class TraceList
     onLdevClick = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
         const trace = this.props.traces.find(t => t.id === e.currentTarget.dataset.trace);
-        
+
         if (trace) {
             const ldevId = this.getLdevId(trace);
-    
+
             // eslint-disable-next-line @typescript-eslint/no-empty-function
             DialogService.open(LdevMapModal, () => { }, { source: ldevId[0], ldev: ldevId[1] });
         }
