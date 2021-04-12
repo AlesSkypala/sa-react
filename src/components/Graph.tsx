@@ -3,20 +3,18 @@ import { faTrash, faWrench } from '@fortawesome/free-solid-svg-icons';
 import * as React from 'react';
 import debounce from 'lodash.debounce';
 import { transfer } from 'comlink';
-import { plotWorker } from '..';
 import { Spinner } from 'react-bootstrap';
 import { Menu, useContextMenu, Submenu, Item, ItemParams } from 'react-contexify';
 
 import './Graph.css';
-import { GraphExtents } from '../plotting';
 import { AppEvents, DialogService } from '../services';
 import { createPortal } from 'react-dom';
 import { connect } from 'react-redux';
 import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, DispatchProps } from '../redux';
 import { ConfirmModal, GraphEditModal } from './Modals';
 import { t } from '../locale';
-
-const zoomToExtent = (zoom: number[]) => ({ x_start: zoom[0], x_end: zoom[1], y_start: zoom[2], y_end: zoom[3] });
+import RendererHandle from '../services/RendererHandle';
+import { dataWorker } from '..';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {
     const elem = document.getElementById('context-menu');
@@ -33,18 +31,24 @@ class GraphComponent
 
     private canvasRef: React.RefObject<HTMLCanvasElement> = React.createRef();
     private guiCanvasRef: React.RefObject<HTMLCanvasElement> = React.createRef();
-    private rendererUid: string | undefined;
-    private traces: { id: Trace['id'], ptr: number }[] = [];
+    private renderer: RendererHandle | undefined;
 
     redrawGraph = async () => {
-        if (!this.rendererUid) return;
+        if (!this.renderer) return;
         
         this.setState({ rendering: true });
-        const trace_ptrs = this.traces.filter(t => this.props.activeTraces.indexOf(t.id) >= 0).map(t => t.ptr);
-        await plotWorker.clearChart(this.rendererUid);
-        await plotWorker.renderTraces(this.rendererUid, trace_ptrs.map(p => ({ ptr: p, color: [0,0,0] })));
 
-        this.traces.length > 0 && this.setState({ rendering: false });
+        const job = this.renderer.createJob(this.props.xType)
+            .clear(true)
+            .zoom(...(this.props.zoom ?? [ ...this.props.xRange, 0.0, 1.0 ]));
+
+        this.props.traces
+            .filter(t => this.props.activeTraces.has(t.id))
+            .forEach(t => job.addTrace(0, t.style ?? { width: 1, color: [255, 255, 0] })); // ! // TODO:
+
+        await job.invoke();
+
+        this.setState({ rendering: false });
     }
 
     public async componentDidMount() {
@@ -58,17 +62,8 @@ class GraphComponent
         if (canvas) {
             // Bind offscreen renderer on another thread
             const offscreen = canvas.transferControlToOffscreen();
-    
-            this.rendererUid = await plotWorker.createOffscreen(
-                transfer(offscreen, [ offscreen ]),
-                this.props.xType,
-                zoomToExtent((this.props.zoom ?? [ 0, 1e10, 0, 1e3 ]) as number[]),
-                {
-                    margin: this.props.style.margin,
-                    x_label_space: this.props.style.xLabelSpace,
-                    y_label_space: this.props.style.yLabelSpace,
-                }
-            );
+
+            this.renderer = await RendererHandle.create(transfer(offscreen, [ offscreen] ));
     
             await this.updateSize();
         } else {
@@ -90,41 +85,41 @@ class GraphComponent
         AppEvents.onRelayout.remove(this.onLayoutChange);
 
         // Dispose off-thread renderer
-        this.rendererUid && await plotWorker.disposeOffscreen(this.rendererUid);
+        this.renderer && await this.renderer.dispose();
     }
 
     public async componentDidUpdate(prevProps: Props) {
         if (this.props.traces !== prevProps.traces) {
-            const newTraces: Trace[] = this.props.traces.filter(t => prevProps.traces.indexOf(t) < 0);
-            const removedTraces: Trace[] = prevProps.traces.filter(t => this.props.traces.indexOf(t) < 0);
+            // const newTraces: Trace[] = this.props.traces.filter(t => prevProps.traces.indexOf(t) < 0);
+            // const removedTraces: Trace[] = prevProps.traces.filter(t => this.props.traces.indexOf(t) < 0);
     
-            if (removedTraces.length > 0) {
-                this.traces = this.traces.filter(d => removedTraces.findIndex(t => t.id === d.id) < 0);
+            // if (removedTraces.length > 0) {
+            //     this.traces = this.traces.filter(d => removedTraces.findIndex(t => t.id === d.id) < 0);
 
-                newTraces.length <= 0 && this.redrawGraph();
-            }
+            //     newTraces.length <= 0 && this.redrawGraph();
+            // }
     
-            if (newTraces.length > 0) {
-                this.setState({ rendering: true });
-                const loaded = await plotWorker.getTraceData(this.props.xRange[0], this.props.xRange[1], newTraces);
-                this.traces.push(...loaded);
+            // if (newTraces.length > 0) {
+            //     this.setState({ rendering: true });
+            //     const loaded = await plotWorker.getTraceData(this.props.xRange[0], this.props.xRange[1], newTraces);
+            //     this.traces.push(...loaded);
 
-                // Redraw lines if initial zoom exists, otherwise recommend an initial zoom
-                if (this.props.zoom) {
-                    await this.redrawGraph();
-                } else {
-                    const { x_start, x_end, y_start, y_end } = await plotWorker.getExtentRecommendation(this.traces.map(l => l.ptr));
-                    this.props.edit_graph({ id: this.props.id, zoom: [ x_start, x_end, y_start, y_end ] });
-                }
-            }
+            //     // Redraw lines if initial zoom exists, otherwise recommend an initial zoom
+            //     if (this.props.zoom) {
+            //         await this.redrawGraph();
+            //     } else {
+            //         const { x_start, x_end, y_start, y_end } = await plotWorker.getExtentRecommendation(this.traces.map(l => l.ptr));
+            //         this.props.edit_graph({ id: this.props.id, zoom: [ x_start, x_end, y_start, y_end ] });
+            //     }
+            // }
+            await this.redrawGraph();
         }
 
         if (this.props.layoutLocked !== prevProps.layoutLocked && this.props.layoutLocked) {
             await this.updateSize();
         }
 
-        if (this.props.zoom !== prevProps.zoom && this.props.zoom && this.rendererUid) {
-            await plotWorker.callRendererFunc(this.rendererUid, 'set_extents', [ zoomToExtent(this.props.zoom as number[]) as GraphExtents ]);
+        if (this.props.zoom !== prevProps.zoom && this.props.zoom && this.renderer) {
             await this.redrawGraph();
         } else if (this.props.activeTraces !== prevProps.activeTraces) {
             await this.redrawGraph();
@@ -155,13 +150,13 @@ class GraphComponent
             const width = this.canvasRef.current.clientWidth;
             const height = this.canvasRef.current.clientHeight;
 
-            if (this.canvasRef.current && this.rendererUid && (this.prevWidth !== width || this.prevHeight !== height)) {
+            if (this.canvasRef.current && this.renderer && (this.prevWidth !== width || this.prevHeight !== height)) {
                 const gui = this.guiCanvasRef.current;
                 if (gui) {
                     gui.width = width,
                     gui.height = height;
                 }
-                await plotWorker.callRendererFunc(this.rendererUid, 'resize', [width, height]);
+                await this.renderer.resize(width, height);
                 await this.redrawGraph();
             }
 
@@ -292,8 +287,13 @@ class GraphComponent
         }
     }
     private canvasDoubleClick = async () => {
-        const { x_start, x_end, y_start, y_end } = await plotWorker.getExtentRecommendation(this.traces.map(l => l.ptr));
-        this.props.edit_graph({ id: this.props.id, zoom: [ x_start, x_end, y_start, y_end ] });
+        const ids = this.props.traces.map(t => t.id).filter(id => this.props.activeTraces.has(id));
+        const [ from, to ] = this.props.xRange;
+
+        this.props.edit_graph({
+            id: this.props.id,
+            zoom: await dataWorker.recommend_extents(from, to, ...ids)
+        });
     }
     private onClone = ({ data }: ItemParams<unknown, 'active' | 'all'>) => {
         this.props.clone_graph({ id: this.props.id, activeOnly: data === 'active' });
@@ -337,7 +337,7 @@ class GraphComponent
                         <Menu id={`graph-${this.props.id}-menu`}>
                             <Submenu label="Clone Chart">
                                 <Item onClick={this.onClone} data='all' data-clone="all">{t('graph.cloneAll')}</Item>
-                                <Item onClick={this.onClone} data='active' data-clone="active" disabled={this.props.activeTraces.length <= 0}>{t('graph.cloneActive')}</Item>
+                                <Item onClick={this.onClone} data='active' data-clone="active" disabled={this.props.activeTraces.size <= 0}>{t('graph.cloneActive')}</Item>
                             </Submenu>
                         </Menu>
                     </MenuPortal>

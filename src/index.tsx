@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
-import { PlotWorker, PlotWorkerProxy } from './workers';
+import { DataWorker, DataWorkerProxy } from './workers';
 import { wrap } from 'comlink';
 
 import { Provider } from 'react-redux';
@@ -19,7 +19,8 @@ import 'react-virtualized/styles.css';
 import 'react-contexify/dist/ReactContexify.css';
 import { loadTranslations } from './locale';
 
-export const plotWorker = wrap<PlotWorkerProxy>(new PlotWorker());
+export const dataWorker = wrap<DataWorkerProxy>(new DataWorker());
+
 loadTranslations();
 
 ReactDOM.render(

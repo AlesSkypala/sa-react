@@ -120,7 +120,7 @@ class TraceList
             >
                 <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
                 <span className='btn-select mr-1'>
-                    <FontAwesomeIcon icon={this.props.activeTraces.indexOf(t.id) >= 0 ? faCheckSquare : faSquare} />
+                    <FontAwesomeIcon icon={this.props.activeTraces.has(t.id) ? faCheckSquare : faSquare} />
                 </span>
                 <span className='trace-row-title'>{t.title}</span>
                 {
@@ -171,7 +171,7 @@ class TraceList
 
 export interface Props {
     traces: Trace[];
-    activeTraces: Trace['id'][];
+    activeTraces: Graph['activeTraces'];
 
     onSelect(id: Trace['id']): void;
     onAction(action: TraceAction): void;

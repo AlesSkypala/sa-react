@@ -4,7 +4,7 @@ import { Layout } from 'react-grid-layout';
 import { AppEvents } from '../services';
 import { SliceStateDraft } from './helpers';
 import actions from './graphs.actions';
-import { plotWorker } from '..';
+import { dataWorker } from '..';
 import deepClone from 'lodash/cloneDeep';
 
 const emitRelayoutEvent = debounce((type: StackingType, layout: Layout[]) => AppEvents.onRelayout.emit({ type, layout }), 300);
@@ -71,11 +71,11 @@ export const graph_threshold_select = createAsyncThunk(
 
         if (!graph) return { id: payload, valid: undefined };
 
-        const fits_thresh = await plotWorker.treshold_by_id(graph.traces.map(t => t.id), payload.threshold) as boolean[];
+        const fits_thresh = await dataWorker.threshold(graph.xRange[0], graph.xRange[1], payload.threshold, ...graph.traces.map(t => t.id)) as boolean[];
 
         dispatch(graphsSlice.actions.edit_graph({
             id: payload.id,
-            activeTraces: graph.traces.filter((t, idx) => fits_thresh[idx]).map(t => t.id)
+            activeTraces: new Set(graph.traces.filter((t, idx) => fits_thresh[idx]).map(t => t.id))
         }));
 
         dispatch(graphsSlice.actions.toggle_threshold(false));

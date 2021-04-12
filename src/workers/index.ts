@@ -1,2 +1,2 @@
-export { default as PlotWorker } from 'worker-loader!./plot.worker.ts';
-export type { PlotWorkerProxy } from './plot.worker';
+export { default as DataWorker } from 'worker-loader!./data.worker.ts';
+export type { DataWorkerProxy } from './data.worker';

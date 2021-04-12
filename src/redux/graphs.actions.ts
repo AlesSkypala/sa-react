@@ -1,11 +1,11 @@
 import { Md5 } from 'ts-md5';
-import { plotWorker } from '..';
+import { dataWorker } from '..';
 import { TraceSearchModal } from '../components/Modals';
 import { DataService, DialogService } from '../services';
 import { GraphsState } from './graphs';
 
 const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: string): void => {
-    const selected = graph.traces.filter(t => graph.activeTraces.indexOf(t.id) >= 0);
+    const selected = graph.traces.filter(t => graph.activeTraces.has(t.id));
 
     if (selected.length > 1) {
         graph.traces = [
@@ -38,7 +38,7 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
     },
     'sel-unq': (_, graph) => {
         const hashes = graph.traces.map(t => DataService.getTraceHash(t));
-        const newSel: string[] = [];
+        const newSel: Set<string> = new Set();
         for (let a = hashes.length - 1; a >= 0; --a) {
             let occured = false;
 
@@ -50,7 +50,7 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
             }
 
             if (!occured) {
-                newSel.push(graph.traces[a].id);
+                newSel.add(graph.traces[a].id);
             }
         }
         graph.activeTraces = newSel;
@@ -59,24 +59,25 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
         DialogService.open(
             TraceSearchModal,
             traces => {
-                if (traces) { graph.activeTraces = traces; }
+                if (traces) { graph.activeTraces = new Set(traces); }
             },
             { traces: graph.traces }
         ),
     'tres': (state) => state.threshold = true,
     'sel-all': (_, graph) => {
-        graph.activeTraces = graph.traces.map(t => t.id);
+        graph.activeTraces = new Set(graph.traces.map(t => t.id));
     },
     'inv': (_, graph) => {
-        graph.activeTraces = graph.traces.map(t => t.id).filter(t => graph.activeTraces.indexOf(t) < 0);
+        graph.activeTraces = new Set(graph.traces.map(t => t.id).filter(t => !graph.activeTraces.has(t)));
     },
     'des': (_, graph) => {
-        graph.activeTraces = [];
+        graph.activeTraces.clear();
     },
     'del-zero': {
         asynch: async (_, graph) => {
             const ids = graph.traces.map(t => t.id);
-            const zero = await plotWorker.is_zero_by_id(ids) as boolean[];
+
+            const zero = await dataWorker.is_zero(graph.xRange[0], graph.xRange[1], ...ids) as boolean[];
 
             return new Set(ids.filter((v, idx) => !zero[idx]));
         },
@@ -88,12 +89,12 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
     'avg': (_, graph) => createCommonTrace(graph, 'avg', 'Průměr'),
     'sum': (_, graph) => createCommonTrace(graph, 'sum', 'Průměr'),
     'del-sel': (_, graph) => {
-        if (graph.activeTraces.length <= 0) return;
-        graph.traces = graph.traces.filter(t => graph.activeTraces.indexOf(t.id) < 0);
+        if (graph.activeTraces.size <= 0) return;
+        graph.traces = graph.traces.filter(t => !graph.activeTraces.has(t.id));
     },
     'del-unsel': (_, graph) => {
-        if (graph.activeTraces.length <= 0) return;
-        graph.traces = graph.traces.filter(t => graph.activeTraces.indexOf(t.id) >= 0);
+        if (graph.activeTraces.size <= 0) return;
+        graph.traces = graph.traces.filter(t => graph.activeTraces.has(t.id));
     },
     'sort': (_, graph) => {
         graph.traces = [...graph.traces.sort((a, b) => a > b ? 1 : (a === b ? 0 : -1))];
