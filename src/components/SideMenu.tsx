@@ -15,19 +15,18 @@ class SideMenuComponent
     onAction = (action: TraceAction) => this.props.graph_action({ id: this.props.selectedGraph?.id ?? -1, action});
     onTraceSelect = (id: Trace['id']) => {
         if (this.props.selectedGraph) {
-            const active = [ ...this.props.selectedGraph.activeTraces ];
 
-            const idx = active.indexOf(id);
+            const activeTraces = new Set(this.props.selectedGraph.activeTraces);
 
-            if (idx >= 0) {
-                active.splice(idx, 1);
+            if (activeTraces.has(id)) {
+                activeTraces.delete(id);
             } else {
-                active.push(id);
+                activeTraces.add(id);
             }
 
             this.props.edit_graph({
                 id: this.props.selectedGraph.id,
-                activeTraces: active,
+                activeTraces,
             });
         }
     };

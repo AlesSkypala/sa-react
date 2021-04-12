@@ -15,7 +15,7 @@ interface Graph<T extends XType = XType> {
 
     // Runtime
     zoom?: [ XTypeTypeMap[T], XTypeTypeMap[T], number, number ];
-    activeTraces: Trace['id'][];
+    activeTraces: Set<Trace['id']>;
 }
 
 interface GraphStyle {

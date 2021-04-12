@@ -280,7 +280,7 @@ class InfoModal
 
             xRange: [...(this.state.selectedRange as Graph['xRange'])],
             traces,
-            activeTraces: traces.map(t => t.id)
+            activeTraces: new Set(traces.map(t => t.id))
         };
 
         this.props.onClose([ graph ]);
@@ -311,7 +311,7 @@ class InfoModal
 
                 xRange: [...(this.state.selectedRange as Graph['xRange'])],
                 traces,
-                activeTraces: traces.map(t => t.id)
+                activeTraces: new Set(traces.map(t => t.id))
             };
         });
 
