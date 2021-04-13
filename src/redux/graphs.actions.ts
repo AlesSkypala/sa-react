@@ -5,7 +5,7 @@ import { DataService, DialogService } from '../services';
 import { GraphsState } from './graphs';
 
 const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: string): void => {
-    const selected = graph.traces.filter(t => graph.activeTraces.has(t.id));
+    const selected = graph.traces.filter(t => graph.activeTraces.includes(t.id));
 
     if (selected.length > 1) {
         graph.traces = [
@@ -13,11 +13,13 @@ const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: s
             {
                 id: idPrefix + '::' + Md5.hashStr(selected.map(s => s.id).join(','), false),
                 title: `${titlePrefix} ${selected.length} křivek`,
-                pipeline: {
-                    type: idPrefix,
-                    children: selected.map(s => JSON.parse(JSON.stringify(s.pipeline))),
-                    options: undefined,
-                }
+                style: { width: 1, color: [ 255, 255, 255 ] },
+                features: [],
+                // pipeline: {
+                //     type: idPrefix,
+                //     children: selected.map(s => JSON.parse(JSON.stringify(s.pipeline))),
+                //     options: undefined,
+                // }
             }
         ];
     }
@@ -37,8 +39,10 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
         }
     },
     'sel-unq': (_, graph) => {
-        const hashes = graph.traces.map(t => DataService.getTraceHash(t));
-        const newSel: Set<string> = new Set();
+        // !
+        // TODO:
+        const hashes = graph.traces.map(t => t.id);
+        const newSel: Trace['id'][] = [];
         for (let a = hashes.length - 1; a >= 0; --a) {
             let occured = false;
 
@@ -50,7 +54,7 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
             }
 
             if (!occured) {
-                newSel.add(graph.traces[a].id);
+                newSel.push(graph.traces[a].id);
             }
         }
         graph.activeTraces = newSel;
@@ -59,19 +63,19 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
         DialogService.open(
             TraceSearchModal,
             traces => {
-                if (traces) { graph.activeTraces = new Set(traces); }
+                if (traces) { graph.activeTraces = traces; }
             },
             { traces: graph.traces }
         ),
     'tres': (state) => state.threshold = true,
     'sel-all': (_, graph) => {
-        graph.activeTraces = new Set(graph.traces.map(t => t.id));
+        graph.activeTraces = graph.traces.map(t => t.id);
     },
     'inv': (_, graph) => {
-        graph.activeTraces = new Set(graph.traces.map(t => t.id).filter(t => !graph.activeTraces.has(t)));
+        graph.activeTraces = graph.traces.map(t => t.id).filter(t => !graph.activeTraces.includes(t));
     },
     'des': (_, graph) => {
-        graph.activeTraces.clear();
+        graph.activeTraces = [];
     },
     'del-zero': {
         asynch: async (_, graph) => {
@@ -89,12 +93,12 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
     'avg': (_, graph) => createCommonTrace(graph, 'avg', 'Průměr'),
     'sum': (_, graph) => createCommonTrace(graph, 'sum', 'Průměr'),
     'del-sel': (_, graph) => {
-        if (graph.activeTraces.size <= 0) return;
-        graph.traces = graph.traces.filter(t => !graph.activeTraces.has(t.id));
+        if (graph.activeTraces.length <= 0) return;
+        graph.traces = graph.traces.filter(t => !graph.activeTraces.includes(t.id));
     },
     'del-unsel': (_, graph) => {
-        if (graph.activeTraces.size <= 0) return;
-        graph.traces = graph.traces.filter(t => graph.activeTraces.has(t.id));
+        if (graph.activeTraces.length <= 0) return;
+        graph.traces = graph.traces.filter(t => graph.activeTraces.includes(t.id));
     },
     'sort': (_, graph) => {
         graph.traces = [...graph.traces.sort((a, b) => a > b ? 1 : (a === b ? 0 : -1))];

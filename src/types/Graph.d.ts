@@ -1,5 +1,5 @@
 interface Graph<T extends XType = XType> {
-    id: number;
+    id: string;
 
     // Appearance
     title: string;
@@ -15,7 +15,7 @@ interface Graph<T extends XType = XType> {
 
     // Runtime
     zoom?: [ XTypeTypeMap[T], XTypeTypeMap[T], number, number ];
-    activeTraces: Set<Trace['id']>;
+    activeTraces: Trace['id'][];
 }
 
 interface GraphStyle {
@@ -27,11 +27,11 @@ interface GraphStyle {
 interface Trace {
     id: string;
     title: string;
-
-    style?: TraceStyle;
+    style: TraceStyle;
     
+    features: string[];
     filtering?: 'sg';
-    pipeline: NodeDescriptor;
+    // pipeline: NodeDescriptor;
 }
 
 interface TraceStyle {

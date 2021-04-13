@@ -77,20 +77,11 @@ class TraceList
 
 
     hasLdevMaps = (trace: Trace) => {
-        if (!this.state.sources || trace.pipeline.type !== 'data' ||
-            !(trace.pipeline as DataNodeDescriptor).dataset.id.startsWith('LDEV')) {
-            return;
-        }
-
-        const source = this.state.sources.find(s => s.id === (trace.pipeline as DataNodeDescriptor).dataset.source);
-
-        return source && source.features.indexOf('ldev_map') >= 0;
+        return trace.features.includes('ldev_map');
     }
 
     getLdevId = (trace: Trace) => {
-        const { dataset } = (trace.pipeline as DataNodeDescriptor);
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        return [ dataset.source, dataset.variant! ];
+        return trace.id.split('::').reverse()[0];
     }
 
     onLdevClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -120,7 +111,7 @@ class TraceList
             >
                 <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
                 <span className='btn-select mr-1'>
-                    <FontAwesomeIcon icon={this.props.activeTraces.has(t.id) ? faCheckSquare : faSquare} />
+                    <FontAwesomeIcon icon={this.props.activeTraces.includes(t.id) ? faCheckSquare : faSquare} />
                 </span>
                 <span className='trace-row-title'>{t.title}</span>
                 {

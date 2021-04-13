@@ -6,6 +6,7 @@ import { SliceStateDraft } from './helpers';
 import actions from './graphs.actions';
 import { dataWorker } from '..';
 import deepClone from 'lodash/cloneDeep';
+import * as uid from 'uuid';
 
 const emitRelayoutEvent = debounce((type: StackingType, layout: Layout[]) => AppEvents.onRelayout.emit({ type, layout }), 300);
 
@@ -75,7 +76,7 @@ export const graph_threshold_select = createAsyncThunk(
 
         dispatch(graphsSlice.actions.edit_graph({
             id: payload.id,
-            activeTraces: new Set(graph.traces.filter((t, idx) => fits_thresh[idx]).map(t => t.id))
+            activeTraces: graph.traces.filter((t, idx) => fits_thresh[idx]).map(t => t.id)
         }));
 
         dispatch(graphsSlice.actions.toggle_threshold(false));
@@ -95,12 +96,8 @@ export const graphsSlice = createSlice({
     reducers: {
         add_graphs: (state, action: PayloadAction<Graph | Graph[]>) => {
             const graphs = Array.isArray(action.payload) ? action.payload : [ action.payload ];
-
-            let maxId = state.items.reduce((prev, next) => Math.max(prev, next.id), -1);
-
-            graphs.forEach(g => g.id = ++maxId);
             state.items.push(...graphs);
-            
+
             state.layout = relayout(state);
             emitRelayoutEvent(state.stacking, state.layout);
         },
@@ -125,19 +122,29 @@ export const graphsSlice = createSlice({
             }
         },
 
+        add_traces: (state, action: PayloadAction<{ id: Graph['id'], traces: Trace[] }>) => {
+            const graph = state.items.find(g => g.id === action.payload.id);
+
+            if (graph) {
+                graph.traces.push(...action.payload.traces);
+            }
+        },
+
         toggle_threshold: (state, action: PayloadAction<boolean>) => {
             state.threshold = action.payload;
         },
 
         clone_graph: (state, action: PayloadAction<{ id: Graph['id'], activeOnly?: boolean}>) => {
             const graph = state.items.find(g => g.id === action.payload.id);
-            const maxId = state.items.reduce((prev, next) => Math.max(prev, next.id), -1);
             
             if (graph) {
                 const clone = deepClone(graph);
-                clone.id = maxId + 1;
+                clone.id = generate_graph_id();
 
                 state.items.push(clone);
+
+                state.layout = relayout(state);
+                emitRelayoutEvent(state.stacking, state.layout);
             }
         },
 
@@ -169,11 +176,14 @@ export const graphsSlice = createSlice({
     }
 });
 
+export const generate_graph_id = () => uid.v4();
+
 export type GraphsState = SliceStateDraft<typeof graphsSlice>;
 export const {
     add_graphs, remove_graphs,
     clone_graph, edit_graph,
     set_layout, set_stacking,
+    add_traces,
 } = graphsSlice.actions;
 
 export default graphsSlice.reducer;

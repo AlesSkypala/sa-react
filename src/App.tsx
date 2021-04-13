@@ -11,7 +11,7 @@ import { t } from './locale';
 class App extends React.Component<AppProps, AppState> {
     public state: AppState = {
         locked: true,
-        focused: -1,
+        focused: undefined,
     };
 
     public componentDidMount() {
@@ -52,12 +52,12 @@ class App extends React.Component<AppProps, AppState> {
     focusGraph = (e: React.MouseEvent<HTMLDivElement>): void => {
         const graphId = e.currentTarget.dataset.graph as string;
 
-        this.setState({ focused: Number.parseInt(graphId) });
+        this.setState({ focused: graphId });
     }
 
     public render(): React.ReactNode {
         // const graph = this.props.graphs.find(g => g.id === this.state.focused);
-        const makeAction = (action: TraceAction) => () => this.props.graph_action({ id: this.state.focused, action });
+        const makeAction = (action: TraceAction) => () => this.state.focused && this.props.graph_action({ id: this.state.focused, action });
 
         return (
             <>
@@ -101,7 +101,7 @@ class App extends React.Component<AppProps, AppState> {
 
 export interface AppState {
     locked: boolean;
-    focused: Graph['id'];
+    focused: Graph['id'] | undefined;
 }
 
 const stateProps = (state: RootStore) => ({

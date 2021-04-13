@@ -1,8 +1,8 @@
 import * as Comlink from 'comlink';
-// import { default as DataService } from '../services/data';
+import DataService from '../services/data';
 
 import type { RendererContainer, RenderJob as WasmRenderJob } from '../plotting';
-import type { RenderJob } from '../services/RendererHandle';
+import type { RenderJob, DataJob } from '../services';
 
 let plotting: typeof import('../plotting');
 import('../plotting').then(wasm => plotting = wasm);
@@ -37,7 +37,7 @@ export class DataWorkerProxy {
         }
     }
 
-    public invokeJob(handle: number, job: RenderJob) {
+    public invokeRenderJob(handle: number, job: RenderJob) {
         const renderer = this.renderers[handle];
 
         if (!renderer) throw new Error('Renderer with given handle does not exist.');
@@ -47,6 +47,48 @@ export class DataWorkerProxy {
         applyToWasm(job, wmjob);
 
         renderer.render(wmjob);
+    }
+
+    public async invokeDataJob(job: DataJob): Promise<DataJobResult> {
+        const sources = await DataService.getSources();
+
+        const result: Trace['id'][] = [];
+
+        for (const bulk of job.bulkDownload) {
+            const trace = sources
+                .find(s => s.id === bulk.source)?.datasets
+                .find(ds => ds.id === bulk.id);
+
+            if (!trace) break;
+
+            if (!bulk.variants) {
+                bulk.variants = await DataService.getTraceVariants({ source: bulk.source, id: bulk.id });
+            }
+            
+            const ids = [];
+            for (const variant of bulk.variants) {
+                const trid = `${bulk.source}::${bulk.id}::${variant}`;
+
+                ids.push(trid);
+
+                if (!(trid in this.traces)) {
+                    this.traces[trid] = plotting.create_trace(trid, trace?.xType, trace?.yType);
+                }
+            }
+
+            console.log('a');
+            const data = await DataService.getBulkData(bulk, job.range);
+            plotting.bulkload_segments(new Uint32Array(ids.map(i => this.traces[i])), trace.xType, trace.yType, new Uint8Array(data[1]));
+
+            console.log('b');
+            result.push(...data[0]);
+
+            console.log('c');
+        }
+
+        return {
+            loadedTraces: result,
+        };
     }
 
     public resizeRenderer(handle: number, width: number, height: number) {

@@ -43,7 +43,7 @@ class GraphComponent
             .zoom(...(this.props.zoom ?? [ ...this.props.xRange, 0.0, 1.0 ]));
 
         this.props.traces
-            .filter(t => this.props.activeTraces.has(t.id))
+            .filter(t => this.props.activeTraces.includes(t.id))
             .forEach(t => job.addTrace(0, t.style ?? { width: 1, color: [255, 255, 0] })); // ! // TODO:
 
         await job.invoke();
@@ -287,7 +287,7 @@ class GraphComponent
         }
     }
     private canvasDoubleClick = async () => {
-        const ids = this.props.traces.map(t => t.id).filter(id => this.props.activeTraces.has(id));
+        const ids = this.props.traces.map(t => t.id).filter(id => this.props.activeTraces.includes(id));
         const [ from, to ] = this.props.xRange;
 
         this.props.edit_graph({
@@ -337,7 +337,7 @@ class GraphComponent
                         <Menu id={`graph-${this.props.id}-menu`}>
                             <Submenu label="Clone Chart">
                                 <Item onClick={this.onClone} data='all' data-clone="all">{t('graph.cloneAll')}</Item>
-                                <Item onClick={this.onClone} data='active' data-clone="active" disabled={this.props.activeTraces.size <= 0}>{t('graph.cloneActive')}</Item>
+                                <Item onClick={this.onClone} data='active' data-clone="active" disabled={this.props.activeTraces.length <= 0}>{t('graph.cloneActive')}</Item>
                             </Submenu>
                         </Menu>
                     </MenuPortal>
