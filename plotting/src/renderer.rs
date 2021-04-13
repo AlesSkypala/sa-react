@@ -125,10 +125,7 @@ impl Renderer for OffscreenGraphRenderer {
                 (*self.backend)
                     .borrow_mut()
                     .draw_path(
-                        trace
-                            .handle
-                            .as_ref()
-                            .unwrap()
+                        crate::data::DATA[trace.idx]
                             .get_data_in(job.x_from, job.x_to)
                             .map(|point| chart.backend_coord(point)),
                         &color,

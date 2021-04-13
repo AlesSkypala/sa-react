@@ -39,7 +39,7 @@ export class RenderJob {
     }
 
     public async invoke(): Promise<void> {
-        await dataWorker.invokeJob(this.handle.raw_handle, this);
+        await dataWorker.invokeRenderJob(this.handle.raw_handle, this);
     }
 
     public clear(val: boolean): RenderJob {

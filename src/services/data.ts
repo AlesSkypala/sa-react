@@ -1,11 +1,9 @@
-import { Md5 } from 'ts-md5';
-
 class Data {
     private sources: DataSource[] | undefined = undefined;
 
     private getApiPath = (...segments: string[]) => '/api/v2/' + segments.join('/');
   
-    public getSources = async () => {
+    public getSources = async (): Promise<DataSource[]> => {
         if (this.sources) {
             return this.sources;
         }
@@ -73,20 +71,16 @@ class Data {
         return [
             vars,
             await (await fetch(
-                this.getApiPath('data', trace.source, trace.id),
+                this.getApiPath('data', trace.source, trace.id, 'bulk'),
                 {
                     headers: {
                         'Content-Type': 'application/json'
                     },
                     method: 'post',
-                    body: JSON.stringify({ from: range[0], to: range[0], variants: trace.variants })
+                    body: JSON.stringify({ from: String(range[0]), to: String(range[1]), variants: trace.variants })
                 }
             )).arrayBuffer()
         ];
-    }
-  
-    public getTraceHash = (trace: Trace & { hash?: string }) => {
-        return trace.hash || (trace.hash = Md5.hashStr(JSON.stringify(trace.pipeline), false) as string);
     }
 }
 

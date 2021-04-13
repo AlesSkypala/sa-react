@@ -2,26 +2,26 @@ import * as React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
 import { Button } from 'react-bootstrap';
-
-import './SideMenu.css';
 import TraceList from './TraceList';
 import { connect } from 'react-redux';
 import { ReduxProps, graph_action, edit_graph } from '../redux';
 import { t } from '../locale';
+import './SideMenu.css';
 
 class SideMenuComponent
     extends React.Component<Props, State> {
 
-    onAction = (action: TraceAction) => this.props.graph_action({ id: this.props.selectedGraph?.id ?? -1, action});
+    onAction = (action: TraceAction) => this.props.graph_action({ id: this.props.selectedGraph?.id ?? '', action});
     onTraceSelect = (id: Trace['id']) => {
         if (this.props.selectedGraph) {
 
-            const activeTraces = new Set(this.props.selectedGraph.activeTraces);
+            const activeTraces = this.props.selectedGraph.activeTraces;
 
-            if (activeTraces.has(id)) {
-                activeTraces.delete(id);
+            const idx = activeTraces.indexOf(id);
+            if (idx >= 0) {
+                activeTraces.splice(idx, 1);
             } else {
-                activeTraces.add(id);
+                activeTraces.push(id);
             }
 
             this.props.edit_graph({

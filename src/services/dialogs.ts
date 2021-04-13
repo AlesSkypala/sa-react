@@ -1,4 +1,4 @@
-import { EventEmitter } from '.';
+import EventEmitter from './EventEmitter';
 import { ModalComponent, ModalProps, ConfirmArgs, ConfirmModal } from '../components/Modals';
 
 class Dialogs {

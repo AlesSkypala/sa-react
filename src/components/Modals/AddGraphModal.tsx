@@ -3,13 +3,15 @@ import * as React from 'react';
 import { Button, Col, ModalTitle, Row, Form, Spinner, ButtonGroup, Dropdown } from 'react-bootstrap';
 import { ModalComponent } from '.';
 import { DataService, Deserialization } from '../../services';
+import DataJob from '../../services/DataJob';
 import { default as moment } from 'moment';
 import DateTimeRange from '../DateTimeRange';
 import { Props } from './ModalComponent';
 
 import './AddGraphModal.css';
 import { t } from '../../locale';
-// import { connect } from '../../redux';
+import { generate_graph_id } from '../../redux';
+import graphs from '../../redux/graphs';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
@@ -220,49 +222,50 @@ class InfoModal
         );
     }
 
-    private generateTraces = async (dataset: Dataset): Promise<Trace[]> => {
-        if (dataset.variantCount <= 1) {
-            return [
-                {
-                    id: `${dataset.source}:${dataset.id}`,
+    // private generateTraces = async (dataset: Dataset): Promise<Trace[]> => {
+    //     if (dataset.variantCount <= 1) {
+    //         return [
+    //             {
+    //                 id: `${dataset.source}:${dataset.id}`,
 
-                    title: this.getTitle(this.state.selectedSource?.type ?? '', dataset.id),
-                    pipeline: {
-                        type: 'data',
-                        dataset: {
-                            source: dataset.source,
-                            id: dataset.id,
-                        }
-                    },
-                }
-            ];
-        }
+    //                 title: this.getTitle(this.state.selectedSource?.type ?? '', dataset.id),
+    //                 pipeline: {
+    //                     type: 'data',
+    //                     dataset: {
+    //                         source: dataset.source,
+    //                         id: dataset.id,
+    //                     }
+    //                 },
+    //             }
+    //         ];
+    //     }
 
-        const variants: string[] = await DataService.getTraceVariants(dataset);
+    //     const variants: string[] = await DataService.getTraceVariants(dataset);
 
-        return variants.map(v => (
-            {
-                id: `${dataset.source}:${dataset.id}:${v}`,
-                title: v,
-                pipeline: {
-                    type: 'data',
-                    dataset: {
-                        source: dataset.source,
-                        id: dataset.id,
-                        variant: v,
-                    }
-                },
-            }
-        ));
-    }
+    //     return variants.map(v => (
+    //         { 
+    //             id: `${dataset.source}:${dataset.id}:${v}`,
+    //             title: v,
+    //             pipeline: {
+    //                 type: 'data',
+    //                 dataset: {
+    //                     source: dataset.source,
+    //                     id: dataset.id,
+    //                     variant: v,
+    //                 }
+    //             },
+    //         }
+    //     ));
+    // }
 
-    private singleClicked = async () => {
+    private singleClicked = () => {
         if (!this.state.selectedTraces || this.state.selectedTraces.length <= 0) return;
 
-        const traces = (await Promise.all(this.state.selectedTraces.map(this.generateTraces))).flatMap(t => t);
+        const xRange = [...(this.state.selectedRange as number[])] as Graph['xRange'];
+        const id = generate_graph_id();
 
         const graph: Graph = {
-            id: 0,
+            id,
 
             title:  this.state.title,
             xLabel: this.state.xLabel,
@@ -278,22 +281,30 @@ class InfoModal
                 yLabelSpace: 60,
             },
 
-            xRange: [...(this.state.selectedRange as Graph['xRange'])],
-            traces,
-            activeTraces: new Set(traces.map(t => t.id))
+            xRange,
+            traces: [],
+            activeTraces: [],
         };
 
-        this.props.onClose([ graph ]);
+        this.props.onClose([ [ graph ],
+            [
+                this.state.selectedTraces.reduce((job, t) => job.downloadBulk({ source: t.source, id: t.id }).relate(id), new DataJob(xRange))
+            ]
+        ]);
     }
 
-    private multiClicked = async () => {
+    private multiClicked = () => {
         if (!this.state.selectedTraces || this.state.selectedTraces.length <= 0) return;
 
-        const graphs = this.state.selectedTraces.map(async (dataset): Promise<Graph> => {
-            const traces = await this.generateTraces(dataset);
-            
-            return {
-                id: 0,
+        const graphs: Graph[] = [];
+        const jobs: DataJob[] = [];
+
+        this.state.selectedTraces.forEach(t => {
+            const xRange = [...(this.state.selectedRange as number[])] as Graph['xRange'];
+            const id = generate_graph_id();
+
+            graphs.push({
+                id,
 
                 title:  this.state.title,
                 xLabel: this.state.xLabel,
@@ -309,13 +320,15 @@ class InfoModal
                     yLabelSpace: 60,
                 },
 
-                xRange: [...(this.state.selectedRange as Graph['xRange'])],
-                traces,
-                activeTraces: new Set(traces.map(t => t.id))
-            };
+                xRange,
+                traces: [],
+                activeTraces: [],
+            });
+
+            jobs.push(new DataJob(xRange).downloadBulk({ source: t.source, id: t.id }).relate(id));
         });
 
-        this.props.onClose(await Promise.all(graphs));
+        this.props.onClose([ graphs, jobs ]);
     }
 
     private cancelClicked = (e: React.MouseEvent) => { e.preventDefault(); this.resolve(undefined); }
@@ -361,6 +374,6 @@ interface State {
     selectedRange?: Graph['xRange'],
 }
 
-export type ImportResult = Graph[];
+export type ImportResult = [ Graph[], DataJob[] ];
 
 export default InfoModal;

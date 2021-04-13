@@ -1,7 +1,5 @@
 use wasm_bindgen::prelude::*;
 
-use crate::data::DataPtr;
-
 #[wasm_bindgen]
 pub struct RenderJob {
     pub clear: bool,
@@ -46,13 +44,13 @@ impl RenderJob {
         }
     }
 
-    pub fn add_trace(&mut self, handle: DataPtr, color: &[u8], width: u32) {
+    pub fn add_trace(&mut self, idx: usize, color: &[u8], width: u32) {
         let mut clr = [0u8; 4];
 
         clr.copy_from_slice(color);
 
         self.traces.push(TraceStyle {
-            handle,
+            idx,
             color: clr,
             width,
         });
@@ -72,7 +70,7 @@ impl RenderJob {
 
 // #[wasm_bindgen]
 pub struct TraceStyle {
-    pub handle: DataPtr,
+    pub idx: usize,
     pub color: [u8; 4],
     pub width: u32,
 }

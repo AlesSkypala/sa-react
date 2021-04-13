@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 
 pub type RangePrec = f32;
 
+#[derive(Debug)]
 pub struct TraceData {
     pub id: String,
     pub x_type: String,
@@ -109,6 +110,7 @@ impl TraceData {
     // }
 }
 
+#[derive(Debug)]
 pub struct DataSegment {
     pub from: RangePrec,
     pub to: RangePrec,
@@ -116,6 +118,7 @@ pub struct DataSegment {
     pub data: SegmentState,
 }
 
+#[derive(Debug)]
 pub enum SegmentState {
     Loading,
     Error(Box<dyn Error>),

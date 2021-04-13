@@ -2,7 +2,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as React from 'react';
 import { faPlus, faUnlock, faLock, faGripVertical, faMinusSquare } from '@fortawesome/free-solid-svg-icons';
 import { Dropdown, Nav, NavItem, NavLink } from 'react-bootstrap';
-import { connect,  set_stacking, add_graphs, ReduxProps, remove_graphs } from '../redux';
+import { connect,  set_stacking, add_graphs, ReduxProps, remove_graphs, invoke_job } from '../redux';
 import { DialogService } from '../services';
 import { AddGraphModal, ConfirmModal } from './Modals';
 import { t } from '../locale';
@@ -15,7 +15,12 @@ class HeaderComponent
     addGraph = () => 
         DialogService.open(
             AddGraphModal,
-            res => res && this.props.add_graphs(res),
+            res => {
+                if (res) {
+                    this.props.add_graphs(res[0]);
+                    res[1].forEach(j => this.props.invoke_job(j));
+                }
+            },
             {
                 ranges: this.props.graphs.reduce((v, next) => {
                     const [ from, to ] = next.xRange;
@@ -96,6 +101,7 @@ const dispatchProps = {
     set_stacking,
     add_graphs,
     remove_graphs,
+    invoke_job,
 };
 
 const storeProps = (store: RootStore) => ({
