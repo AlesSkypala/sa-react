@@ -3,7 +3,7 @@ import { AutoSizer, List, ListRowProps } from 'react-virtualized';
 import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckSquare, faHdd, faSquare } from '@fortawesome/free-solid-svg-icons';
+import { faCheckSquare, faSitemap, faSquare } from '@fortawesome/free-solid-svg-icons';
 
 import './TraceList.css';
 // import { withHotKeys } from 'react-hotkeys';
@@ -103,7 +103,12 @@ class TraceList
                 <span className='btn-select mr-1'>
                     <FontAwesomeIcon icon={this.props.activeTraces.indexOf(t.id) >= 0 ? faCheckSquare : faSquare} />
                 </span>
-                <span className='trace-row-title'>{t.title}</span> {this.hasLdevMaps(t) ? (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faHdd} /></button>) : undefined}
+                <span className='trace-row-title'>{t.title}</span>
+                {
+                    this.hasLdevMaps(t)
+                        ? (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>)
+                        : undefined
+                }
             </li>
         );
     }
