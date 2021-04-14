@@ -5,6 +5,7 @@ const en_lang = {
 
     header: {
         addGraph: 'Add a graph',
+        minimizeGraphs: 'Minimize all graphs',
         removeGraphs: 'Remove all graphs',
         toggleLock: 'Lock/unlock the layout',
     },

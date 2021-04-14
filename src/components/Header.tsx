@@ -1,6 +1,7 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as React from 'react';
 import { faPlus, faUnlock, faLock, faGripVertical, faMinusSquare } from '@fortawesome/free-solid-svg-icons';
+import { trashAll } from '../assets/icons/trash-all';
 import { Dropdown, Nav, NavItem, NavLink } from 'react-bootstrap';
 import { connect,  set_stacking, add_graphs, ReduxProps, remove_graphs } from '../redux';
 import { DialogService } from '../services';
@@ -12,7 +13,7 @@ import './Header.css';
 class HeaderComponent
     extends React.Component<Props, State> {
 
-    addGraph = () => 
+    addGraph = () =>
         DialogService.open(
             AddGraphModal,
             res => res && this.props.add_graphs(res),
@@ -32,6 +33,9 @@ class HeaderComponent
     onSelectLayout = (key: unknown) => {
         this.props.set_stacking(key as StackingType);
     };
+
+    minimizeAll = () =>
+        this.props.graphIds.length > 0 && alert('society. we live in one');
 
     clearAll = () =>
         this.props.graphIds.length > 0 && DialogService.open(
@@ -63,14 +67,18 @@ class HeaderComponent
                                 </NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink title={t('header.removeGraphs')} onClick={this.clearAll} disabled={this.props.graphIds.length <= 0}>
+                                <NavLink title={t('header.minimizeGraphs')} onClick={this.minimizeAll} disabled={this.props.graphIds.length <= 0}>
                                     <FontAwesomeIcon color='white' icon={faMinusSquare} />
+                                </NavLink>
+                            </NavItem>
+                            <NavItem>
+                                <NavLink title={t('header.removeGraphs')} onClick={this.clearAll} disabled={this.props.graphIds.length <= 0}>
+                                    <FontAwesomeIcon color='white' icon={trashAll} />
                                 </NavLink>
                             </NavItem>
                             <NavItem>
                                 <NavLink title={t('header.toggleLock')} onClick={this.props.onToggleLock}>
                                     <FontAwesomeIcon color='white' icon={this.props.layoutUnlocked ? faUnlock : faLock} />
-                                    
                                 </NavLink>
                             </NavItem>
                             <Dropdown as={NavItem} onSelect={this.onSelectLayout}>
