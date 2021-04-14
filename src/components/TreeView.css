@@ -1,21 +1,23 @@
+.tree-view {
+    --connection-color: #333;
+}
+
 ul.tree-view > li {
     list-style-type: none;
 }
 
 ul.tree-view ul.tree-view {
-    padding-inline-start: 30px;
-    margin-inline-start: 9px;
-    border-left: 1px dashed black;
+    padding-inline-start: 40px;
 }
 
-ul.tree-view ul.tree-view > li > .tree-view-connection {
+ul.tree-view ul.tree-view > li > .tree-view-connection-horizontal {
     display: inline-block;
     width: 0;
 }
 
-ul.tree-view ul.tree-view > li > .tree-view-connection::before {
+ul.tree-view ul.tree-view > li > .tree-view-connection-horizontal::after {
     content: '';
-    border-bottom: 1px dashed black;
+    border-bottom: 1px dashed var(--connection-color);
 
     display: inline-block;
     width: 25px;
@@ -24,4 +26,28 @@ ul.tree-view ul.tree-view > li > .tree-view-connection::before {
     position: relative;
     right: 30px;
     vertical-align: middle;
+}
+
+ul.tree-view ul.tree-view > li:not(:last-of-type) {
+    margin-inline-start: -31px;
+    padding-inline-start: 30px;
+    border-left: 1px dashed var(--connection-color);
+}
+
+ul.tree-view ul.tree-view > li > .tree-view-connection-vertical {
+    display: inline-block;
+    width: 0;
+}
+
+ul.tree-view ul.tree-view > li:last-of-type > .tree-view-connection-vertical::before {
+    content: '';
+    border-left: 1px dashed var(--connection-color);
+
+    display: inline-block;
+    width: 0;
+    height: 0.5em;
+
+    position: relative;
+    right: 31px;
+    bottom: 0.5em;
 }
