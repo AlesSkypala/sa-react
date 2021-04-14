@@ -9,7 +9,7 @@ import('../plotting').then(wasm => plotting = wasm);
 
 export class DataWorkerProxy {
     private availableRendererHandle = 0;
-    private renderers: { [key: number]: RendererContainer } = [];
+    private renderers: { [key: number]: RendererContainer } = {};
     private traces: { [key: string]: number } = {};
 
     public createRenderer(canvas: OffscreenCanvas) {

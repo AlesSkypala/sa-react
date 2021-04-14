@@ -83,10 +83,10 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
 
             const zero = await dataWorker.is_zero(graph.xRange[0], graph.xRange[1], ...ids) as boolean[];
 
-            return new Set(ids.filter((v, idx) => !zero[idx]));
+            return ids.filter((v, idx) => !zero[idx]);
         },
-        post: (_, graph, data: Set<Trace['id']>) => {
-            graph.traces = graph.traces.filter(t => data.has(t.id));
+        post: (_, graph, data: Trace['id'][]) => {
+            graph.traces = graph.traces.filter(t => data.includes(t.id));
         }
     },
 
