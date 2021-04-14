@@ -1,4 +1,8 @@
+use std::convert::TryInto;
+
 use wasm_bindgen::prelude::*;
+
+use crate::data::DataIdx;
 
 #[wasm_bindgen]
 pub struct RenderJob {
@@ -44,14 +48,10 @@ impl RenderJob {
         }
     }
 
-    pub fn add_trace(&mut self, idx: usize, color: &[u8], width: u32) {
-        let mut clr = [0u8; 4];
-
-        clr.copy_from_slice(color);
-
+    pub fn add_trace(&mut self, idx: DataIdx, color: &[u8], width: u32) {
         self.traces.push(TraceStyle {
             idx,
-            color: clr,
+            color: color.try_into().unwrap(),
             width,
         });
     }
@@ -71,6 +71,6 @@ impl RenderJob {
 // #[wasm_bindgen]
 pub struct TraceStyle {
     pub idx: usize,
-    pub color: [u8; 4],
+    pub color: [u8; 3],
     pub width: u32,
 }

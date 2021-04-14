@@ -38,15 +38,18 @@ class GraphComponent
         
         this.setState({ rendering: true });
 
+        const n = performance.now();
         const job = this.renderer.createJob(this.props.xType)
             .clear(true)
             .zoom(...(this.props.zoom ?? [ ...this.props.xRange, 0.0, 1.0 ]));
 
         this.props.traces
             .filter(t => this.props.activeTraces.includes(t.id))
-            .forEach(t => job.addTrace(0, t.style ?? { width: 1, color: [255, 255, 0] })); // ! // TODO:
+            .forEach(t => job.addTrace(t.id, t.style));
 
         await job.invoke();
+        const d = performance.now() - n;
+        console.log(`render: ${d} ms`);
 
         this.setState({ rendering: false });
     }
@@ -63,15 +66,11 @@ class GraphComponent
             // Bind offscreen renderer on another thread
             const offscreen = canvas.transferControlToOffscreen();
 
-            this.renderer = await RendererHandle.create(transfer(offscreen, [ offscreen] ));
-    
+            this.renderer = await RendererHandle.create(transfer(offscreen, [ offscreen ] ));
             await this.updateSize();
         } else {
             throw new Error('Underlying canvas element was not initialized for this graph.');
         }
-
-        // Load traces
-        this.componentDidUpdate({ ...this.props, traces: [] });
     }
 
     onLayoutChange = async () => {
@@ -90,28 +89,16 @@ class GraphComponent
 
     public async componentDidUpdate(prevProps: Props) {
         if (this.props.traces !== prevProps.traces) {
-            // const newTraces: Trace[] = this.props.traces.filter(t => prevProps.traces.indexOf(t) < 0);
-            // const removedTraces: Trace[] = prevProps.traces.filter(t => this.props.traces.indexOf(t) < 0);
-    
-            // if (removedTraces.length > 0) {
-            //     this.traces = this.traces.filter(d => removedTraces.findIndex(t => t.id === d.id) < 0);
+            if (this.props.traces.length > 0 && this.props.zoom === undefined) {
+                const ids = this.props.traces.map(t => t.id).filter(id => this.props.activeTraces.includes(id));
+                const [ from, to ] = this.props.xRange;
+        
+                this.props.edit_graph({
+                    id: this.props.id,
+                    zoom: await dataWorker.recommend_extents(from, to, ...ids)
+                });
+            }
 
-            //     newTraces.length <= 0 && this.redrawGraph();
-            // }
-    
-            // if (newTraces.length > 0) {
-            //     this.setState({ rendering: true });
-            //     const loaded = await plotWorker.getTraceData(this.props.xRange[0], this.props.xRange[1], newTraces);
-            //     this.traces.push(...loaded);
-
-            //     // Redraw lines if initial zoom exists, otherwise recommend an initial zoom
-            //     if (this.props.zoom) {
-            //         await this.redrawGraph();
-            //     } else {
-            //         const { x_start, x_end, y_start, y_end } = await plotWorker.getExtentRecommendation(this.traces.map(l => l.ptr));
-            //         this.props.edit_graph({ id: this.props.id, zoom: [ x_start, x_end, y_start, y_end ] });
-            //     }
-            // }
             await this.redrawGraph();
         }
 
@@ -322,7 +309,7 @@ class GraphComponent
                     {traces.length <= 0 && (<div>{t('graph.noTraces')}</div>)}
                     <canvas
                         ref={this.canvasRef}
-                        hidden={traces.length <= 0}
+                        // hidden={traces.length <= 0}
                     />
                     <canvas
                         ref={this.guiCanvasRef}

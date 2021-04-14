@@ -1,7 +1,7 @@
 import { Md5 } from 'ts-md5';
 import { dataWorker } from '..';
 import { TraceSearchModal } from '../components/Modals';
-import { DataService, DialogService } from '../services';
+import { DialogService } from '../services';
 import { GraphsState } from './graphs';
 
 const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: string): void => {

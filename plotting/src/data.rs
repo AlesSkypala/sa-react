@@ -89,7 +89,6 @@ pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box
             row_idx += 1;
         }
 
-
         for (d, trace) in out.drain(0..).zip(traces) {
             trace.push_segment(
                     crate::structs::DataSegment {

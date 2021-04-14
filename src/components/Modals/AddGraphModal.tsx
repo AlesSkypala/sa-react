@@ -11,7 +11,6 @@ import { Props } from './ModalComponent';
 import './AddGraphModal.css';
 import { t } from '../../locale';
 import { generate_graph_id } from '../../redux';
-import graphs from '../../redux/graphs';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 

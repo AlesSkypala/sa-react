@@ -7,15 +7,6 @@ import type { RenderJob, DataJob } from '../services';
 let plotting: typeof import('../plotting');
 import('../plotting').then(wasm => plotting = wasm);
 
-const applyToWasm = (from: RenderJob, to: WasmRenderJob) => {
-    to.clear = true;
-    Object.assign(to, from.content);
-
-    for (const trace of from.traces) {
-        to.add_trace(trace.handle, new Uint8Array(trace.color), trace.width);
-    }
-};
-
 export class DataWorkerProxy {
     private availableRendererHandle = 0;
     private renderers: { [key: number]: RendererContainer } = [];
@@ -28,6 +19,15 @@ export class DataWorkerProxy {
         this.renderers[handle] = renderer;
 
         return handle;
+    }
+
+    private applyToWasm = (from: RenderJob, to: WasmRenderJob) => {
+        to.clear = true;
+        Object.assign(to, from.content);
+    
+        for (const trace of from.traces) {
+            to.add_trace(this.traces[trace.id], new Uint8Array(trace.color), trace.width);
+        }
     }
 
     public disposeRenderer(handle: number) {
@@ -43,9 +43,7 @@ export class DataWorkerProxy {
         if (!renderer) throw new Error('Renderer with given handle does not exist.');
 
         const wmjob = new plotting.RenderJob(job.x_type);
-
-        applyToWasm(job, wmjob);
-
+        this.applyToWasm(job, wmjob);
         renderer.render(wmjob);
     }
 
@@ -76,14 +74,10 @@ export class DataWorkerProxy {
                 }
             }
 
-            console.log('a');
             const data = await DataService.getBulkData(bulk, job.range);
             plotting.bulkload_segments(new Uint32Array(ids.map(i => this.traces[i])), trace.xType, trace.yType, new Uint8Array(data[1]));
 
-            console.log('b');
-            result.push(...data[0]);
-
-            console.log('c');
+            result.push(...ids);
         }
 
         return {

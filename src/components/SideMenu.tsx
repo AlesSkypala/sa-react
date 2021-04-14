@@ -15,7 +15,7 @@ class SideMenuComponent
     onTraceSelect = (id: Trace['id']) => {
         if (this.props.selectedGraph) {
 
-            const activeTraces = this.props.selectedGraph.activeTraces;
+            const activeTraces = [ ...this.props.selectedGraph.activeTraces ];
 
             const idx = activeTraces.indexOf(id);
             if (idx >= 0) {
