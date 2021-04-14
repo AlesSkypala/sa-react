@@ -1,0 +1,27 @@
+ul.tree-view > li {
+    list-style-type: none;
+}
+
+ul.tree-view ul.tree-view {
+    padding-inline-start: 30px;
+    margin-inline-start: 9px;
+    border-left: 1px dashed black;
+}
+
+ul.tree-view ul.tree-view > li > .tree-view-connection {
+    display: inline-block;
+    width: 0;
+}
+
+ul.tree-view ul.tree-view > li > .tree-view-connection::before {
+    content: '';
+    border-bottom: 1px dashed black;
+
+    display: inline-block;
+    width: 25px;
+    height: 0px;
+
+    position: relative;
+    right: 30px;
+    vertical-align: middle;
+}

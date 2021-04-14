@@ -4,8 +4,7 @@ import { Button, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
 import { t } from '../../locale';
 import { DataService } from '../../services';
-
-import './LdevMapModal.css';
+import { TreeView, TreeItem } from '../TreeView';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEyeDropper, faServer, faDesktop, faMicrochip, faArrowsAltH, faDatabase, faAngleDoubleRight, faChartPie, IconDefinition } from '@fortawesome/free-solid-svg-icons';
@@ -49,40 +48,40 @@ class LdevMapModal
         // TODO: handle error
 
         return (
-            <ul className="modal-ldev-map">
-                <li>{icon(faDatabase)} LDEV: {ldevInfo.id} [{ldevInfo.name}]</li>
-                <li>{icon(faArrowsAltH)} SIZE: {ldevInfo.size}</li>
-                <li>{icon(faMicrochip)} MPU: {ldevInfo.mpu}</li>
-                <li>{icon(faChartPie)} POOL: {ldevInfo.poolName}</li>
-                <li>
+            <TreeView className="modal-ldev-map">
+                <TreeItem>{icon(faDatabase)} LDEV: {ldevInfo.id} [{ldevInfo.name}]</TreeItem>
+                <TreeItem>{icon(faArrowsAltH)} SIZE: {ldevInfo.size}</TreeItem>
+                <TreeItem>{icon(faMicrochip)} MPU: {ldevInfo.mpu}</TreeItem>
+                <TreeItem>{icon(faChartPie)} POOL: {ldevInfo.poolName}</TreeItem>
+                <TreeItem>
                     {icon(faDesktop)}
                     HOST:
-                    <ul>
+                    <TreeView>
                         {this.getHostgroups().map(hostgroup => (
-                            <li key={hostgroup}>
+                            <TreeItem key={hostgroup}>
                                 {icon(faServer)}
                                 {hostgroup}
-                                <ul>
+                                <TreeView>
                                     {this.getPorts(hostgroup).map(hostport => (
-                                        <li key={hostport.port}>
+                                        <TreeItem key={hostport.port}>
                                             {icon(faEyeDropper)}
                                             {hostport.port}
-                                            <ul>
+                                            <TreeView>
                                                 {this.getWwns(hostport).map(wwn => (
-                                                    <li key={wwn.nickname}>
+                                                    <TreeItem key={wwn.nickname}>
                                                         {icon(faAngleDoubleRight)}
                                                         {wwn.wwn} [{wwn.nickname}]
-                                                    </li>
+                                                    </TreeItem>
                                                 ))}
-                                            </ul>
-                                        </li>
+                                            </TreeView>
+                                        </TreeItem>
                                     ))}
-                                </ul>
-                            </li>
+                                </TreeView>
+                            </TreeItem>
                         ))}
-                    </ul>
-                </li>
-            </ul>
+                    </TreeView>
+                </TreeItem>
+            </TreeView>
         );
     }
 
