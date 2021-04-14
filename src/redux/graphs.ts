@@ -122,11 +122,15 @@ export const graphsSlice = createSlice({
             }
         },
 
-        add_traces: (state, action: PayloadAction<{ id: Graph['id'], traces: Trace[] }>) => {
+        add_traces: (state, action: PayloadAction<{ id: Graph['id'], traces: Trace[], active?: true }>) => {
             const graph = state.items.find(g => g.id === action.payload.id);
 
             if (graph) {
                 graph.traces.push(...action.payload.traces);
+
+                if (action.payload.active) {
+                    graph.activeTraces.push(...action.payload.traces.map(t => t.id));
+                }
             }
         },
 

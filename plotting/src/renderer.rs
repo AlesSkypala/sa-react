@@ -69,16 +69,16 @@ impl OffscreenGraphRenderer {
         if let Option::Some(root) = &self.root {
             ChartBuilder::on(&root)
                 .margin(job.margin)
-                // .x_label_area_size(self.x_label_space)
-                // .y_label_area_size(self.y_label_space)
+                .x_label_area_size(32)
+                .y_label_area_size(60)
                 .build_cartesian_2d(
                     Range {
                         start: job.x_from,
                         end: job.x_to,
                     },
                     Range {
-                        start: job.x_from,
-                        end: job.x_to,
+                        start: job.y_from,
+                        end: job.y_to,
                     },
                 )
                 .expect("Failed to build range.")
@@ -139,7 +139,7 @@ impl Renderer for OffscreenGraphRenderer {
         (*self.backend).borrow_mut().set_size(width, height);
 
         if let Option::Some(_) = &self.root {
-            self.root = Option::Some(self.root.take().unwrap().shrink((0, 0), (width, height)));
+            self.root = Option::Some(self.root.take().unwrap().shrink((0, 0), (width + 1, height + 1)));
         }
     }
 }

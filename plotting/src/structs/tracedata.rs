@@ -137,7 +137,7 @@ impl SegmentState {
 
 impl DataSegment {
     pub fn contains(&self, point: RangePrec) -> bool {
-        self.from <= point && self.to > point
+        self.from <= point && self.to >= point
     }
 
     pub fn intersects(&self, from: RangePrec, to: RangePrec) -> bool {

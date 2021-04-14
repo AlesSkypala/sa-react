@@ -3,6 +3,8 @@ import { SliceStateDraft } from './helpers';
 import type { default as DataJob } from '../services/DataJob';
 import { add_traces } from './graphs';
 
+const genColor = () => [0, 0, 0].map(() => Math.floor(255 * Math.random())) as [ number, number, number ];
+
 export const invoke_job = createAsyncThunk(
     'jobs/invoke',
     async (job: DataJob, { dispatch }) => {
@@ -26,11 +28,11 @@ export const invoke_job = createAsyncThunk(
             const traces: Trace[] | undefined = result.loadedTraces?.map(t => ({
                 id: t,
                 title: t.split('::').reverse()[0],
-                style: { width: 1, color: [0, 0, 0] },
+                style: { width: 1, color: genColor() },
                 features: [],
             }));
 
-            traces && job.relatedGraphs.forEach(g => dispatch(add_traces({ id: g, traces })));
+            traces && job.relatedGraphs.forEach(g => dispatch(add_traces({ id: g, traces, active: true })));
         }
     }
 );

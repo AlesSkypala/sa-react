@@ -32,7 +32,7 @@ class RendererHandle {
 export class RenderJob {
 
     public content: Partial<Omit<WasmRenderJob, 'free'>> = {};
-    public traces: ({ handle: number } & TraceStyle)[] = [];
+    public traces: (Pick<Trace, 'id'> & TraceStyle)[] = [];
 
     constructor(private handle: RendererHandle, public x_type: string) {
 
@@ -58,8 +58,8 @@ export class RenderJob {
         return this;
     }
 
-    public addTrace(handle: number, style: TraceStyle) {
-        this.traces.push({ ...style, handle });
+    public addTrace(id: string, style: TraceStyle) {
+        this.traces.push({ ...style, id });
         return this;
     }
 }
