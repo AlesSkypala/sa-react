@@ -38,7 +38,6 @@ class GraphComponent
         
         this.setState({ rendering: true });
 
-        const n = performance.now();
         const job = this.renderer.createJob(this.props.xType)
             .clear(true)
             .zoom(...(this.props.zoom ?? [ ...this.props.xRange, 0.0, 1.0 ]));
@@ -48,8 +47,6 @@ class GraphComponent
             .forEach(t => job.addTrace(t.id, t.style));
 
         await job.invoke();
-        const d = performance.now() - n;
-        console.log(`render: ${d} ms`);
 
         this.setState({ rendering: false });
     }
@@ -88,6 +85,8 @@ class GraphComponent
     }
 
     public async componentDidUpdate(prevProps: Props) {
+        let redraw: boolean | undefined = undefined;
+
         if (this.props.traces !== prevProps.traces) {
             if (this.props.traces.length > 0 && this.props.zoom === undefined) {
                 const ids = this.props.traces.map(t => t.id).filter(id => this.props.activeTraces.includes(id));
@@ -97,18 +96,24 @@ class GraphComponent
                     id: this.props.id,
                     zoom: await dataWorker.recommend_extents(from, to, ...ids)
                 });
+                redraw = false;
+            } else {
+                redraw = true;
             }
-
-            await this.redrawGraph();
         }
 
         if (this.props.layoutLocked !== prevProps.layoutLocked && this.props.layoutLocked) {
             await this.updateSize();
+            redraw = false;
         }
 
         if (this.props.zoom !== prevProps.zoom && this.props.zoom && this.renderer) {
-            await this.redrawGraph();
+            if (redraw === undefined) redraw = true;
         } else if (this.props.activeTraces !== prevProps.activeTraces) {
+            if (redraw === undefined) redraw = true;
+        }
+
+        if (redraw) {
             await this.redrawGraph();
         }
     }
@@ -277,9 +282,11 @@ class GraphComponent
         const ids = this.props.traces.map(t => t.id).filter(id => this.props.activeTraces.includes(id));
         const [ from, to ] = this.props.xRange;
 
+        const zoom = await dataWorker.recommend_extents(from, to, ...ids);
+
         this.props.edit_graph({
             id: this.props.id,
-            zoom: await dataWorker.recommend_extents(from, to, ...ids)
+            zoom
         });
     }
     private onClone = ({ data }: ItemParams<unknown, 'active' | 'all'>) => {

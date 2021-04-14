@@ -82,6 +82,18 @@ class Data {
             )).arrayBuffer()
         ];
     }
+
+    public hasLdevMap = (id: Trace['id']): boolean => {
+        const split = id.split('::');
+        if (!this.sources || split.length < 3) return false;
+        const [ sourceId, setid ] = split;
+
+        const source = this.sources.find(s => s.id === sourceId);
+        const set = source?.datasets.find(ds => ds.id === setid);
+
+        return (source?.features.includes('ldev_map') ?? false) && (set?.id.startsWith('LDEV_') ?? false);
+
+    }
 }
 
 const _instance = new Data();

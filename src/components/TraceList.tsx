@@ -61,11 +61,12 @@ class TraceList
 
 
     hasLdevMaps = (trace: Trace) => {
-        return trace.features.includes('ldev_map');
+        return DataService.hasLdevMap(trace.id); // trace.features.includes('ldev_map');
     }
 
     getLdevId = (trace: Trace) => {
-        return trace.id.split('::').reverse()[0];
+        const split = trace.id.split('::');
+        return { source: split[0], ldev: split[2] };
     }
 
     onLdevClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -74,9 +75,8 @@ class TraceList
 
         if (trace) {
             const ldevId = this.getLdevId(trace);
-
             // eslint-disable-next-line @typescript-eslint/no-empty-function
-            DialogService.open(LdevMapModal, () => { }, { source: ldevId[0], ldev: ldevId[1] });
+            DialogService.open(LdevMapModal, () => { }, ldevId);
         }
     }
 
