@@ -8,6 +8,22 @@ import { faCheckSquare, faSitemap, faSquare } from '@fortawesome/free-solid-svg-
 import './TraceList.css';
 // import { withHotKeys } from 'react-hotkeys';
 
+// TODO only for testing, remove later
+function randomColor() {
+    let color = '#';
+    const chars = '0123456789abcdef';
+
+    for (let i = 0; i < 6; i++) {
+        color += chars[ Math.floor(Math.random() * chars.length) ];
+    }
+
+    return color;
+}
+
+function colorToHex(color: [number, number, number]) {
+    return '#' + color.map(c => c.toString(16)).join('');
+}
+
 const buttons: { label: string, action: TraceAction }[][] = [
     [
         { label: 'Filter', action: 'filter' },
@@ -92,6 +108,8 @@ class TraceList
     rowRenderer = (props: ListRowProps) => {
         const t = this.props.traces[props.index];
 
+        const color = t.style ? colorToHex(t.style.color) : randomColor();
+
         return (
             <li
                 key={props.key}
@@ -100,6 +118,7 @@ class TraceList
                 className={`trace-row ${this.state.active === t.id ? 'active' : ''}`}
                 onClick={this.traceClicked}
             >
+                <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
                 <span className='btn-select mr-1'>
                     <FontAwesomeIcon icon={this.props.activeTraces.indexOf(t.id) >= 0 ? faCheckSquare : faSquare} />
                 </span>
