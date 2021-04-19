@@ -4,25 +4,11 @@ import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckSquare, faSitemap, faSquare } from '@fortawesome/free-solid-svg-icons';
+import { colorToHex } from '../utils/color';
 
 import './TraceList.css';
 // import { withHotKeys } from 'react-hotkeys';
 
-// TODO only for testing, remove later
-function randomColor() {
-    let color = '#';
-    const chars = '0123456789abcdef';
-
-    for (let i = 0; i < 6; i++) {
-        color += chars[ Math.floor(Math.random() * chars.length) ];
-    }
-
-    return color;
-}
-
-function colorToHex(color: [number, number, number]) {
-    return '#' + color.map(c => c.toString(16)).join('');
-}
 
 const buttons: { label: string, action: TraceAction }[][] = [
     [
@@ -98,8 +84,7 @@ class TraceList
 
     rowRenderer = (props: ListRowProps) => {
         const t = this.props.traces[props.index];
-
-        const color = t.style ? colorToHex(t.style.color) : randomColor();
+        const color = colorToHex(t.style.color);
 
         return (
             <li
