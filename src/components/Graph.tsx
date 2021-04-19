@@ -94,7 +94,7 @@ class GraphComponent
         
                 this.props.edit_graph({
                     id: this.props.id,
-                    zoom: await dataWorker.recommend_extents(from, to, ...ids)
+                    zoom: await dataWorker.recommend_extents(from, to, ids)
                 });
                 redraw = false;
             } else {
@@ -282,7 +282,7 @@ class GraphComponent
         const ids = this.props.traces.map(t => t.id).filter(id => this.props.activeTraces.includes(id));
         const [ from, to ] = this.props.xRange;
 
-        const zoom = await dataWorker.recommend_extents(from, to, ...ids);
+        const zoom = await dataWorker.recommend_extents(from, to, ids);
 
         this.props.edit_graph({
             id: this.props.id,

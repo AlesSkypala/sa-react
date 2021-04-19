@@ -81,7 +81,7 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
         asynch: async (_, graph) => {
             const ids = graph.traces.map(t => t.id);
 
-            const zero = await dataWorker.is_zero(graph.xRange[0], graph.xRange[1], ...ids) as boolean[];
+            const zero = await dataWorker.is_zero(graph.xRange[0], graph.xRange[1], ids) as boolean[];
 
             return ids.filter((v, idx) => !zero[idx]);
         },

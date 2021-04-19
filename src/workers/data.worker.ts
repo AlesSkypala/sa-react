@@ -93,15 +93,15 @@ export class DataWorkerProxy {
         renderer.size_changed(width, height);
     }
 
-    public threshold(from: number, to: number, val: number, ...traces: Trace['id'][]): boolean[] {
+    public threshold(from: number, to: number, val: number, traces: Trace['id'][]): boolean[] {
         return traces.map(t => plotting.treshold(this.traces[t], from, to, val));
     }
 
-    public is_zero(from: number, to: number, ...traces: Trace['id'][]): boolean[] {
+    public is_zero(from: number, to: number, traces: Trace['id'][]): boolean[] {
         return traces.map(t => plotting.is_zero(this.traces[t], from, to));
     }
 
-    public recommend_extents(from: number, to: number, ...traces: Trace['id'][]): [ number, number, number, number ] {
+    public recommend_extents(from: number, to: number, traces: Trace['id'][]): [ number, number, number, number ] {
         return traces.map(t => plotting.get_extents(this.traces[t], from, to))
             .reduce(
                 (prev, cur) => [
