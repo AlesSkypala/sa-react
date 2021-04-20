@@ -29,7 +29,7 @@ interface Trace {
     title: string;
     style: TraceStyle;
     
-    features: string[];
+    // features: string[];
     filtering?: 'sg';
     // pipeline: NodeDescriptor;
 }

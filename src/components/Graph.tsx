@@ -1,9 +1,9 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faWrench } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faWrench, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import * as React from 'react';
 import debounce from 'lodash.debounce';
 import { transfer } from 'comlink';
-import { Spinner } from 'react-bootstrap';
+import { Button, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
 import { Menu, useContextMenu, Submenu, Item, ItemParams } from 'react-contexify';
 
 import './Graph.css';
@@ -15,6 +15,7 @@ import { ConfirmModal, GraphEditModal } from './Modals';
 import { t } from '../locale';
 import RendererHandle from '../services/RendererHandle';
 import { dataWorker } from '..';
+import { PendingDataJob } from '../redux/jobs';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {
     const elem = document.getElementById('context-menu');
@@ -308,8 +309,42 @@ class GraphComponent
                 <div className='text-center position-relative'>
                     <h4 className='mt-1 w-100 text-center'>{title}</h4>
                     <div style={{ right: 0, top: 0, bottom: 0 }} className='d-flex align-items-center position-absolute buttons'>
-                        <button className='btn btn-sm' onClick={this.onEdit}><FontAwesomeIcon icon={faWrench} /></button>
-                        <button className='btn btn-sm' onClick={this.onRemove}><FontAwesomeIcon icon={faTrash} /></button>
+                        {this.props.jobs.length > 0 && (
+                            <OverlayTrigger
+                                trigger={[ 'focus', 'hover' ]}
+                                placement='left'
+                                container={document.getElementById('context-menu')}
+
+                                overlay={(
+                                    <Tooltip id={`load-tooltip-${this.props.id}`}>
+                                        {t('graph.pendingJobs', { count: this.props.jobs.length })}
+                                    </Tooltip>
+                                )}
+                            >
+                                <Button size='sm' variant='link' className='opaque'>
+                                    <Spinner animation='border' variant='primary' size='sm' />
+                                </Button>
+                            </OverlayTrigger>
+                        )}
+                        {this.props.failedJobs.length > 0 && (
+                            <OverlayTrigger
+                                trigger={[ 'focus', 'hover' ]}
+                                placement='left'
+                                container={document.getElementById('context-menu')}
+
+                                overlay={(
+                                    <Tooltip id={`load-tooltip-${this.props.id}`}>
+                                        {t('graph.failedJobs', { count: this.props.failedJobs.length })}
+                                    </Tooltip>
+                                )}
+                            >
+                                <Button size='sm' variant='link' className='opaque'>
+                                    <FontAwesomeIcon icon={faExclamationTriangle} color='red' />
+                                </Button>
+                            </OverlayTrigger>
+                        )}
+                        <Button size='sm' variant='none' onClick={this.onEdit}>  <FontAwesomeIcon icon={faWrench} /></Button>
+                        <Button size='sm' variant='none' onClick={this.onRemove}><FontAwesomeIcon icon={faTrash}  /></Button>
                     </div>
                 </div>
                 <div className='graph-content'>
@@ -335,19 +370,24 @@ class GraphComponent
                             </Submenu>
                         </Menu>
                     </MenuPortal>
+                    {!this.props.layoutLocked ? (
+                        <div className='graph-resize-overlay'><h3>{t('graph.redrawNotice')}...</h3></div>
+                    ) : (this.state.rendering && (
+                        <div className='graph-resize-overlay'><Spinner animation='border' variant='light' /></div>
+                    ))}
                 </div>
-                {!this.props.layoutLocked ? (
-                    <div className='graph-resize-overlay'><h3>{t('graph.redrawNotice')}...</h3></div>
-                ) : (this.state.rendering && (
-                    <div className='graph-resize-overlay'><Spinner animation='border' variant='light' /></div>
-                ))}
             </div>
         );
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({ ...(state.graphs.items.find(g => g.id === props.id)!), threshold: state.graphs.threshold });
+const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    ...(state.graphs.items.find(g => g.id === props.id)!),
+    threshold: state.graphs.threshold,
+    jobs: Object.values(state.jobs.items).filter(j => j.relatedGraphs.includes(props.id) && j.state === 'pending'),
+    failedJobs: Object.values(state.jobs.items).filter(j => j.relatedGraphs.includes(props.id) && j.state === 'error'),
+});
 
 const dispatchProps = {
     graph_threshold_select,
@@ -360,6 +400,8 @@ type Props = DispatchProps<typeof dispatchProps> & Graph & {
     focused?: boolean;
     layoutLocked: boolean;
     threshold: boolean;
+    jobs: PendingDataJob[];
+    failedJobs: PendingDataJob[];
 }
 
 type State = {

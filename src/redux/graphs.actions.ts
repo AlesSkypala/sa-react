@@ -14,7 +14,7 @@ const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: s
                 id: idPrefix + '::' + Md5.hashStr(selected.map(s => s.id).join(','), false),
                 title: `${titlePrefix} ${selected.length} křivek`,
                 style: { width: 1, color: [ 255, 255, 255 ] },
-                features: [],
+                // features: [],
                 // pipeline: {
                 //     type: idPrefix,
                 //     children: selected.map(s => JSON.parse(JSON.stringify(s.pipeline))),

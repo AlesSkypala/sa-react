@@ -54,6 +54,6 @@
     transition: 0.3s;
 }
 
-.buttons > .btn:hover {
+.buttons > .btn:hover, .buttons > .btn.opaque {
     opacity: 0.8;
 }

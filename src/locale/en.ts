@@ -30,6 +30,11 @@ const en_lang = {
         xAxis: 'x axis',
         yAxis: 'y axis',
 
+        pendingJobs: '{{count}} job is running',
+        pendingJobs_plural: '{{count}} jobs are running',
+        failedJobs:  '{{count}} job has failed',
+        failedJobs_plural:  '{{count}} jobs have failed',
+
         noTraces: 'No active traces',
         redrawNotice: 'The graph will be rerendered after you lock the layout',
         cloneAll: 'Clone All Series',

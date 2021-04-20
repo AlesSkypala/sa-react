@@ -9,6 +9,8 @@ extends Identified {
 interface Dataset
 extends Identified {
     source: string;
+    category: string[];
+    units: string;
 
     xType: string;
     yType: string;
