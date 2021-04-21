@@ -1,7 +1,7 @@
 import * as Comlink from 'comlink';
 import DataService from '../services/data';
 
-import type { RendererContainer, RenderJob as WasmRenderJob } from '../plotting';
+import type { RendererContainer } from '../plotting';
 import type { RenderJob, DataJob } from '../services';
 
 let plotting: typeof import('../plotting');
@@ -13,21 +13,12 @@ export class DataWorkerProxy {
     private traces: { [key: string]: number } = {};
 
     public createRenderer(canvas: OffscreenCanvas) {
-        const renderer = plotting.RendererContainer.new_offscreen(canvas);
+        const renderer = plotting.RendererContainer.new_webgl(canvas);
         const handle = this.availableRendererHandle++;
         
         this.renderers[handle] = renderer;
 
         return handle;
-    }
-
-    private applyToWasm = (from: RenderJob, to: WasmRenderJob) => {
-        to.clear = true;
-        Object.assign(to, from.content);
-    
-        for (const trace of from.traces) {
-            to.add_trace(this.traces[trace.id], new Uint8Array(trace.color), trace.width);
-        }
     }
 
     public disposeRenderer(handle: number) {
@@ -37,20 +28,64 @@ export class DataWorkerProxy {
         }
     }
 
-    public invokeRenderJob(handle: number, job: RenderJob) {
+    public createBundle(handle: number, range: Graph['xRange'], data: ArrayBuffer): number {
         const renderer = this.renderers[handle];
 
         if (!renderer) throw new Error('Renderer with given handle does not exist.');
 
-        const wmjob = new plotting.RenderJob(job.x_type);
-        this.applyToWasm(job, wmjob);
+        return renderer.create_bundle_from_stream(range[0], range[1], new Uint8Array(data));
+    }
+
+    public disposeBundle(handle: number, bundle: number) {
+        const renderer = this.renderers[handle];
+
+        if (!renderer) throw new Error('Renderer with given handle does not exist.');
+
+        renderer.dispose_bundle(bundle);
+    }
+
+    public invokeRenderJob(handle: number, x_type: string, content: RenderJob['content'], traces: ArrayBuffer, bundles: number[]) {
+        const renderer = this.renderers[handle];
+
+        if (!renderer) throw new Error('Renderer with given handle does not exist.');
+
+        const wmjob = new plotting.RenderJob(x_type, traces.byteLength / 11, 0);
+        
+        wmjob.clear = true;
+        Object.assign(wmjob, content);
+
+        const view = new DataView(traces);
+        console.log(traces.byteLength / 11);
+    
+        for (let i = 0; i < view.byteLength; i += 11) {
+            const handle = view.getUint32(i);
+            const width = view.getUint32(i + 4);
+            wmjob.add_trace(
+                handle,
+                new Uint8Array([
+                    view.getUint8(i + 8),
+                    view.getUint8(i + 9),
+                    view.getUint8(i + 10),
+                ]),
+                width
+            );
+        }
+
+        for (const bundle of bundles) {
+            wmjob.add_bundle(bundle);
+        }
+
+        const n = performance.now();
+
         renderer.render(wmjob);
+
+        console.log(`render time: ${performance.now() - n}`);
     }
 
     public async invokeDataJob(job: DataJob): Promise<DataJobResult> {
         const sources = await DataService.getSources();
 
-        const result: Trace['id'][] = [];
+        const result: { [key: string]: number } = {};
 
         for (const bulk of job.bulkDownload) {
             const trace = sources
@@ -70,14 +105,12 @@ export class DataWorkerProxy {
                 ids.push(trid);
 
                 if (!(trid in this.traces)) {
-                    this.traces[trid] = plotting.create_trace(trid, trace?.xType, trace?.yType);
+                    result[trid] = this.traces[trid] = plotting.create_trace(trid, trace?.xType, trace?.yType);
                 }
             }
 
             const data = await DataService.getBulkData(bulk, job.range);
             plotting.bulkload_segments(new Uint32Array(ids.map(i => this.traces[i])), trace.xType, trace.yType, new Uint8Array(data[1]));
-
-            result.push(...ids);
         }
 
         return {

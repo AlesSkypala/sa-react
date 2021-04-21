@@ -64,13 +64,19 @@ class GraphComponent
 
         this.setState({ rendering: true });
 
-        const job = this.renderer.createJob(this.props.xType)
+        const job = this.renderer.createJob(this.props.xType, this.primaryBundle !== undefined ? 0 : this.props.traces.length)
+            .margin(this.props.style.margin)
+            .labelSpaces(this.props.style.xLabelSpace, this.props.style.yLabelSpace)
             .clear(true)
             .zoom(...(this.props.zoom ?? [ ...this.props.xRange, 0.0, 1.0 ]));
 
-        this.props.traces
-            .filter(t => this.props.activeTraces.includes(t.id))
-            .forEach(t => job.addTrace(t.id, t.style));
+        if (this.primaryBundle !== undefined) {
+            job.addBundle(this.primaryBundle);
+        } else {
+            this.props.traces
+                .filter(t => this.props.activeTraces.includes(t.id))
+                .forEach(t => job.addTrace(t));
+        }
 
         await job.invoke();
 
@@ -110,6 +116,7 @@ class GraphComponent
         this.renderer && await this.renderer.dispose();
     }
 
+    private primaryBundle: number | undefined;
     public async componentDidUpdate(prevProps: Props) {
         let redraw: boolean | undefined = undefined;
 
@@ -122,6 +129,8 @@ class GraphComponent
                     id: this.props.id,
                     zoom: await dataWorker.recommend_extents(from, to, ids)
                 });
+
+                this.primaryBundle = await this.renderer?.createBundle(this.props.xRange, this.props.traces);
                 redraw = false;
             } else {
                 redraw = true;

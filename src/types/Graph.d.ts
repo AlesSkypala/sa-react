@@ -33,6 +33,7 @@ interface GraphStyle {
 
 interface Trace {
     id: string;
+    handle: number;
     title: string;
     style: TraceStyle;
 

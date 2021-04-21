@@ -14,7 +14,7 @@ export const invoke_job = createAsyncThunk(
             relatedGraphs: job.relatedGraphs,
         }));
 
-        let result;
+        let result: DataJobResult;
         try {
             result = await job.invoke();
             dispatch(change_state({ handle: job.handle, state: 'completed' }));
@@ -25,8 +25,9 @@ export const invoke_job = createAsyncThunk(
         }
 
         if (job.relatedGraphs.length > 0) {
-            const traces: Trace[] | undefined = result.loadedTraces?.map(t => ({
+            const traces: Trace[] | undefined = result.loadedTraces && Object.keys(result.loadedTraces)?.map(t => ({
                 id: t,
+                handle: result.loadedTraces![t],
                 title: t.split('::').reverse()[0],
                 style: { width: 1, color: genColor() },
                 features: [],

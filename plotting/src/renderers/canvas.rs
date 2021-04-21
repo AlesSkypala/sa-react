@@ -1,42 +1,14 @@
+use plotters::coord::{types::RangedCoordf32, Shift};
 use plotters::prelude::*;
-use plotters::{
-    coord::{types::RangedCoordf32, Shift},
-};
 use plotters_canvas::OffscreenCanvasBackend;
 use std::cell::RefCell;
 use std::ops::Range;
 use std::rc::Rc;
-use wasm_bindgen::prelude::*;
 use web_sys::OffscreenCanvas;
 
-use crate::{structs::RenderJob};
+use crate::structs::RenderJob;
 
-trait Renderer {
-    fn render(&mut self, job: RenderJob);
-    fn size_changed(&mut self, width: u32, height: u32);
-}
-
-#[wasm_bindgen]
-pub struct RendererContainer {
-    renderer: Box<dyn Renderer>,
-}
-
-#[wasm_bindgen]
-impl RendererContainer {
-    pub fn new_offscreen(elem: OffscreenCanvas) -> Self {
-        Self {
-            renderer: Box::new(OffscreenGraphRenderer::new(elem)),
-        }
-    }
-
-    pub fn render(&mut self, job: RenderJob) {
-        self.renderer.render(job)
-    }
-
-    pub fn size_changed(&mut self, width: u32, height: u32) {
-        self.renderer.size_changed(width, height);
-    }
-}
+use super::Renderer;
 
 pub struct OffscreenGraphRenderer {
     backend: Rc<RefCell<OffscreenCanvasBackend>>,
@@ -139,7 +111,20 @@ impl Renderer for OffscreenGraphRenderer {
         (*self.backend).borrow_mut().set_size(width, height);
 
         if let Option::Some(_) = &self.root {
-            self.root = Option::Some(self.root.take().unwrap().shrink((0, 0), (width + 1, height + 1)));
+            self.root = Option::Some(
+                self.root
+                    .take()
+                    .unwrap()
+                    .shrink((0, 0), (width + 1, height + 1)),
+            );
         }
+    }
+
+    fn create_bundle(&mut self, _from: f32, _to: f32, _data: &[super::BundleEntry]) -> usize {
+        todo!()
+    }
+
+    fn dispose_bundle(&mut self, bundle: usize) {
+        todo!()
     }
 }

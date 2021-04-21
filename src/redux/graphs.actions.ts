@@ -12,6 +12,7 @@ const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: s
             ...graph.traces,
             {
                 id: idPrefix + '::' + Md5.hashStr(selected.map(s => s.id).join(','), false),
+                handle: -1,
                 title: `${titlePrefix} ${selected.length} křivek`,
                 style: { width: 1, color: [ 255, 255, 255 ] },
                 // features: [],

@@ -20,14 +20,17 @@ pub struct RenderJob {
     pub render_labels: bool,
 
     pub margin: u32,
+    pub x_label_space: u32,
+    pub y_label_space: u32,
 
     traces: Vec<TraceStyle>,
+    bundles: Vec<usize>,
 }
 
 #[wasm_bindgen]
 impl RenderJob {
     #[wasm_bindgen(constructor)]
-    pub fn new(x_type: String) -> Self {
+    pub fn new(x_type: String, trace_count: usize, bundle_count: usize) -> Self {
         Self {
             clear: true,
 
@@ -43,8 +46,11 @@ impl RenderJob {
             render_labels: true,
 
             margin: 0,
+            x_label_space: 0,
+            y_label_space: 0,
 
-            traces: Vec::new(),
+            traces: Vec::with_capacity(trace_count),
+            bundles: Vec::with_capacity(bundle_count),
         }
     }
 
@@ -55,12 +61,20 @@ impl RenderJob {
             width,
         });
     }
+
+    pub fn add_bundle(&mut self, idx: usize) {
+        self.bundles.push(idx);
+    }
 }
 
 // unbound methods
 impl RenderJob {
     pub fn get_traces(&self) -> &Vec<TraceStyle> {
         &self.traces
+    }
+
+    pub fn get_bundles(&self) -> &Vec<usize> {
+        &self.bundles
     }
 
     pub fn get_x_type(&self) -> &String {

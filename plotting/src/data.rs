@@ -16,7 +16,6 @@ pub struct TypeDescriptor {
 }
 
 impl TypeDescriptor {
-
     pub fn new(size: usize, parser: fn(&[u8]) -> f32) -> Self {
         Self {
             size,
@@ -29,19 +28,49 @@ lazy_static! {
     pub static ref TYPE_SIZES: HashMap<&'static str, TypeDescriptor> = {
         let mut m = HashMap::new();
 
-        m.insert("datetime", TypeDescriptor::new(4, |a| i32::from_le_bytes(a.try_into().unwrap()) as f32));
-        m.insert("byte", TypeDescriptor::new(1, |a| u8::from_le_bytes(a.try_into().unwrap()) as f32));
+        m.insert(
+            "datetime",
+            TypeDescriptor::new(4, |a| i32::from_le_bytes(a.try_into().unwrap()) as f32),
+        );
+        m.insert(
+            "byte",
+            TypeDescriptor::new(1, |a| u8::from_le_bytes(a.try_into().unwrap()) as f32),
+        );
 
-        m.insert("short", TypeDescriptor::new(2, |a| i8::from_le_bytes(a.try_into().unwrap()) as f32));
-        m.insert("int", TypeDescriptor::new(4, |a| i32::from_le_bytes(a.try_into().unwrap()) as f32));
-        m.insert("long", TypeDescriptor::new(8, |a| i64::from_le_bytes(a.try_into().unwrap()) as f32));
+        m.insert(
+            "short",
+            TypeDescriptor::new(2, |a| i8::from_le_bytes(a.try_into().unwrap()) as f32),
+        );
+        m.insert(
+            "int",
+            TypeDescriptor::new(4, |a| i32::from_le_bytes(a.try_into().unwrap()) as f32),
+        );
+        m.insert(
+            "long",
+            TypeDescriptor::new(8, |a| i64::from_le_bytes(a.try_into().unwrap()) as f32),
+        );
 
-        m.insert("ushort", TypeDescriptor::new(2, |a| u16::from_le_bytes(a.try_into().unwrap()) as f32));
-        m.insert("uint", TypeDescriptor::new(4, |a| u32::from_le_bytes(a.try_into().unwrap()) as f32));
-        m.insert("ulong", TypeDescriptor::new(8, |a| u64::from_le_bytes(a.try_into().unwrap()) as f32));
+        m.insert(
+            "ushort",
+            TypeDescriptor::new(2, |a| u16::from_le_bytes(a.try_into().unwrap()) as f32),
+        );
+        m.insert(
+            "uint",
+            TypeDescriptor::new(4, |a| u32::from_le_bytes(a.try_into().unwrap()) as f32),
+        );
+        m.insert(
+            "ulong",
+            TypeDescriptor::new(8, |a| u64::from_le_bytes(a.try_into().unwrap()) as f32),
+        );
 
-        m.insert("float", TypeDescriptor::new(4, |a| f32::from_le_bytes(a.try_into().unwrap())));
-        m.insert("double", TypeDescriptor::new(8, |a| f64::from_le_bytes(a.try_into().unwrap()) as f32));
+        m.insert(
+            "float",
+            TypeDescriptor::new(4, |a| f32::from_le_bytes(a.try_into().unwrap())),
+        );
+        m.insert(
+            "double",
+            TypeDescriptor::new(8, |a| f64::from_le_bytes(a.try_into().unwrap()) as f32),
+        );
 
         m
     };
@@ -90,13 +119,11 @@ pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box
         }
 
         for (d, trace) in out.drain(0..).zip(traces) {
-            trace.push_segment(
-                    crate::structs::DataSegment {
-                        from: start,
-                        to: cur,
-                        data: crate::structs::SegmentState::Complete(d),
-                    }
-                );
+            trace.push_segment(crate::structs::DataSegment {
+                from: start,
+                to: cur,
+                data: crate::structs::SegmentState::Complete(d),
+            });
         }
     }
 }

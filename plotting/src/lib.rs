@@ -1,10 +1,9 @@
 pub mod data;
-pub mod renderer;
+pub mod renderers;
 pub mod structs;
 pub mod utils;
 
 use wasm_bindgen::prelude::*;
-
 
 #[wasm_bindgen]
 extern "C" {

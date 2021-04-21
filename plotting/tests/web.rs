@@ -3,8 +3,8 @@
 #![cfg(target_arch = "wasm32")]
 
 extern crate wasm_bindgen_test;
+use plotting::data;
 use wasm_bindgen_test::*;
-use plotting::{data};
 
 wasm_bindgen_test_configure!(run_in_browser);
 
@@ -13,12 +13,11 @@ fn pass() {
     assert_eq!(1 + 1, 2);
 }
 
-
 #[wasm_bindgen_test]
 fn add_segments() {
     let ptr = data::create_trace("test", "datetime", "int");
 
-    unsafe { 
+    unsafe {
         let deref = ptr.as_mut().expect("Expected being able to deref.");
     }
 }

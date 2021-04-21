@@ -1,10 +1,10 @@
-use plotting::{data};
+use plotting::data;
 
 #[test]
 fn add_segments() {
     let ptr = data::create_trace("test", "datetime", "int");
 
-    unsafe { 
+    unsafe {
         let deref = &data::DATA[ptr];
 
         assert_eq!(deref.id, "test");

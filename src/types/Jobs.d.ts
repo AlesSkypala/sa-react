@@ -6,5 +6,5 @@ type DataJobState =
 ;
 
 type DataJobResult = {
-    loadedTraces?: Trace['id'][];
+    loadedTraces?: { [key: string]: number };
 };
