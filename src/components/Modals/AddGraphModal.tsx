@@ -286,14 +286,22 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
         const graphs: Graph[] = [];
         const jobs: DataJob[] = [];
 
+        const sourceType = this.state.selectedSource?.type;
+
         this.state.selectedDatasets.forEach(dataset => {
             const xRange = [...(this.state.selectedRange as number[])] as Graph['xRange'];
             const id = generate_graph_id();
 
-            graphs.push({
-                id,
+            // TODO more systematic approach?
+            const units = dataset.units === 'percent' ? '%' : dataset.units;
 
-                title:  this.state.title,
+            const title = sourceType === undefined
+                ? this.state.title
+                : `${this.getTitle(sourceType, dataset.id)} [${units}]`;
+
+            graphs.push({
+                id, title,
+
                 xLabel: this.state.xLabel,
                 yLabel: this.state.yLabel,
 
