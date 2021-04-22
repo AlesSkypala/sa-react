@@ -14,8 +14,7 @@ import { generate_graph_id } from '../../redux';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
-class InfoModal
-    extends ModalComponent<ImportResult, Args, State> {
+class InfoModal extends ModalComponent<ImportResult, Args, State> {
     public state: State = {
         title: t('graph.new'),
         xLabel: t('graph.xAxis'),
@@ -28,16 +27,7 @@ class InfoModal
     }
 
     public componentDidMount(): void {
-        DataService.getSources().then(this.loadTraces);
-    }
-
-    private sourceMap: { [key: string]: Dataset } = {};
-    private loadTraces = (sources: DataSource[]) => {
-        this.sourceMap = {};
-        sources.forEach(s => s.datasets.forEach(d => {
-            this.sourceMap[`${s.id}:${d.id}`] = d;
-        }));
-        this.setState({ sources });
+        DataService.getSources().then((sources: DataSource[]) => { this.setState({ sources }); });
     }
 
     protected renderHeader(): JSX.Element {
@@ -54,7 +44,7 @@ class InfoModal
                 return t(`datasets.titles.hp.${match[1]}`, id, { val: match[2] });
             }
         }
-        
+
         return t(`datasets.titles.${sourceType}.${id}`, id);
     }
 
@@ -93,14 +83,14 @@ class InfoModal
                 ];
             }
 
-            this.setState({ ...additional, selectedSource, selectedTraces: undefined });
+            this.setState({ ...additional, selectedSource, selectedDatasets: undefined });
         }
     }
 
     onSetSelected = (e: React.ChangeEvent<HTMLSelectElement>) => {
         if (this.state.selectedSource) {
             const selected = Array.from(e.currentTarget.selectedOptions, i => this.state.selectedSource?.datasets.find(ds => ds.id === i.value)).filter(v => !!v) as Dataset[];
-            this.setState({ selectedTraces: selected });
+            this.setState({ selectedDatasets: selected });
         }
     }
 
@@ -146,7 +136,7 @@ class InfoModal
             );
         }
 
-        const { availableRange, selectedRange, selectedSource, selectedTraces } = this.state;
+        const { availableRange, selectedRange, selectedSource, selectedDatasets } = this.state;
         const timeDisabled = !selectedSource;
         const setsDisabled = !selectedRange;
         const now = new Date();
@@ -171,7 +161,7 @@ class InfoModal
                             <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={24 * 3600}>{t('modals.addGraph.day')}</Button>
                             <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={7 * 24 * 3600}>{t('modals.addGraph.week')}</Button>
                             <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={4 * 7 * 24 * 3600}>{t('modals.addGraph.month')}</Button>
-                            
+
                             <Dropdown.Toggle disabled={timeDisabled} />
                             <Dropdown.Menu>
                                 <Dropdown.Item onClick={this.onRangeButton} data-range={91 * 24 * 3600}>{t('modals.addGraph.quarter')}</Dropdown.Item>
@@ -189,8 +179,8 @@ class InfoModal
                             </Dropdown.Menu>
                         </Dropdown>
                         <DateTimeRange
-                            bounds={(availableRange?.map(v => Deserialization.parseTimestamp(v as number)) as ([Date, Date] | undefined)) ?? defaultRange}
-                            value={selectedRange?.map(v => Deserialization.parseTimestamp(v as number)) as ([Date, Date] | undefined)}
+                            bounds={(availableRange?.map(v => Deserialization.parseTimestamp(v)) as ([Date, Date] | undefined)) ?? defaultRange}
+                            value={selectedRange?.map(v => Deserialization.parseTimestamp(v)) as ([Date, Date] | undefined)}
 
                             disabled={timeDisabled}
                             onChange={this.onRangeChange}
@@ -207,11 +197,11 @@ class InfoModal
                     <Col>
                         <Form.Group>
                             <Form.Label>{t('modals.addGraph.traceCount')}</Form.Label>
-                            <Form.Control readOnly value={selectedTraces?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
+                            <Form.Control readOnly value={selectedDatasets?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
                         </Form.Group>
                         <Form.Group>
                             <Form.Label>{t('modals.addGraph.description')}</Form.Label>
-                            {selectedSource && selectedTraces?.map(t => [ t.id, this.getDescription(selectedSource.type, t.id) ]).filter(t => t[1]).map(t => (
+                            {selectedSource && selectedDatasets?.map(t => [ t.id, this.getDescription(selectedSource.type, t.id) ]).filter(t => t[1]).map(t => (
                                 <Form.Text key={t[0]}>{t[1]}</Form.Text>
                             ))}
                         </Form.Group>
@@ -242,7 +232,7 @@ class InfoModal
     //     const variants: string[] = await DataService.getTraceVariants(dataset);
 
     //     return variants.map(v => (
-    //         { 
+    //         {
     //             id: `${dataset.source}:${dataset.id}:${v}`,
     //             title: v,
     //             pipeline: {
@@ -258,7 +248,7 @@ class InfoModal
     // }
 
     private singleClicked = () => {
-        if (!this.state.selectedTraces || this.state.selectedTraces.length <= 0) return;
+        if (!this.state.selectedDatasets || this.state.selectedDatasets.length <= 0) return;
 
         const xRange = [...(this.state.selectedRange as number[])] as Graph['xRange'];
         const id = generate_graph_id();
@@ -285,20 +275,18 @@ class InfoModal
             activeTraces: [],
         };
 
-        this.props.onClose([ [ graph ],
-            [
-                this.state.selectedTraces.reduce((job, t) => job.downloadBulk({ source: t.source, id: t.id }).relate(id), new DataJob(xRange))
-            ]
-        ]);
+        const job = new DataJob(xRange).relate(id);
+        this.state.selectedDatasets.forEach( t => job.downloadBulk({ source: t.source, id: t.id }) );
+        this.props.onClose([ [ graph ], [ job ] ]);
     }
 
     private multiClicked = () => {
-        if (!this.state.selectedTraces || this.state.selectedTraces.length <= 0) return;
+        if (!this.state.selectedDatasets || this.state.selectedDatasets.length <= 0) return;
 
         const graphs: Graph[] = [];
         const jobs: DataJob[] = [];
 
-        this.state.selectedTraces.forEach(t => {
+        this.state.selectedDatasets.forEach(dataset => {
             const xRange = [...(this.state.selectedRange as number[])] as Graph['xRange'];
             const id = generate_graph_id();
 
@@ -324,7 +312,7 @@ class InfoModal
                 activeTraces: [],
             });
 
-            jobs.push(new DataJob(xRange).downloadBulk({ source: t.source, id: t.id }).relate(id));
+            jobs.push(new DataJob(xRange).downloadBulk({ source: dataset.source, id: dataset.id }).relate(id));
         });
 
         this.props.onClose([ graphs, jobs ]);
@@ -333,8 +321,8 @@ class InfoModal
     private cancelClicked = (e: React.MouseEvent) => { e.preventDefault(); this.resolve(undefined); }
 
     protected renderFooter(): JSX.Element {
-        const { selectedTraces } = this.state;
-        const addDisabled = !selectedTraces || selectedTraces.length < 1;
+        const { selectedDatasets } = this.state;
+        const addDisabled = !selectedDatasets || selectedDatasets.length < 1;
 
         return (
             <>
@@ -363,7 +351,7 @@ interface State {
     sources?: DataSource[];
 
     selectedSource?: DataSource;
-    selectedTraces?: Dataset[];
+    selectedDatasets?: Dataset[];
 
     title: Graph['title'],
     xLabel: Graph['xLabel'],
