@@ -404,7 +404,6 @@ class GraphComponent
                         { icon(faDesktop)   }{ metadata.sourceNames.join('; ') } <br/>
                         { icon(faChartLine) }{ metadata.datasetNames.join('; ') } <br/>
                         { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) }
-                        { console.log(xRange) }
                     </div>
                 </div>
             </div>
