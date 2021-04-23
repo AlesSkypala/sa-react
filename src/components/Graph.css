@@ -31,10 +31,19 @@
 }
 
 .graph-content > .graph-details {
+    pointer-events: none;
     position: absolute;
     right: 0;
     top: 0;
-    padding: 1em;
+
+    margin: .5em;
+    padding: .5em;
+    background: rgba(255, 255, 255, 0.4);
+
+    max-width: 300px;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .graph-content > canvas {

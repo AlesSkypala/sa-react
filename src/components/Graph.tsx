@@ -1,20 +1,25 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faWrench, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 import * as React from 'react';
+import { createPortal } from 'react-dom';
+import { connect } from 'react-redux';
 import debounce from 'lodash.debounce';
-import { transfer } from 'comlink';
+
+import { icon } from '../utils/icon';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrash, faWrench, faExclamationTriangle, faChartLine, faDesktop, faArrowsAltH } from '@fortawesome/free-solid-svg-icons';
+
 import { Button, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
 import { Menu, useContextMenu, Submenu, Item, ItemParams } from 'react-contexify';
 
-import './Graph.css';
+import { dataWorker } from '..';
+import { transfer } from 'comlink';
 import { AppEvents, DialogService } from '../services';
-import { createPortal } from 'react-dom';
-import { connect } from 'react-redux';
+
+import './Graph.css';
+import { t } from '../locale';
+import { timestampToLongDate } from '../locale/date';
 import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, DispatchProps } from '../redux';
 import { ConfirmModal, GraphEditModal } from './Modals';
-import { t } from '../locale';
 import RendererHandle from '../services/RendererHandle';
-import { dataWorker } from '..';
 import { PendingDataJob } from '../redux/jobs';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {
@@ -315,7 +320,7 @@ class GraphComponent
     }
 
     public render() {
-        const { title, traces, jobs, failedJobs, metadata } = this.props;
+        const { title, traces, jobs, failedJobs, metadata, xRange } = this.props;
 
         const menuShow = useContextMenu({ id: `graph-${this.props.id}-menu` }).show;
 
@@ -396,9 +401,10 @@ class GraphComponent
                         <div className='graph-resize-overlay'><Spinner animation='border' variant='light' /></div>
                     ))}
                     <div className='graph-details'>
-                        { metadata.sourceNames.join('; ') } <br/>
-                        { metadata.datasetNames.join('; ') } <br/>
-                        Tvoje máma
+                        { icon(faDesktop)   }{ metadata.sourceNames.join('; ') } <br/>
+                        { icon(faChartLine) }{ metadata.datasetNames.join('; ') } <br/>
+                        { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) }
+                        { console.log(xRange) }
                     </div>
                 </div>
             </div>

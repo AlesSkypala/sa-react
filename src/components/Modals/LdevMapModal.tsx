@@ -6,9 +6,8 @@ import { t } from '../../locale';
 import { DataService } from '../../services';
 import { TreeView, TreeItem } from '../TreeView';
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEyeDropper, faServer, faDesktop, faMicrochip, faArrowsAltH, faDatabase, faAngleDoubleRight, faChartPie, IconDefinition } from '@fortawesome/free-solid-svg-icons';
-const icon = (i: IconDefinition) => <><FontAwesomeIcon icon={i} /> &nbsp;</>;
+import { faEyeDropper, faServer, faDesktop, faMicrochip, faArrowsAltH, faDatabase, faAngleDoubleRight, faChartPie } from '@fortawesome/free-solid-svg-icons';
+import { icon } from '../../utils/icon';
 
 class LdevMapModal
     extends ModalComponent<void, Args, State> {
