@@ -14,12 +14,24 @@ import { generate_graph_id } from '../../redux';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
+export interface Args {
+    ranges: Graph['xRange'][];
+}
+
+interface State {
+    sources?: DataSource[];
+
+    selectedSource?: DataSource;
+    selectedDatasets?: Dataset[];
+
+    availableRange?: Graph['xRange'],
+    selectedRange?: Graph['xRange'],
+}
+
+export type ImportResult = [ Graph[], DataJob[] ];
+
 class InfoModal extends ModalComponent<ImportResult, Args, State> {
-    public state: State = {
-        title: t('graph.new'),
-        xLabel: t('graph.xAxis'),
-        yLabel: t('graph.yAxis'),
-    };
+    public state: State = {};
 
     constructor(props: Props<ImportResult, Args> | Readonly<Props<ImportResult, Args>>) {
         super(props);
@@ -248,17 +260,28 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
     // }
 
     private singleClicked = () => {
-        if (!this.state.selectedDatasets || this.state.selectedDatasets.length <= 0) return;
+        const datasets = this.state.selectedDatasets;
+        if (!datasets || datasets.length <= 0) return;
+        if (this.state.selectedRange === undefined) throw new Error('Unexpected error: No range selected when creating a graph.');
+        if (this.state.selectedSource === undefined) throw new Error('Unexpected error: No source selected when creating a graph.');
 
-        const xRange = [...(this.state.selectedRange as number[])] as Graph['xRange'];
+
+        const xRange = [...this.state.selectedRange] as Graph['xRange'];
         const id = generate_graph_id();
+
+        const sourceType = this.state.selectedSource.type;
+        const sourceName = this.state.selectedSource.name;
+
+        // TODO convert units if possible
+        const units = new Set<string>();
+        datasets.forEach( d => units.add(d.units) );
 
         const graph: Graph = {
             id,
 
-            title:  this.state.title,
-            xLabel: this.state.xLabel,
-            yLabel: this.state.yLabel,
+            title:  t('graph.new'),
+            xLabel: t('graph.xAxis'),
+            yLabel: t('graph.yAxis'),
 
             // !
             // TODO: this must be reworked to take into account the real xtype of selected traces
@@ -270,44 +293,56 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
                 yLabelSpace: 60,
             },
 
+            metadata: {
+                sourceNames: [ sourceName ],
+                datasetNames: datasets.map( d => this.getTitle(sourceType, d.id) ),
+                units: [...units],
+            },
+
             xRange,
             traces: [],
             activeTraces: [],
         };
 
         const job = new DataJob(xRange).relate(id);
-        this.state.selectedDatasets.forEach( t => job.downloadBulk({ source: t.source, id: t.id }) );
+        datasets.forEach( t => job.downloadBulk({ source: t.source, id: t.id }) );
         this.props.onClose([ [ graph ], [ job ] ]);
     }
 
     private multiClicked = () => {
         if (!this.state.selectedDatasets || this.state.selectedDatasets.length <= 0) return;
+        if (this.state.selectedRange === undefined) throw new Error('Unexpected error: No range selected when creating a graph.');
+        if (this.state.selectedSource === undefined) throw new Error('Unexpected error: No source selected when creating a graph.');
 
         const graphs: Graph[] = [];
         const jobs: DataJob[] = [];
 
-        const sourceType = this.state.selectedSource?.type;
+        const xRange = [...this.state.selectedRange] as Graph['xRange'];
+
+        const sourceType = this.state.selectedSource.type;
+        const sourceName = this.state.selectedSource.name;
 
         this.state.selectedDatasets.forEach(dataset => {
-            const xRange = [...(this.state.selectedRange as number[])] as Graph['xRange'];
             const id = generate_graph_id();
 
-            // TODO more systematic approach?
-            const units = dataset.units === 'percent' ? '%' : dataset.units;
-
-            const title = sourceType === undefined
-                ? this.state.title
-                : `${this.getTitle(sourceType, dataset.id)} [${units}]`;
+            const datasetName = this.getTitle(sourceType, dataset.id);
+            const title = `${datasetName} [${dataset.units === 'percent' ? '%' : dataset.units}]`;
 
             graphs.push({
                 id, title,
 
-                xLabel: this.state.xLabel,
-                yLabel: this.state.yLabel,
+                xLabel: t('graph.xAxis'),
+                yLabel: t('graph.yAxis'),
 
                 // !
                 // TODO: this must be reworked to take into account the real xtype of selected traces
                 xType: 'datetime',
+
+                metadata: {
+                    sourceNames: [ sourceName ],
+                    datasetNames: [ datasetName ],
+                    units: [ dataset.units ],
+                },
 
                 style: {
                     margin: 5,
@@ -350,25 +385,5 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
         );
     }
 }
-
-export interface Args {
-    ranges: Graph['xRange'][];
-}
-
-interface State {
-    sources?: DataSource[];
-
-    selectedSource?: DataSource;
-    selectedDatasets?: Dataset[];
-
-    title: Graph['title'],
-    xLabel: Graph['xLabel'],
-    yLabel: Graph['yLabel'],
-
-    availableRange?: Graph['xRange'],
-    selectedRange?: Graph['xRange'],
-}
-
-export type ImportResult = [ Graph[], DataJob[] ];
 
 export default InfoModal;

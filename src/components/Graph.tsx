@@ -22,6 +22,26 @@ function MenuPortal({ children }: { children: React.ReactNode }) {
     return elem ? createPortal(children, elem) : <>{children}</>;
 }
 
+const dispatchProps = {
+    graph_threshold_select,
+    clone_graph,
+    remove_graphs,
+    edit_graph,
+};
+
+type Props = DispatchProps<typeof dispatchProps> & Graph & {
+    focused?: boolean;
+    layoutLocked: boolean;
+    threshold: boolean;
+    jobs: PendingDataJob[];
+    failedJobs: PendingDataJob[];
+}
+
+type State = {
+    revision: number;
+    rendering: boolean;
+}
+
 class GraphComponent
     extends React.Component<Props, State> {
 
@@ -36,7 +56,7 @@ class GraphComponent
 
     redrawGraph = async () => {
         if (!this.renderer) return;
-        
+
         this.setState({ rendering: true });
 
         const job = this.renderer.createJob(this.props.xType)
@@ -92,7 +112,7 @@ class GraphComponent
             if (this.props.traces.length > 0 && this.props.zoom === undefined) {
                 const ids = this.props.traces.map(t => t.id).filter(id => this.props.activeTraces.includes(id));
                 const [ from, to ] = this.props.xRange;
-        
+
                 this.props.edit_graph({
                     id: this.props.id,
                     zoom: await dataWorker.recommend_extents(from, to, ids)
@@ -295,7 +315,7 @@ class GraphComponent
     }
 
     public render() {
-        const { title, traces } = this.props;
+        const { title, traces, jobs, failedJobs, metadata } = this.props;
 
         const menuShow = useContextMenu({ id: `graph-${this.props.id}-menu` }).show;
 
@@ -309,7 +329,7 @@ class GraphComponent
                 <div className='text-center position-relative'>
                     <h4 className='mt-1 w-100 text-center'>{title}</h4>
                     <div style={{ right: 0, top: 0, bottom: 0 }} className='d-flex align-items-center position-absolute buttons'>
-                        {this.props.jobs.length > 0 && (
+                        {jobs.length > 0 && (
                             <OverlayTrigger
                                 trigger={[ 'focus', 'hover' ]}
                                 placement='left'
@@ -317,7 +337,7 @@ class GraphComponent
 
                                 overlay={(
                                     <Tooltip id={`load-tooltip-${this.props.id}`}>
-                                        {t('graph.pendingJobs', { count: this.props.jobs.length })}
+                                        {t('graph.pendingJobs', { count: jobs.length })}
                                     </Tooltip>
                                 )}
                             >
@@ -326,7 +346,7 @@ class GraphComponent
                                 </Button>
                             </OverlayTrigger>
                         )}
-                        {this.props.failedJobs.length > 0 && (
+                        {failedJobs.length > 0 && (
                             <OverlayTrigger
                                 trigger={[ 'focus', 'hover' ]}
                                 placement='left'
@@ -334,7 +354,7 @@ class GraphComponent
 
                                 overlay={(
                                     <Tooltip id={`load-tooltip-${this.props.id}`}>
-                                        {t('graph.failedJobs', { count: this.props.failedJobs.length })}
+                                        {t('graph.failedJobs', { count: failedJobs.length })}
                                     </Tooltip>
                                 )}
                             >
@@ -375,6 +395,11 @@ class GraphComponent
                     ) : (this.state.rendering && (
                         <div className='graph-resize-overlay'><Spinner animation='border' variant='light' /></div>
                     ))}
+                    <div className='graph-details'>
+                        { metadata.sourceNames.join('; ') } <br/>
+                        { metadata.datasetNames.join('; ') } <br/>
+                        Tvoje máma
+                    </div>
                 </div>
             </div>
         );
@@ -388,25 +413,5 @@ const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
     jobs: Object.values(state.jobs.items).filter(j => j.relatedGraphs.includes(props.id) && j.state === 'pending'),
     failedJobs: Object.values(state.jobs.items).filter(j => j.relatedGraphs.includes(props.id) && j.state === 'error'),
 });
-
-const dispatchProps = {
-    graph_threshold_select,
-    clone_graph,
-    remove_graphs,
-    edit_graph,
-};
-
-type Props = DispatchProps<typeof dispatchProps> & Graph & {
-    focused?: boolean;
-    layoutLocked: boolean;
-    threshold: boolean;
-    jobs: PendingDataJob[];
-    failedJobs: PendingDataJob[];
-}
-
-type State = {
-    revision: number;
-    rendering: boolean;
-}
 
 export default connect(stateProps, dispatchProps)(GraphComponent);

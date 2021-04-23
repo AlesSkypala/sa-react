@@ -6,6 +6,7 @@ interface Graph<T extends XType = XType> {
     xLabel: string;
     yLabel: string;
 
+    metadata: GraphMetadata;
     style: GraphStyle;
 
     // Functionality
@@ -18,6 +19,12 @@ interface Graph<T extends XType = XType> {
     activeTraces: Trace['id'][];
 }
 
+interface GraphMetadata {
+    units: string[];
+    datasetNames: string[];
+    sourceNames: string[];
+}
+
 interface GraphStyle {
     margin: number;
     xLabelSpace: number;
@@ -28,7 +35,7 @@ interface Trace {
     id: string;
     title: string;
     style: TraceStyle;
-    
+
     // features: string[];
     filtering?: 'sg';
     // pipeline: NodeDescriptor;

@@ -30,6 +30,13 @@
     height: 100%;
 }
 
+.graph-content > .graph-details {
+    position: absolute;
+    right: 0;
+    top: 0;
+    padding: 1em;
+}
+
 .graph-content > canvas {
     flex-grow: 1;
 }
