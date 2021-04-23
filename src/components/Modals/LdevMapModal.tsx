@@ -9,8 +9,16 @@ import { TreeView, TreeItem } from '../TreeView';
 import { faEyeDropper, faServer, faDesktop, faMicrochip, faArrowsAltH, faDatabase, faAngleDoubleRight, faChartPie } from '@fortawesome/free-solid-svg-icons';
 import { icon } from '../../utils/icon';
 
-class LdevMapModal
-    extends ModalComponent<void, Args, State> {
+interface Args {
+    source: string;
+    ldev: string;
+}
+
+interface State {
+    ldevInfo?: LdevInfo
+}
+
+class LdevMapModal extends ModalComponent<void, Args, State> {
     public state: State = {
         ldevInfo: undefined,
     };
@@ -92,15 +100,6 @@ class LdevMapModal
             </Button>
         );
     }
-}
-
-interface Args {
-    source: string;
-    ldev: string;
-}
-
-interface State {
-    ldevInfo?: LdevInfo
 }
 
 export default LdevMapModal;

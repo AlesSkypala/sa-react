@@ -1,4 +1,5 @@
 import * as React from 'react';
+import debounce from 'lodash.debounce';
 import { AutoSizer, List, ListRowProps } from 'react-virtualized';
 import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
@@ -36,13 +37,28 @@ const buttons: { label: string, action: TraceAction }[][] = [
     // { label: 'DelSel', action: 'del-sel' },
 ];
 
-class TraceList
-    extends React.PureComponent<Props, State> {
+export interface Props {
+    traces: Trace[];
+    activeTraces: Graph['activeTraces'];
+
+    onSelect(id: Trace['id']): void;
+    onAction(action: TraceAction): void;
+}
+
+export interface State {
+    sources: DataSource[];
+    active: Trace['id'] | undefined;
+    numero_uno_in_italia: number;
+}
+
+class TraceList extends React.PureComponent<Props, State> {
     public state: State = {
         sources: [],
         active: undefined,
         numero_uno_in_italia: 0,
     };
+
+    private traceNameMap: { [s: string]: string } = {};
 
     private listRef = React.createRef<HTMLDivElement>();
     public componentDidMount() {
@@ -61,6 +77,9 @@ class TraceList
         this.props.onAction(action);
     }
 
+    ldevNameLoaded = () => {
+        this.forceUpdate();
+    }
 
     hasLdevMaps = (trace: Trace) => {
         return DataService.hasLdevMap(trace.id); // trace.features.includes('ldev_map');
@@ -86,6 +105,26 @@ class TraceList
         const t = this.props.traces[props.index];
         const color = colorToHex(t.style.color);
 
+        const hasMap = this.hasLdevMaps(t);
+        const { source, ldev } = this.getLdevId(t);
+        const ldevId = `${source}::${ldev}`;
+
+        let ldevName = '';
+
+        if (hasMap) {
+            // !
+            // TODO tohle je asi hloupej způsob
+            if (this.traceNameMap[ldevId] === undefined)  {
+                const promise = DataService.getLdevMap(source, ldev);
+                promise.then( ({ name }) => {
+                    this.traceNameMap[ldevId] = name;
+                    debounce(this.ldevNameLoaded, 500);
+                } );
+            } else {
+                ldevName = ` [${this.traceNameMap[ldevId]}]`;
+            }
+        }
+
         return (
             <li
                 key={props.key}
@@ -98,12 +137,8 @@ class TraceList
                 <span className='btn-select mr-1'>
                     <FontAwesomeIcon icon={this.props.activeTraces.includes(t.id) ? faCheckSquare : faSquare} />
                 </span>
-                <span className='trace-row-title'>{t.title}</span>
-                {
-                    this.hasLdevMaps(t)
-                        ? (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>)
-                        : undefined
-                }
+                <span className='trace-row-title'>{t.title}{ldevName}</span>
+                { hasMap && (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
             </li>
         );
     }
@@ -143,20 +178,6 @@ class TraceList
             </React.Fragment>
         );
     }
-}
-
-export interface Props {
-    traces: Trace[];
-    activeTraces: Graph['activeTraces'];
-
-    onSelect(id: Trace['id']): void;
-    onAction(action: TraceAction): void;
-}
-
-export interface State {
-    sources: DataSource[];
-    active: Trace['id'] | undefined;
-    numero_uno_in_italia: number;
 }
 
 export default TraceList;
