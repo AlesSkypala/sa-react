@@ -77,9 +77,9 @@ class TraceList extends React.PureComponent<Props, State> {
         this.props.onAction(action);
     }
 
-    ldevNameLoaded = () => {
-        this.forceUpdate();
-    }
+    ldevNameLoaded = debounce(() => {
+        this.setState({ numero_uno_in_italia: (this.state.numero_uno_in_italia + 1) % 420 });
+    }, 500);
 
     hasLdevMaps = (trace: Trace) => {
         return DataService.hasLdevMap(trace.id); // trace.features.includes('ldev_map');
@@ -118,7 +118,7 @@ class TraceList extends React.PureComponent<Props, State> {
                 const promise = DataService.getLdevMap(source, ldev);
                 promise.then( ({ name }) => {
                     this.traceNameMap[ldevId] = name;
-                    debounce(this.ldevNameLoaded, 500);
+                    this.ldevNameLoaded();
                 } );
             } else {
                 ldevName = ` [${this.traceNameMap[ldevId]}]`;
