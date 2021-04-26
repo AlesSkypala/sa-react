@@ -41,10 +41,10 @@ export class TreeView extends React.PureComponent<TreeViewProps> {
 
 export class TreeItem extends React.PureComponent<LiProps> {
     render () {
-        const children = React.Children.toArray(this.props.children);
-        children.unshift(<span className="tree-view-connection-horizontal"></span>);
-        children.unshift(<span className="tree-view-connection-vertical"></span>);
-
-        return <li {...this.props}>{children}</li>;
+        return <li {...this.props}>
+            <span className="tree-view-connection-horizontal"></span>
+            <span className="tree-view-connection-vertical"></span>
+            {this.props.children}
+        </li>;
     }
 }
