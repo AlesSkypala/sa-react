@@ -28,6 +28,8 @@ function MenuPortal({ children }: { children: React.ReactNode }) {
     return elem ? createPortal(children, elem) : <>{children}</>;
 }
 
+const X_TICK_SPACE = 24;
+
 const dispatchProps = {
     graph_threshold_select,
     clone_graph,
@@ -68,7 +70,7 @@ class GraphComponent
 
         const job = this.renderer.createJob(this.props.xType, this.primaryBundle !== undefined ? 0 : this.props.traces.length)
             .margin(this.props.style.margin)
-            .labelSpaces(this.props.style.xLabelSpace, this.props.style.yLabelSpace)
+            .labelSpaces(this.props.style.xLabelSpace + X_TICK_SPACE, this.props.style.yLabelSpace)
             .clear(true)
             .zoom(...(this.props.zoom ?? [ ...this.props.xRange, 0.0, 1.0 ]));
 
@@ -194,18 +196,36 @@ class GraphComponent
         }
     }
 
-    private debounceResize = debounce(this.updateSize, 300);
-    private positionInGraphSpace = (e: { clientX: number, clientY: number }): [ number, number ] | undefined => {
-        const rect = this.guiCanvasRef.current?.getBoundingClientRect();
-        if (!rect) return undefined;
+    private graphArea = () => {
+        if (!this.guiCanvasRef.current) return [0, 0];
 
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
 
+        return [
+            this.guiCanvasRef.current.width  - 2 * margin  - yLabelSpace,
+            this.guiCanvasRef.current.height - 2 * margin - xLabelSpace - X_TICK_SPACE
+        ];
+    };
+
+    private debounceResize = debounce(this.updateSize, 300);
+    private positionInGraphSpace = (e: { clientX: number, clientY: number }, clamp = false): [ number, number ] | undefined => {
+        const rect = this.guiCanvasRef.current?.getBoundingClientRect();
+        if (!rect) return undefined;
+
+        const { margin, yLabelSpace } = this.props.style;
+
+        const [ areaWidth, areaHeight ] = this.graphArea();
         const pos: [number, number] = [ e.clientX - rect.x - margin - yLabelSpace, e.clientY - rect.y - margin ];
 
+        function clampf(val: number, from: number, to: number) { return Math.max(Math.min(val, to), from); }
+
+        if (clamp) {
+            return [ clampf(pos[0], 0, areaWidth), clampf(pos[1], 0, areaHeight) ];
+        }
+
         if (pos[0] >= 0 && pos[1] >= 0 &&
-            pos[0] < rect.width - 2 * margin - yLabelSpace &&
-            pos[1] < rect.height - 2 * margin - xLabelSpace) {
+            pos[0] < areaWidth &&
+            pos[1] < areaHeight) {
 
             return pos;
         }
@@ -217,14 +237,10 @@ class GraphComponent
     private canvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (this.props.threshold) {
             if (!this.guiCanvasRef.current) return;
-            const { margin, xLabelSpace, yLabelSpace } = this.props.style;
 
             const pos = this.positionInGraphSpace(e);
             const zoom = this.props.zoom as number[] | undefined;
-            const area = [
-                this.guiCanvasRef.current.width - 2 * margin  - yLabelSpace,
-                this.guiCanvasRef.current.height - 2 * margin - xLabelSpace
-            ];
+            const area = this.graphArea();
 
             if (!pos || !zoom) return;
 
@@ -273,16 +289,12 @@ class GraphComponent
 
     private canvasMouseUp = (e: MouseEvent) => {
         if (this.downPos && this.guiCanvasRef.current) {
-            const pos = this.positionInGraphSpace(e);
+            const pos = this.positionInGraphSpace(e, true);
 
             if (pos && this.props.zoom) {
                 const zoom = this.props.zoom as number[];
-                const { margin, xLabelSpace, yLabelSpace } = this.props.style;
 
-                const area = [
-                    this.guiCanvasRef.current.width - 2 * margin  - yLabelSpace,
-                    this.guiCanvasRef.current.height - 2 * margin - xLabelSpace
-                ];
+                const area = this.graphArea();
 
                 if (Math.abs((this.downPos[0] - pos[0]) * (this.downPos[1] - pos[1])) > 16) {
                     const [ relXS, relXE, relYS, relYE ] = [
