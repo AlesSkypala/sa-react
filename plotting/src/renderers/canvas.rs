@@ -124,7 +124,7 @@ impl Renderer for OffscreenGraphRenderer {
         todo!()
     }
 
-    fn dispose_bundle(&mut self, bundle: usize) {
+    fn dispose_bundle(&mut self, _bundle: usize) {
         todo!()
     }
 }

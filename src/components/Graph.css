@@ -50,6 +50,24 @@
     flex-grow: 1;
 }
 
+.graph-content .xlabel {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    bottom: 0;
+}
+
+.graph-content .ylabel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    left: 0;
+}
+
 .graph-resize-overlay {
     position: absolute;
     left: 0;

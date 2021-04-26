@@ -330,6 +330,7 @@ class GraphComponent
 
     public render() {
         const { title, traces, jobs, failedJobs, metadata, xRange } = this.props;
+        const { margin, xLabelSpace, yLabelSpace } = this.props.style;
 
         const menuShow = useContextMenu({ id: `graph-${this.props.id}-menu` }).show;
 
@@ -413,6 +414,15 @@ class GraphComponent
                         { icon(faDesktop)   }{ metadata.sourceNames.join('; ') } <br/>
                         { icon(faChartLine) }{ metadata.datasetNames.join('; ') } <br/>
                         { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) }
+                    </div>
+                    {/* <div style={{ }}>
+                        {this.props.yLabel}    
+                    </div> */}
+                    <div className='xlabel' style={{ left: margin + yLabelSpace, right: margin, maxHeight: xLabelSpace }}>
+                        {this.props.xLabel}    
+                    </div>
+                    <div className='ylabel' style={{ height: `calc(100% - ${2 * margin + xLabelSpace}px)`, maxWidth: yLabelSpace, top: margin }}>
+                        <span style={{ transform: 'rotate(-90deg)' }} >{this.props.yLabel}</span>
                     </div>
                 </div>
             </div>

@@ -15,18 +15,22 @@ struct BufferEntry {
 }
 
 pub struct WebGlRenderer {
-    tp_size_pos:   WebGlUniformLocation,
-    tp_origin_pos: WebGlUniformLocation,
-    tp_color_pos: WebGlUniformLocation,
-    // pos: usize,
-
     width: u32,
     height: u32,
 
     _canvas: OffscreenCanvas,
-    trace_program: WebGlProgram,
     context: WebGlRenderingContext,
     trace_buffer: WebGlBuffer,
+
+    tp_size_pos:   WebGlUniformLocation,
+    tp_origin_pos: WebGlUniformLocation,
+    tp_color_pos: WebGlUniformLocation,
+    tp_transform_pos: WebGlUniformLocation,
+    trace_program: WebGlProgram,
+
+    ap_resolution_pos: WebGlUniformLocation,
+    ap_color_pos: WebGlUniformLocation,
+    axes_program: WebGlProgram,
 
     bundles_counter: usize,
     bundles: HashMap<usize, Vec<BufferEntry>>,
@@ -47,11 +51,12 @@ impl WebGlRenderer {
             r#"
             attribute vec2 aVertexPosition;
 
+            uniform vec2 transform;
             uniform vec2 origin;
             uniform vec2 size;
 
             void main() {
-                gl_Position = vec4(vec2(-1,-1) + vec2(2,2) * (aVertexPosition - origin) / size, 0, 1);
+                gl_Position = vec4(vec2(-1,-1) + vec2(2,2) * (aVertexPosition * vec2(1,transform.x) + vec2(0, transform.y) - origin) / size, 0, 1);
             }
             "#
         ).unwrap();
@@ -71,17 +76,54 @@ impl WebGlRenderer {
 
         let program = webgl_utils::link_program(&context, &vert_shader, &frag_shader).unwrap();
 
+        let axes_program = {
+
+            let vert_shader = webgl_utils::compile_shader(
+                &context,
+                WebGlRenderingContext::VERTEX_SHADER,
+                r#"
+                attribute vec2 aVertexPosition;
+    
+                uniform vec2 resolution;
+    
+                void main() {
+                    gl_Position = vec4(vec2(-1, -1) + vec2(2, 2) * aVertexPosition / resolution, 0, 1);
+                }
+                "#
+            ).unwrap();
+    
+            let frag_shader = webgl_utils::compile_shader(
+                &context,
+                WebGlRenderingContext::FRAGMENT_SHADER,
+                r#"
+                precision mediump float;
+                uniform vec4 color;
+
+                void main() {
+                    gl_FragColor = color;
+                }
+                "#
+            ).unwrap();
+
+            webgl_utils::link_program(&context, &vert_shader, &frag_shader).unwrap()
+        };
+
         WebGlRenderer {
+            width: elem.width(),
+            height: elem.height(),
+            _canvas: elem,
+
             tp_origin_pos: context.get_uniform_location(&program, "origin").unwrap(),
             tp_size_pos: context.get_uniform_location(&program, "size").unwrap(),
             tp_color_pos: context.get_uniform_location(&program, "color").unwrap(),
-            trace_buffer: context.create_buffer().unwrap(),
-
-            width: elem.width(),
-            height: elem.height(),
-
-            _canvas: elem,
+            tp_transform_pos: context.get_uniform_location(&program, "transform").unwrap(),
             trace_program: program,
+
+            ap_resolution_pos: context.get_uniform_location(&axes_program, "resolution").unwrap(),
+            ap_color_pos: context.get_uniform_location(&axes_program, "color").unwrap(),
+            axes_program,
+
+            trace_buffer: context.create_buffer().unwrap(),
             context,
 
             bundles_counter: 0,
@@ -92,6 +134,112 @@ impl WebGlRenderer {
     pub fn clear(&self) {
         self.context.clear_color(1.0, 1.0, 1.0, 1.0);
         self.context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+    }
+
+    pub fn render_axes(&self, job: &RenderJob) {
+        let gl = &self.context;
+
+        gl.viewport(0, 0, self.width as i32, self.height as i32);
+
+        gl.use_program(Some(&self.axes_program));
+        gl.uniform2f(Some(&self.ap_resolution_pos), self.width as f32, self.height as f32);
+        gl.uniform4f(Some(&self.ap_color_pos), 0.3, 0.3, 0.3, 1.0);
+        gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&self.trace_buffer));
+        gl.line_width(2.0);
+
+        unsafe {
+
+            let data: Vec<f32> = vec![
+                (job.y_label_space + job.margin) as f32 - 1.0, (self.height - job.margin) as f32,
+                (job.y_label_space + job.margin) as f32 - 1.0, (job.x_label_space + job.margin) as f32 - 1.0,
+                (self.width - job.margin) as f32, (job.margin + job.x_label_space) as f32 - 1.0,
+            ];
+
+            let vert_array = js_sys::Float32Array::view(&data);
+
+            gl.buffer_data_with_array_buffer_view(
+                WebGlRenderingContext::ARRAY_BUFFER,
+                &vert_array,
+                WebGlRenderingContext::STATIC_DRAW,
+            );
+        }
+
+        gl.vertex_attrib_pointer_with_i32(0, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
+        gl.enable_vertex_attrib_array(0);
+        gl.draw_arrays(
+            WebGlRenderingContext::LINE_STRIP,
+            0,
+            3
+        );
+    }
+
+    pub fn render_grid(&self, job: &RenderJob) {
+        let gl = &self.context;
+
+        gl.viewport(
+            (job.margin + job.y_label_space) as i32,
+            (job.margin + job.x_label_space) as i32,
+            (self.width  - job.margin * 2 - job.y_label_space) as i32,
+            (self.height - job.margin * 2 - job.x_label_space) as i32
+        );
+
+        gl.use_program(Some(&self.trace_program));
+        gl.uniform2f(Some(&self.tp_origin_pos), job.x_from, job.y_from);
+        gl.uniform2f(Some(&self.tp_size_pos), job.x_to - job.x_from, job.y_to - job.y_from);
+        gl.uniform2f(Some(&self.tp_transform_pos), 1.0, 0.0);
+        gl.uniform3f(Some(&self.tp_color_pos), 0.8, 0.8, 0.8);
+        gl.line_width(1.0);
+
+        gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&self.trace_buffer));
+
+        const SIZES: [f32; 4] = [1.0, 2.0, 5.0, 10.0];
+    
+        let mut y0: f32 = 0.0;
+        let mut dy: f32 = 1.0;
+        let n;
+
+        {
+            let y_span = job.y_to - job.y_from;
+            let order = y_span.log10().floor() - 1.0;
+            
+            for size in SIZES.iter() {
+                dy = (10.0f32).powf(order) * size;
+                y0 = (job.y_from / dy).floor() * dy;
+
+                if y_span / dy < 10.0 { break; }
+            }
+
+            n = (y_span / dy) as i32;
+        }
+
+        unsafe {
+            let mut data: Vec<f32> = Vec::with_capacity(n as usize * 4);
+
+            let (_dx, dy) = ((job.x_to - job.x_from) / n as f32, (job.y_to - job.y_from) / n as f32);
+
+            for i in 1..=n {
+                data.push(job.x_from);
+                data.push(y0 + i as f32 * dy);
+                data.push(job.x_to);
+                data.push(y0 + i as f32 * dy);
+            }
+
+            let vert_array = js_sys::Float32Array::view(&data);
+
+            gl.buffer_data_with_array_buffer_view(
+                WebGlRenderingContext::ARRAY_BUFFER,
+                &vert_array,
+                WebGlRenderingContext::STATIC_DRAW,
+            );
+        }
+
+        gl.vertex_attrib_pointer_with_i32(0, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
+        gl.enable_vertex_attrib_array(0);
+        gl.draw_arrays(
+            WebGlRenderingContext::LINES,
+            0,
+            4 * n
+        );
     }
 
     #[allow(dead_code)]
@@ -111,11 +259,11 @@ impl Renderer for WebGlRenderer {
         }
 
         if job.render_axes {
-            // todo!()
+            self.render_axes(&job);
         }
 
         if job.render_grid {
-            // todo!()
+            self.render_grid(&job);
         }
 
         if job.render_labels {
@@ -133,6 +281,7 @@ impl Renderer for WebGlRenderer {
         gl.use_program(Some(&self.trace_program));
         gl.uniform2f(Some(&self.tp_origin_pos), job.x_from, job.y_from);
         gl.uniform2f(Some(&self.tp_size_pos), job.x_to - job.x_from, job.y_to - job.y_from);
+        gl.uniform2f(Some(&self.tp_transform_pos), 1.0, 0.0);
 
         if job.get_bundles().len() > 0 {
             for (_, bundle) in &self.bundles {
