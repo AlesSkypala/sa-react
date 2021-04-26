@@ -313,10 +313,11 @@ impl Renderer for WebGlRenderer {
                 unsafe {
                     use std::iter::once;
 
-                    let data: Vec<f32> = crate::data::DATA[trace.idx]
-                        .get_data_in(job.x_from, job.x_to)
-                        .flat_map(|p| once(p.0).chain(once(p.1)))
-                        .collect();
+                    let data: Vec<f32> = crate::data::get_trace_ret(trace.idx, |t|
+                        t.get_data_in(job.x_from, job.x_to)
+                            .flat_map(|p| once(p.0).chain(once(p.1)))
+                            .collect()
+                    );
 
                     n = data.len() / 2;
                     let vert_array = js_sys::Float32Array::view(&data);
@@ -357,10 +358,11 @@ impl Renderer for WebGlRenderer {
             unsafe {
                 use std::iter::once;
 
-                let data: Vec<f32> = crate::data::DATA[row.handle]
-                    .get_data_in(from, to)
+                let data: Vec<f32> = crate::data::get_trace_ret(row.handle, |t|
+                    t.get_data_in(from, to)
                     .flat_map(|p| once(p.0).chain(once(p.1)))
-                    .collect();
+                    .collect()
+                );
 
                 let vert_array = js_sys::Float32Array::view(&data);
 

@@ -93,17 +93,17 @@ impl Renderer for OffscreenGraphRenderer {
         for trace in job.get_traces() {
             let color = RGBColor(trace.color[0], trace.color[1], trace.color[2]);
 
-            unsafe {
+            crate::data::get_trace(trace.idx, |trace|
                 (*self.backend)
                     .borrow_mut()
                     .draw_path(
-                        crate::data::DATA[trace.idx]
+                            trace
                             .get_data_in(job.x_from, job.x_to)
                             .map(|point| chart.backend_coord(point)),
                         &color,
                     )
-                    .expect("Failed to draw a trace");
-            }
+                    .expect("Failed to draw a trace")
+            );
         }
     }
 

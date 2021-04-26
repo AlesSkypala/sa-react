@@ -1,4 +1,3 @@
-use std::error::Error;
 use wasm_bindgen::prelude::*;
 
 pub type RangePrec = f32;
@@ -121,7 +120,7 @@ pub struct DataSegment {
 #[derive(Debug)]
 pub enum SegmentState {
     Loading,
-    Error(Box<dyn Error>),
+    Error,
     Complete(Vec<(f32, f32)>),
 }
 

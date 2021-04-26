@@ -1,4 +1,4 @@
-use std::convert::TryInto;
+use std::{collections::HashSet, convert::TryInto};
 
 use wasm_bindgen::prelude::*;
 
@@ -25,6 +25,7 @@ pub struct RenderJob {
 
     traces: Vec<TraceStyle>,
     bundles: Vec<usize>,
+    bundle_blacklist: HashSet<usize>,
 }
 
 #[wasm_bindgen]
@@ -51,6 +52,7 @@ impl RenderJob {
 
             traces: Vec::with_capacity(trace_count),
             bundles: Vec::with_capacity(bundle_count),
+            bundle_blacklist: HashSet::new(),
         }
     }
 

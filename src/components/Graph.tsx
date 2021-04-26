@@ -256,7 +256,7 @@ class GraphComponent
     private canvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const canvas = this.guiCanvasRef.current?.getContext('2d');
         if (!canvas) return;
-        const pos = this.positionInGraphSpace(e);
+        const pos = this.positionInGraphSpace(e, true);
         const { margin, yLabelSpace } = this.props.style;
 
         if (this.props.threshold) {
