@@ -190,11 +190,11 @@ impl Renderer for WebGlRenderer {
         }
     }
 
-    fn size_changed(&mut self, _width: u32, _height: u32) {
-        self.width = _width;
-        self.height = _height;
-        self._canvas.set_width(_width);
-        self._canvas.set_height(_height);
+    fn size_changed(&mut self, width: u32, height: u32) {
+        self.width = width;
+        self.height = height;
+        self._canvas.set_width(width);
+        self._canvas.set_height(height);
     }
 
     fn create_bundle(&mut self, from: f32, to: f32, data: &[super::BundleEntry]) -> usize{

@@ -265,7 +265,6 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
         if (this.state.selectedRange === undefined) throw new Error('Unexpected error: No range selected when creating a graph.');
         if (this.state.selectedSource === undefined) throw new Error('Unexpected error: No source selected when creating a graph.');
 
-
         const xRange = [...this.state.selectedRange] as Graph['xRange'];
         const id = generate_graph_id();
 

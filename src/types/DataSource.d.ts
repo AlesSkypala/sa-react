@@ -15,7 +15,7 @@ extends Identified {
     xType: string;
     yType: string;
 
-    dataRange: [ [ unknown, unknown ] ];
+    dataRange: [ unknown, unknown ][];
 
     // variants?: string[];
     variantCount: number;
