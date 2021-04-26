@@ -2,10 +2,11 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { connect } from 'react-redux';
 import debounce from 'lodash.debounce';
+import domtoimage from 'dom-to-image';
 
 import { icon } from '../utils/icon';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faWrench, faExclamationTriangle, faChartLine, faDesktop, faArrowsAltH } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faWrench, faExclamationTriangle, faChartLine, faDesktop, faArrowsAltH, faCamera } from '@fortawesome/free-solid-svg-icons';
 
 import { Button, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
 import { Menu, useContextMenu, Submenu, Item, ItemParams } from 'react-contexify';
@@ -57,6 +58,7 @@ class GraphComponent
 
     private canvasRef: React.RefObject<HTMLCanvasElement> = React.createRef();
     private guiCanvasRef: React.RefObject<HTMLCanvasElement> = React.createRef();
+    private graphRef: React.RefObject<HTMLDivElement> = React.createRef();
     private renderer: RendererHandle | undefined;
 
     redrawGraph = async () => {
@@ -328,6 +330,17 @@ class GraphComponent
         this.props.clone_graph({ id: this.props.id, activeOnly: data === 'active' });
     }
 
+    private takeScreenshot = () => {
+        if (this.graphRef.current) {
+            domtoimage.toPng(this.graphRef.current).then(url => {
+                const link = document.createElement('a');
+                link.download = `graph-${this.props.id}.png`;
+                link.href = url;
+                link.click();
+            });
+        }
+    }
+
     public render() {
         const { title, traces, jobs, failedJobs, metadata, xRange } = this.props;
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
@@ -340,7 +353,7 @@ class GraphComponent
         };
 
         return (
-            <div className={`graph ${this.props.focused ? 'active' : ''}`}>
+            <div className={`graph ${this.props.focused ? 'active' : ''}`} ref={this.graphRef}>
                 <div className='text-center position-relative'>
                     <h4 className='mt-1 w-100 text-center'>{title}</h4>
                     <div style={{ right: 0, top: 0, bottom: 0 }} className='d-flex align-items-center position-absolute buttons'>
@@ -378,6 +391,7 @@ class GraphComponent
                                 </Button>
                             </OverlayTrigger>
                         )}
+                        <Button size='sm' variant='none' onClick={this.takeScreenshot}><FontAwesomeIcon icon={faCamera} /></Button>
                         <Button size='sm' variant='none' onClick={this.onEdit}>  <FontAwesomeIcon icon={faWrench} /></Button>
                         <Button size='sm' variant='none' onClick={this.onRemove}><FontAwesomeIcon icon={faTrash}  /></Button>
                     </div>
