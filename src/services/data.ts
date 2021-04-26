@@ -37,17 +37,30 @@ class Data {
         )).arrayBuffer();
     }
   
-    public getLdevMap = async (source: string, ldev: string): Promise<LdevInfo> => {
-        return await (await fetch(
-            this.getApiPath('data', source, 'features', 'ldev_map'),
-            {
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ id: ldev }),
-                method: 'post'
-            }
-        )).json();
+    public getLdevMap = async (source: string, ldev: string | string[]): Promise<LdevInfo[]> => {
+        if (!Array.isArray(ldev)) {
+            return [ await (await fetch(
+                this.getApiPath('data', source, 'features', 'ldev_map'),
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: ldev }),
+                    method: 'post'
+                }
+            )).json() ];
+        } else {
+            return await (await fetch(
+                this.getApiPath('data', source, 'features', 'ldev_map'),
+                {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ids: ldev }),
+                    method: 'post'
+                }
+            )).json();
+        }
     }
 
     public getTraceVariants = async (dataset: { source: string, id: string }): Promise<string[]> => {

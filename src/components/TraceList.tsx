@@ -46,23 +46,43 @@ export interface Props {
 }
 
 export interface State {
-    sources: DataSource[];
+    ldevMap: { [key: string]: string };
     active: Trace['id'] | undefined;
     numero_uno_in_italia: number;
 }
 
 class TraceList extends React.PureComponent<Props, State> {
     public state: State = {
-        sources: [],
+        ldevMap: {},
         active: undefined,
         numero_uno_in_italia: 0,
     };
 
-    private traceNameMap: { [s: string]: string } = {};
-
     private listRef = React.createRef<HTMLDivElement>();
-    public componentDidMount() {
-        DataService.getSources().then(sources => this.setState({ sources }));
+    
+    public async componentDidUpdate(prevProps: Props) {
+        if (prevProps.traces !== this.props.traces || Object.keys(this.state.ldevMap).length <= 0) {
+            const sources = this.props.traces.map(t => t.id.split('::')[0])
+                .filter((v, i, a) => a.indexOf(v) === i); // Select distinct sources
+
+            const ldevMap: { [key: string]: string } = {};
+
+            for (const source of sources) {
+                const ldevs = this.props.traces
+                    .filter(t => t.id.startsWith(source))
+                    .map(t => t.id.split('::').reverse()[0]);
+
+                const map = await DataService.getLdevMap(source, ldevs);
+
+                for (const ldev of map) {
+                    ldevMap[`${source}::${ldev.id}`] = ldev.name;
+                }
+
+                console.log(`LDEVs: ${ldevs.length}, Response: ${map.length}`);
+            }
+
+            this.setState({ ldevMap });
+        }
     }
 
     traceClicked = (e: React.MouseEvent<HTMLLIElement>) => {
@@ -107,23 +127,9 @@ class TraceList extends React.PureComponent<Props, State> {
 
         const hasMap = this.hasLdevMaps(t);
         const { source, ldev } = this.getLdevId(t);
-        const ldevId = `${source}::${ldev}`;
+        const ldevId = `${source}::${ldev.substr(0, 8)}`;
 
-        let ldevName = '';
-
-        if (hasMap) {
-            // !
-            // TODO tohle je asi hloupej způsob
-            if (this.traceNameMap[ldevId] === undefined)  {
-                const promise = DataService.getLdevMap(source, ldev);
-                promise.then( ({ name }) => {
-                    this.traceNameMap[ldevId] = name;
-                    this.ldevNameLoaded();
-                } );
-            } else {
-                ldevName = ` [${this.traceNameMap[ldevId]}]`;
-            }
-        }
+        const ldevName = this.state.ldevMap[ldevId] ?? '';
 
         return (
             <li
@@ -137,7 +143,7 @@ class TraceList extends React.PureComponent<Props, State> {
                 <span className='btn-select mr-1'>
                     <FontAwesomeIcon icon={this.props.activeTraces.includes(t.id) ? faCheckSquare : faSquare} />
                 </span>
-                <span className='trace-row-title'>{t.title}{ldevName}</span>
+                <span className='trace-row-title'>{t.title}{ldevName && ` [${ldevName}]`}</span>
                 { hasMap && (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
             </li>
         );
