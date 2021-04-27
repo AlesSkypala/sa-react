@@ -68,14 +68,14 @@ class GraphComponent
 
         this.setState({ rendering: true });
 
-        const job = this.renderer.createJob(this.props.xType, this.primaryBundle !== undefined ? 0 : this.props.traces.length)
+        const job = this.renderer.createJob(this.props.xType, this.renderer.bundles.length > 0 ? 0 : this.props.traces.length)
             .margin(this.props.style.margin)
             .labelSpaces(this.props.style.xLabelSpace + X_TICK_SPACE, this.props.style.yLabelSpace)
             .clear(true)
             .zoom(...(this.props.zoom ?? [ ...this.props.xRange, 0.0, 1.0 ]));
 
-        if (this.primaryBundle !== undefined) {
-            job.addBundle(this.primaryBundle);
+        if (this.renderer.bundles.length < 0) {
+            this.renderer.bundles.forEach(b => job.addBundle(b.handle));
         } else {
             this.props.traces
                 .filter(t => this.props.activeTraces.includes(t.id))
@@ -100,7 +100,7 @@ class GraphComponent
             const offscreen = canvas.transferControlToOffscreen();
 
             this.renderer = await RendererHandle.create(transfer(offscreen, [ offscreen ] ));
-            await this.updateSize();
+            setTimeout(() => this.updateSize(), 10);
         } else {
             throw new Error('Underlying canvas element was not initialized for this graph.');
         }
@@ -120,7 +120,6 @@ class GraphComponent
         this.renderer && await this.renderer.dispose();
     }
 
-    private primaryBundle: number | undefined;
     public async componentDidUpdate(prevProps: Props) {
         let redraw: boolean | undefined = undefined;
 
@@ -134,7 +133,7 @@ class GraphComponent
                     zoom: await dataWorker.recommend_extents(from, to, ids)
                 });
 
-                this.primaryBundle = await this.renderer?.createBundle(this.props.xRange, this.props.traces);
+                await this.renderer?.createBundle(this.props.xRange, this.props.traces);
                 redraw = false;
             } else {
                 redraw = true;

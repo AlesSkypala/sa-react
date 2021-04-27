@@ -67,6 +67,10 @@ impl RenderJob {
     pub fn add_bundle(&mut self, idx: usize) {
         self.bundles.push(idx);
     }
+
+    pub fn blacklist_trace(&mut self, handle: DataIdx) {
+        self.bundle_blacklist.insert(handle);
+    }
 }
 
 // unbound methods

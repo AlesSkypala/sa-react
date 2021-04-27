@@ -5,7 +5,7 @@ import type { RenderJob as WasmRenderJob } from '../plotting';
 class RendererHandle {
 
     get raw_handle(): number { return this.handle; }
-    private bundles: number[] = [];
+    public bundles: { handle: number, traces: Set<number> }[] = [];
 
     constructor(private handle: number) {
 
@@ -47,7 +47,7 @@ class RendererHandle {
 
         const handle = await dataWorker.createBundle(this.handle, range, transfer(data, [data]));
 
-        this.bundles.push(handle);
+        this.bundles.push({ handle, traces: new Set(traces.map(t => t.handle)) });
 
         return handle;
     }
