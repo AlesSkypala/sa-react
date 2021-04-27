@@ -59,9 +59,18 @@ class TraceList extends React.PureComponent<Props, State> {
     };
 
     private listRef = React.createRef<HTMLDivElement>();
-    
+
     public async componentDidUpdate(prevProps: Props) {
-        if (prevProps.traces !== this.props.traces || Object.keys(this.state.ldevMap).length <= 0) {
+        await this.fetchLdevNames(prevProps);
+    }
+
+    public async componentDidMount() {
+        await this.fetchLdevNames();
+    }
+
+    public async fetchLdevNames(prevProps?: Props) {
+        if (prevProps?.traces !== this.props.traces || Object.keys(this.state.ldevMap).length <= 0) {
+            console.log('Aight imma download them ldev names');
             const sources = this.props.traces.map(t => t.id.split('::')[0])
                 .filter((v, i, a) => a.indexOf(v) === i); // Select distinct sources
 
@@ -75,13 +84,15 @@ class TraceList extends React.PureComponent<Props, State> {
                 const map = await DataService.getLdevMap(source, ldevs);
 
                 for (const ldev of map) {
-                    ldevMap[`${source}::${ldev.id}`] = ldev.name;
+                    ldevMap[`${source}::${ldev.id}`.toLowerCase()] = ldev.name;
                 }
 
                 console.log(`LDEVs: ${ldevs.length}, Response: ${map.length}`);
             }
 
-            this.setState({ ldevMap });
+            this.setState({ ldevMap, numero_uno_in_italia: (this.state.numero_uno_in_italia + 1) % 420 });
+        } else {
+            console.log('Nah bro, I don\'t feel like downloading ldev names');
         }
     }
 
@@ -96,10 +107,6 @@ class TraceList extends React.PureComponent<Props, State> {
         const action = e.currentTarget.dataset.action as TraceAction;
         this.props.onAction(action);
     }
-
-    ldevNameLoaded = debounce(() => {
-        this.setState({ numero_uno_in_italia: (this.state.numero_uno_in_italia + 1) % 420 });
-    }, 500);
 
     hasLdevMaps = (trace: Trace) => {
         return DataService.hasLdevMap(trace.id); // trace.features.includes('ldev_map');
@@ -127,9 +134,9 @@ class TraceList extends React.PureComponent<Props, State> {
 
         const hasMap = this.hasLdevMaps(t);
         const { source, ldev } = this.getLdevId(t);
-        const ldevId = `${source}::${ldev.substr(0, 8)}`;
+        const ldevId = `${source}::${ldev.substr(0, 8)}`.toLowerCase();
 
-        const ldevName = this.state.ldevMap[ldevId] ?? '';
+        const ldevName = this.state.ldevMap[ldevId];
 
         return (
             <li
