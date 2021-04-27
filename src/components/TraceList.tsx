@@ -186,10 +186,7 @@ class TraceList extends React.PureComponent<Props, State> {
                                 rowHeight={35}
                                 rowCount={this.props.traces.length}
                                 rowRenderer={this.rowRenderer}
-                                // Before anyone accuses me of the terrible crimes I might have commited
-                                // in former Yugoslavia, just let me state that this is a necessity of
-                                // react-virtualized in order to redraw the list in cases where changes
-                                // occur a level deeper than just the passed props above
+                                map={this.state.ldevMap}
                             />
                         )}
                     </AutoSizer>
