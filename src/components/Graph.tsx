@@ -137,12 +137,13 @@ class GraphComponent
                 const ids = this.props.traces.filter(t => t.active).map(t => t.id);
                 const [ from, to ] = this.props.xRange;
 
+                await this.renderer?.createBundle(this.props.xRange, this.props.traces);
+
                 this.props.edit_graph({
                     id: this.props.id,
                     zoom: await dataWorker.recommend_extents(from, to, ids)
                 });
 
-                await this.renderer?.createBundle(this.props.xRange, this.props.traces);
                 redraw = false;
             } else {
                 redraw = true;

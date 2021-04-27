@@ -62,11 +62,7 @@ export class DataWorkerProxy {
 
         wmjob.deserialize_blacklist(new Uint8Array(blacklist));
 
-        const n = performance.now();
-
         renderer.render(wmjob);
-
-        console.log(`render time: ${performance.now() - n}`);
     }
 
     public async invokeDataJob(job: DataJob): Promise<DataJobResult> {

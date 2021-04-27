@@ -288,7 +288,7 @@ impl Renderer for WebGlRenderer {
             for (_, bundle) in &self.bundles {
                 for row in bundle {
                     if job.is_blacklisted(row.handle) { continue; }
-                    
+
                     gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&row.buffer));
                     gl.uniform3f(Some(&self.tp_color_pos), row.color[0], row.color[1], row.color[2]);
                     gl.line_width(row.width);
@@ -401,9 +401,8 @@ impl Renderer for WebGlRenderer {
     }
 
     fn dispose_bundle(&mut self, bundle: usize) {
-
         let bundle = self.bundles.remove(&bundle).unwrap();
-        
+
         for row in bundle {
             self.context.delete_buffer(Some(&row.buffer));
         }

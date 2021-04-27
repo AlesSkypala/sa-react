@@ -91,8 +91,6 @@ class TraceList extends React.PureComponent<Props, State> {
                 for (const ldev of map) {
                     ldevMap[`${source}::${ldev.id}`.toLowerCase()] = ldev.name;
                 }
-
-                console.log(`LDEVs: ${ldevs.length}, Response: ${map.length}`);
             }
 
             this.setState({ ldevMap });
