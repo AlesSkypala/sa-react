@@ -16,6 +16,7 @@
     user-select: none;
 }
 .trace-row > .trace-row-title {
+    font-size: 0.85em;
     flex-shrink: 1;
     text-overflow: ellipsis;
     white-space: nowrap;
