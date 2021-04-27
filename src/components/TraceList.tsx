@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { AutoSizer, List, ListRowProps } from 'react-virtualized';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -147,7 +148,7 @@ class TraceList extends React.PureComponent<Props, State> {
             <li
                 key={props.key}
                 data-id={t.id}
-                data-active={isActive ? 'true' : 'false'} 
+                data-active={isActive ? 'true' : 'false'}
                 style={props.style}
                 className={`trace-row ${this.state.active === t.id ? 'active' : ''}`}
                 onClick={this.traceClicked}
@@ -159,6 +160,34 @@ class TraceList extends React.PureComponent<Props, State> {
                 <span className='trace-row-title'>{t.title}{ldevName && ` [${ldevName}]`}</span>
                 { hasMap && (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
             </li>
+        );
+
+        const rowTitle = `${t.title}${ldevName && ` [${ldevName}]`}`;
+
+        return (
+
+            <OverlayTrigger
+                trigger={[ 'focus', 'hover' ]}
+                placement='right'
+                container={document.getElementById('context-menu')}
+                overlay={<Tooltip id={`trace-row-tooltip-${ldevId}`}>{rowTitle}</Tooltip>}
+            >
+                <li
+                    key={props.key}
+                    data-id={t.id}
+                    style={props.style}
+                    className={`trace-row ${this.state.active === t.id ? 'active' : ''}`}
+                    onClick={this.traceClicked}
+                >
+                    <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
+                    <span className='btn-select mr-1'>
+                        <FontAwesomeIcon icon={this.props.activeTraces.includes(t.id) ? faCheckSquare : faSquare} />
+                    </span>
+                    <span className='trace-row-title'>{rowTitle}</span>
+                    { hasMap && (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
+                </li>
+
+            </OverlayTrigger>
         );
     }
 
