@@ -16,7 +16,6 @@ interface Graph<T extends XType = XType> {
 
     // Runtime
     zoom?: [ XTypeTypeMap[T], XTypeTypeMap[T], number, number ];
-    activeTraces: Trace['id'][];
 }
 
 interface GraphMetadata {
@@ -36,6 +35,7 @@ interface Trace {
     handle: number;
     title: string;
     style: TraceStyle;
+    active: boolean;
 
     // features: string[];
     filtering?: 'sg';

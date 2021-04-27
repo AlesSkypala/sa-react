@@ -1,5 +1,4 @@
 import * as React from 'react';
-import debounce from 'lodash.debounce';
 import { AutoSizer, List, ListRowProps } from 'react-virtualized';
 import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
@@ -39,23 +38,20 @@ const buttons: { label: string, action: TraceAction }[][] = [
 
 export interface Props {
     traces: Trace[];
-    activeTraces: Graph['activeTraces'];
 
-    onSelect(id: Trace['id']): void;
+    onSelect(id: Trace['id'], toggle: boolean): void;
     onAction(action: TraceAction): void;
 }
 
 export interface State {
     ldevMap: { [key: string]: string };
     active: Trace['id'] | undefined;
-    numero_uno_in_italia: number;
 }
 
 class TraceList extends React.PureComponent<Props, State> {
     public state: State = {
         ldevMap: {},
         active: undefined,
-        numero_uno_in_italia: 0,
     };
 
     private listRef = React.createRef<HTMLDivElement>();
@@ -69,7 +65,16 @@ class TraceList extends React.PureComponent<Props, State> {
     }
 
     public async fetchLdevNames(prevProps?: Props) {
-        if (prevProps?.traces !== this.props.traces || Object.keys(this.state.ldevMap).length <= 0) {
+        if (prevProps?.traces !== this.props.traces) {
+
+            if (prevProps?.traces && this.props.traces && this.props.traces.length === prevProps.traces.length) {
+                const ids = new Set(this.props.traces.map(t => t.id));
+
+                if (prevProps.traces.findIndex(t => !ids.has(t.id)) < 0) {
+                    return;
+                }
+            }
+
             console.log('Aight imma download them ldev names');
             const sources = this.props.traces.map(t => t.id.split('::')[0])
                 .filter((v, i, a) => a.indexOf(v) === i); // Select distinct sources
@@ -90,7 +95,7 @@ class TraceList extends React.PureComponent<Props, State> {
                 console.log(`LDEVs: ${ldevs.length}, Response: ${map.length}`);
             }
 
-            this.setState({ ldevMap, numero_uno_in_italia: (this.state.numero_uno_in_italia + 1) % 420 });
+            this.setState({ ldevMap });
         } else {
             console.log('Nah bro, I don\'t feel like downloading ldev names');
         }
@@ -98,8 +103,9 @@ class TraceList extends React.PureComponent<Props, State> {
 
     traceClicked = (e: React.MouseEvent<HTMLLIElement>) => {
         const id = e.currentTarget.dataset.id as Trace['id'];
-        this.props.onSelect(id);
-        this.setState({ active: id, numero_uno_in_italia: (this.state.numero_uno_in_italia + 1) % 420 });
+        const active = e.currentTarget.dataset.active === 'true';
+        this.props.onSelect(id, !active);
+        this.setState({ active: id });
         this.listRef.current?.focus();
     }
 
@@ -137,18 +143,20 @@ class TraceList extends React.PureComponent<Props, State> {
         const ldevId = `${source}::${ldev.substr(0, 8)}`.toLowerCase();
 
         const ldevName = this.state.ldevMap[ldevId];
+        const isActive = t.active;
 
         return (
             <li
                 key={props.key}
                 data-id={t.id}
+                data-active={isActive ? 'true' : 'false'} 
                 style={props.style}
                 className={`trace-row ${this.state.active === t.id ? 'active' : ''}`}
                 onClick={this.traceClicked}
             >
                 <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
                 <span className='btn-select mr-1'>
-                    <FontAwesomeIcon icon={this.props.activeTraces.includes(t.id) ? faCheckSquare : faSquare} />
+                    <FontAwesomeIcon icon={isActive ? faCheckSquare : faSquare} />
                 </span>
                 <span className='trace-row-title'>{t.title}{ldevName && ` [${ldevName}]`}</span>
                 { hasMap && (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
@@ -178,8 +186,6 @@ class TraceList extends React.PureComponent<Props, State> {
                                 rowHeight={35}
                                 rowCount={this.props.traces.length}
                                 rowRenderer={this.rowRenderer}
-                                active={this.props.activeTraces}
-                                lol={this.state.numero_uno_in_italia}
                                 // Before anyone accuses me of the terrible crimes I might have commited
                                 // in former Yugoslavia, just let me state that this is a necessity of
                                 // react-virtualized in order to redraw the list in cases where changes

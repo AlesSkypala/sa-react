@@ -300,7 +300,6 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
 
             xRange,
             traces: [],
-            activeTraces: [],
         };
 
         const job = new DataJob(xRange).relate(id);
@@ -351,7 +350,6 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
 
                 xRange,
                 traces: [],
-                activeTraces: [],
             });
 
             jobs.push(new DataJob(xRange).downloadBulk({ source: dataset.source, id: dataset.id }).relate(id));

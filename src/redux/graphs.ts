@@ -74,16 +74,18 @@ export const graph_threshold_select = createAsyncThunk(
 
         const fits_thresh = await dataWorker.threshold(graph.xRange[0], graph.xRange[1], payload.threshold, graph.traces.map(t => t.id)) as boolean[];
 
-        dispatch(graphsSlice.actions.edit_graph({
+        dispatch(graphsSlice.actions.toggle_traces({
             id: payload.id,
-            activeTraces: graph.traces.filter((t, idx) => fits_thresh[idx]).map(t => t.id)
+            traces: new Set(graph.traces.filter((t, idx) => fits_thresh[idx]).map(t => t.id)),
+            val: true,
+            negateRest: true,
         }));
 
         dispatch(graphsSlice.actions.toggle_threshold(false));
     }
 );
 
-type GraphEdit = Partial<Pick<Graph, 'title' | 'xLabel' | 'yLabel'| 'zoom' | 'activeTraces'>>;
+type GraphEdit = Partial<Pick<Graph, 'title' | 'xLabel' | 'yLabel'| 'zoom'>>;
 
 export const graphsSlice = createSlice({
     name: 'graphs',
@@ -122,15 +124,25 @@ export const graphsSlice = createSlice({
             }
         },
 
-        add_traces: (state, action: PayloadAction<{ id: Graph['id'], traces: Trace[], active?: true }>) => {
+        add_traces: (state, action: PayloadAction<{ id: Graph['id'], traces: Trace[] }>) => {
             const graph = state.items.find(g => g.id === action.payload.id);
 
             if (graph) {
                 graph.traces.push(...action.payload.traces);
+            }
+        },
 
-                if (action.payload.active) {
-                    graph.activeTraces.push(...action.payload.traces.map(t => t.id));
-                }
+        toggle_traces: (state, action: PayloadAction<{ id: Graph['id'], traces: Set<Trace['id']>, val: boolean, negateRest?: boolean }>) => {
+            const graph = state.items.find(g => g.id === action.payload.id);
+
+            if (graph) {
+                graph.traces.forEach(t => {
+                    if (action.payload.traces.has(t.id)) {
+                        t.active = action.payload.val;
+                    } else if (action.payload.negateRest) {
+                        t.active = !action.payload.val;
+                    }
+                });
             }
         },
 
@@ -187,7 +199,7 @@ export const {
     add_graphs, remove_graphs,
     clone_graph, edit_graph,
     set_layout, set_stacking,
-    add_traces,
+    add_traces, toggle_traces
 } = graphsSlice.actions;
 
 export default graphsSlice.reducer;

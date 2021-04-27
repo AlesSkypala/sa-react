@@ -31,9 +31,10 @@ export const invoke_job = createAsyncThunk(
                 handle: result.loadedTraces![t],
                 title: t.split('::').reverse()[0],
                 style: { width: 1, color: genColor() },
+                active: true,
             }));
 
-            traces && job.relatedGraphs.forEach(g => dispatch(add_traces({ id: g, traces, active: true })));
+            traces && job.relatedGraphs.forEach(g => dispatch(add_traces({ id: g, traces })));
         }
     }
 );
