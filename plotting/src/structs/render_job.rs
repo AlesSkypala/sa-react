@@ -1,4 +1,4 @@
-use std::{collections::HashSet, convert::TryInto};
+use std::{collections::HashSet, convert::TryInto, mem::size_of};
 
 use wasm_bindgen::prelude::*;
 
@@ -71,6 +71,26 @@ impl RenderJob {
     pub fn blacklist_trace(&mut self, handle: DataIdx) {
         self.bundle_blacklist.insert(handle);
     }
+
+    pub fn deserialize_traces(&mut self, data: &[u8]) {
+        const TRACE_ROW_SIZE: usize = 2 * size_of::<u32>() + 3;
+
+        for row in data.chunks_exact(TRACE_ROW_SIZE) {
+            self.add_trace(
+                usize::from_be_bytes(row[0..4].try_into().unwrap()),
+                &row[8..11],
+                u32::from_be_bytes(row[4..8].try_into().unwrap())
+            );
+        }
+    }
+
+    pub fn deserialize_blacklist(&mut self, data: &[u8]) {
+        const ROW_SIZE: usize = size_of::<u32>();
+
+        for row in data.chunks_exact(ROW_SIZE) {
+            self.blacklist_trace(usize::from_be_bytes(row.try_into().unwrap()));
+        }
+    }
 }
 
 // unbound methods
@@ -85,6 +105,10 @@ impl RenderJob {
 
     pub fn get_x_type(&self) -> &String {
         &self.x_type
+    }
+
+    pub fn is_blacklisted(&self, handle: DataIdx) -> bool {
+        self.bundle_blacklist.contains(&handle)
     }
 }
 

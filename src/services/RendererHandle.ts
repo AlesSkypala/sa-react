@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { transfer } from 'comlink';
 import { dataWorker } from '../index';
 import type { RenderJob as WasmRenderJob } from '../plotting';
@@ -26,8 +27,8 @@ class RendererHandle {
         await dataWorker.resizeRenderer(this.handle, width, height);
     }
 
-    public createJob(x_type: string, traces: number) {
-        return new RenderJob(this, x_type, traces);
+    public createJob(x_type: string, traces: number, blacklist: number) {
+        return new RenderJob(this, x_type, traces, blacklist);
     }
 
     public async createBundle(range: Graph['xRange'], traces: Pick<Trace, 'handle' | 'style'>[]): Promise<number> {
@@ -53,24 +54,33 @@ class RendererHandle {
     }
 }
 
-const TRACE_LEN = 4 + 4 + 3; // 
+const TRACE_LEN = 2 * Uint32Array.BYTES_PER_ELEMENT + 3 * Uint8Array.BYTES_PER_ELEMENT;
 export class RenderJob {
 
     public content: Partial<Omit<WasmRenderJob, 'free'>> = {};
     public bundles: number[] = [];
-    // public traces: (Pick<Trace, 'id'> & TraceStyle)[] = [];
-    public traces: ArrayBuffer;
-    public view: DataView;
-    private cursor = 0;
+    
+    private traces: ArrayBuffer;
+    private tracesView: DataView | undefined;
+    private tracesCursor = 0;
 
-    constructor(private handle: RendererHandle, public x_type: string, expectedTraceCount: number) {
+    private blacklist: ArrayBuffer;
+    private blacklistView: DataView | undefined;
+    private blacklistCursor = 0;
+
+
+    constructor(private handle: RendererHandle, public x_type: string, expectedTraceCount: number, blacklistSize: number) {
         this.traces = new ArrayBuffer(expectedTraceCount * TRACE_LEN);
-        this.view = new DataView(this.traces);
+        this.blacklist = new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * blacklistSize); 
+        this.tracesView = new DataView(this.traces);
+        this.blacklistView = new DataView(this.blacklist);
     }
 
     public async invoke(): Promise<void> {
-        delete (this as unknown as Partial<RenderJob>).view;
-        await dataWorker.invokeRenderJob(this.handle.raw_handle, this.x_type, this.content, transfer(this.traces, [ this.traces ]), this.bundles);
+        delete this.tracesView;
+        delete this.blacklistView;
+
+        await dataWorker.invokeRenderJob(this.handle.raw_handle, this.x_type, this.content, transfer(this.traces, [ this.traces ]), this.bundles, transfer(this.blacklist, [ this.blacklist ]));
     }
 
     public clear(val: boolean): RenderJob {
@@ -101,13 +111,21 @@ export class RenderJob {
     }
 
     public addTrace(trace: Trace) {
-        this.view.setUint32(this.cursor, trace.handle);
-        this.view.setUint32(this.cursor + 4, trace.style.width);
-        this.view.setUint8(this.cursor + 8, trace.style.color[0]);
-        this.view.setUint8(this.cursor + 9, trace.style.color[1]);
-        this.view.setUint8(this.cursor + 10, trace.style.color[2]);
 
-        this.cursor += TRACE_LEN;
+        this.tracesView!.setUint32(this.tracesCursor, trace.handle);
+        this.tracesView!.setUint32(this.tracesCursor + 4, trace.style.width);
+        this.tracesView!.setUint8( this.tracesCursor + 8, trace.style.color[0]);
+        this.tracesView!.setUint8( this.tracesCursor + 9, trace.style.color[1]);
+        this.tracesView!.setUint8( this.tracesCursor + 10, trace.style.color[2]);
+
+        this.tracesCursor += TRACE_LEN;
+        return this;
+    }
+
+    public blacklistTrace(trace: Pick<Trace, 'handle'>) {
+        this.blacklistView!.setUint32(this.blacklistCursor, trace.handle);
+
+        this.blacklistCursor += Uint32Array.BYTES_PER_ELEMENT;
         return this;
     }
 

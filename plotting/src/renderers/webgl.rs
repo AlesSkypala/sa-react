@@ -3,12 +3,13 @@ use std::{collections::HashMap};
 use wasm_bindgen::{JsCast};
 use web_sys::{OffscreenCanvas, WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlUniformLocation};
 
-use crate::{structs::RenderJob};
+use crate::{data::DataIdx, structs::RenderJob};
 
 use super::Renderer;
 
 struct BufferEntry {
     points: i32,
+    handle: DataIdx,
     buffer: WebGlBuffer,
     width: f32,
     color: [f32; 3],
@@ -286,6 +287,8 @@ impl Renderer for WebGlRenderer {
         if job.get_bundles().len() > 0 {
             for (_, bundle) in &self.bundles {
                 for row in bundle {
+                    if job.is_blacklisted(row.handle) { continue; }
+                    
                     gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&row.buffer));
                     gl.uniform3f(Some(&self.tp_color_pos), row.color[0], row.color[1], row.color[2]);
                     gl.line_width(row.width);
@@ -378,6 +381,7 @@ impl Renderer for WebGlRenderer {
             vec.push(
                 BufferEntry {
                     points,
+                    handle: row.handle,
                     buffer,
                     width: row.width as f32,
                     color: [

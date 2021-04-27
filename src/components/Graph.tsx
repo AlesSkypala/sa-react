@@ -68,19 +68,28 @@ class GraphComponent
 
         this.setState({ rendering: true });
 
-        const job = this.renderer.createJob(this.props.xType, this.renderer.bundles.length > 0 ? 0 : this.props.traces.length)
+        const disabled: Trace[] = [];
+        const enabledOffbundle: Trace[] = [];
+
+        this.props.traces.forEach(t => {
+            if (!t.active) {
+                disabled.push(t);
+            } else {
+                if ((this.renderer?.bundles.findIndex(b => b.traces.has(t.handle)) ?? -1) < 0) {
+                    enabledOffbundle.push(t);
+                }
+            }
+        });
+
+        const job = this.renderer.createJob(this.props.xType, enabledOffbundle.length, disabled.length)
             .margin(this.props.style.margin)
             .labelSpaces(this.props.style.xLabelSpace + X_TICK_SPACE, this.props.style.yLabelSpace)
             .clear(true)
             .zoom(...(this.props.zoom ?? [ ...this.props.xRange, 0.0, 1.0 ]));
 
-        if (this.renderer.bundles.length > 0) {
-            this.renderer.bundles.forEach(b => job.addBundle(b.handle));
-        } else {
-            this.props.traces
-                .filter(t => t.active)
-                .forEach(t => job.addTrace(t));
-        }
+        this.renderer.bundles.forEach(b => job.addBundle(b.handle));
+        enabledOffbundle.forEach(t => job.addTrace(t));
+        disabled.forEach(t => job.blacklistTrace(t));
 
         await job.invoke();
 

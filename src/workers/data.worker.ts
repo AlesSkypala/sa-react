@@ -44,7 +44,7 @@ export class DataWorkerProxy {
         renderer.dispose_bundle(bundle);
     }
 
-    public invokeRenderJob(handle: number, x_type: string, content: RenderJob['content'], traces: ArrayBuffer, bundles: number[]) {
+    public invokeRenderJob(handle: number, x_type: string, content: RenderJob['content'], traces: ArrayBuffer, bundles: number[], blacklist: ArrayBuffer) {
         const renderer = this.renderers[handle];
 
         if (!renderer) throw new Error('Renderer with given handle does not exist.');
@@ -54,26 +54,13 @@ export class DataWorkerProxy {
         wmjob.clear = true;
         Object.assign(wmjob, content);
 
-        const view = new DataView(traces);
-        console.log(traces.byteLength / 11);
-    
-        for (let i = 0; i < view.byteLength; i += 11) {
-            const handle = view.getUint32(i);
-            const width = view.getUint32(i + 4);
-            wmjob.add_trace(
-                handle,
-                new Uint8Array([
-                    view.getUint8(i + 8),
-                    view.getUint8(i + 9),
-                    view.getUint8(i + 10),
-                ]),
-                width
-            );
-        }
+        wmjob.deserialize_traces(new Uint8Array(traces));
 
         for (const bundle of bundles) {
             wmjob.add_bundle(bundle);
         }
+
+        wmjob.deserialize_blacklist(new Uint8Array(blacklist));
 
         const n = performance.now();
 
