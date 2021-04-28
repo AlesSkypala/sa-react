@@ -58,9 +58,9 @@ class GraphComponent
         rendering: false,
     }
 
-    private canvasRef: React.RefObject<HTMLCanvasElement> = React.createRef();
-    private guiCanvasRef: React.RefObject<HTMLCanvasElement> = React.createRef();
-    private graphRef: React.RefObject<HTMLDivElement> = React.createRef();
+    private canvasRef = React.createRef<HTMLCanvasElement>();
+    private guiCanvasRef= React.createRef<HTMLCanvasElement>();
+    private graphRef = React.createRef<HTMLDivElement>();
     private renderer: RendererHandle | undefined;
 
     redrawGraph = async () => {
@@ -449,10 +449,10 @@ class GraphComponent
                         { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) }
                     </div>
                     {/* <div style={{ }}>
-                        {this.props.yLabel}    
+                        {this.props.yLabel}
                     </div> */}
                     <div className='xlabel' style={{ left: margin + yLabelSpace, right: margin, maxHeight: xLabelSpace }}>
-                        {this.props.xLabel}    
+                        {this.props.xLabel}
                     </div>
                     <div className='ylabel' style={{ height: `calc(100% - ${2 * margin + xLabelSpace}px)`, maxWidth: yLabelSpace, top: margin }}>
                         <span style={{ transform: 'rotate(-90deg)' }} >{this.props.yLabel}</span>
