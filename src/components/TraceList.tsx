@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { AutoSizer, List, ListRowProps } from 'react-virtualized';
+import { AutoSizer, List as VirtualizedList, ListRowProps as VirtualizedRowProps } from 'react-virtualized';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
@@ -136,44 +136,8 @@ class TraceList extends React.PureComponent<Props, State> {
         }
     }
 
-    rowRenderer = (props: ListRowProps) => {
-        const t = this.props.traces[props.index];
-        const color = colorToHex(t.style.color);
-
-        const hasMap = this.hasLdevMaps(t);
-        const { source, ldev } = this.getLdevId(t);
-        const ldevId = `${source}::${ldev.substr(0, 8)}`.toLowerCase();
-
-        const ldevName = this.state.ldevMap[ldevId];
-        const rowTitle = t.title + (ldevName ? ` [${ldevName}]` : '');
-        const isActive = t.active;
-
-        return (
-            <li
-                key={props.key}
-                data-id={t.id}
-                data-active={isActive ? 'true' : 'false'}
-                style={props.style}
-                className={`trace-row-outer ${this.state.active === t.id ? 'active' : ''}`}
-                onClick={this.traceClicked}
-            >
-                <OverlayTrigger
-                    trigger={[ 'focus', 'hover' ]}
-                    placement='right'
-                    container={document.getElementById('context-menu')}
-                    overlay={<Tooltip id={`trace-row-tooltip-${ldevId}`}>{rowTitle}</Tooltip>}
-                >
-                    <div className="trace-row-inner">
-                        <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
-                        <span className='btn-select mr-1'>
-                            <FontAwesomeIcon icon={isActive ? faCheckSquare : faSquare} />
-                        </span>
-                        <span className='trace-row-title'>{rowTitle}</span>
-                        { hasMap && (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
-                    </div>
-                </OverlayTrigger>
-            </li>
-        );
+    rowRenderer = (props: VirtualizedRowProps) => {
+        return <TraceListRow virtualizedRow={props} parentList={this} />;
     }
 
     public render() {
@@ -191,7 +155,7 @@ class TraceList extends React.PureComponent<Props, State> {
                 <div style={{flexGrow: 1}} tabIndex={0} ref={this.listRef}>
                     <AutoSizer>
                         {({height, width}) => (
-                            <List
+                            <VirtualizedList
                                 containerProps={{ className: 'list-group' }}
                                 height={height}
                                 width={width}
@@ -209,3 +173,73 @@ class TraceList extends React.PureComponent<Props, State> {
 }
 
 export default TraceList;
+
+interface RowProps {
+    virtualizedRow: VirtualizedRowProps;
+    parentList: TraceList;
+}
+interface TraceListRowState {
+    showTooltip: boolean;
+}
+
+class TraceListRow extends React.Component<RowProps, TraceListRowState> {
+    public state = { showTooltip: false };
+    private spanRef = React.createRef<HTMLElement>();
+
+    checkForEllipsis() {
+        const e = this.spanRef.current;
+        const showTooltip = e !== null && e.offsetWidth < e.scrollWidth;
+        if (this.state.showTooltip !== showTooltip) this.setState({ showTooltip });
+    }
+
+    componentDidMount() {
+        this.checkForEllipsis();
+    }
+
+    componentDidUpdate() {
+        this.checkForEllipsis();
+    }
+
+    render() {
+        const { virtualizedRow, parentList } = this.props;
+        const { showTooltip } = this.state;
+
+        const trace = parentList.props.traces[virtualizedRow.index];
+        const color = colorToHex(trace.style.color);
+
+        const hasMap = parentList.hasLdevMaps(trace);
+        const { source, ldev } = parentList.getLdevId(trace);
+        const ldevId = `${source}::${ldev.substr(0, 8)}`.toLowerCase();
+
+        const ldevName = parentList.state.ldevMap[ldevId];
+        const rowTitle = trace.title + (ldevName ? ` [${ldevName}]` : '');
+        const isActive = trace.active;
+
+        return (
+            <li
+                key={virtualizedRow.key}
+                data-id={trace.id}
+                data-active={isActive ? 'true' : 'false'}
+                style={virtualizedRow.style}
+                className={`trace-row-outer ${parentList.state.active === trace.id ? 'active' : ''}`}
+                onClick={parentList.traceClicked}
+            >
+                <OverlayTrigger
+                    trigger={showTooltip ? [ 'focus', 'hover' ] : []}
+                    placement='right'
+                    container={document.getElementById('context-menu')}
+                    overlay={<Tooltip id={`trace-row-tooltip-${ldevId}`}>{rowTitle}</Tooltip>}
+                >
+                    <div className="trace-row-inner">
+                        <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
+                        <span className='btn-select mr-1'>
+                            <FontAwesomeIcon icon={isActive ? faCheckSquare : faSquare} />
+                        </span>
+                        <span className='trace-row-title' ref={this.spanRef}>{rowTitle}</span>
+                        { hasMap && (<button className='btn ldev btn-sm' data-trace={trace.id} onClick={parentList.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
+                    </div>
+                </OverlayTrigger>
+            </li>
+        );
+    }
+}
