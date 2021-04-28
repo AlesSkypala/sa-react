@@ -15,6 +15,12 @@ struct BufferEntry {
     color: [f32; 3],
 }
 
+struct BufferBundle {
+    from: f32,
+    to: f32,
+    buffers: Vec<BufferEntry>,
+}
+
 pub struct WebGlRenderer {
     width: u32,
     height: u32,
@@ -34,7 +40,7 @@ pub struct WebGlRenderer {
     axes_program: WebGlProgram,
 
     bundles_counter: usize,
-    bundles: HashMap<usize, Vec<BufferEntry>>,
+    bundles: HashMap<usize, BufferBundle>,
 }
 
 impl WebGlRenderer {
@@ -249,6 +255,44 @@ impl WebGlRenderer {
             .format("%d.%m. %H:%M")
             .to_string()
     }
+
+    fn allocate_bundle_entry(context: &WebGlRenderingContext, from: f32, to: f32, entry: &super::BundleEntry) -> BufferEntry {
+        let buffer = context.create_buffer().unwrap();
+        context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
+        let points;
+
+        unsafe {
+            use std::iter::once;
+
+            let data: Vec<f32> = crate::data::get_trace_ret(entry.handle, |t|
+                t.get_data_in(from, to)
+                .flat_map(|p| once(p.0).chain(once(p.1)))
+                .collect()
+            );
+
+            let vert_array = js_sys::Float32Array::view(&data);
+
+            points = data.len() as i32 / 2;
+
+            context.buffer_data_with_array_buffer_view(
+                WebGlRenderingContext::ARRAY_BUFFER,
+                &vert_array,
+                WebGlRenderingContext::STATIC_DRAW,
+            );
+        }
+
+        BufferEntry {
+            points,
+            handle: entry.handle,
+            buffer,
+            width: entry.width as f32,
+            color: [
+                entry.color[0] as f32 / 255.0,
+                entry.color[1] as f32 / 255.0,
+                entry.color[2] as f32 / 255.0,
+            ],
+        }
+    }
 }
 
 impl Renderer for WebGlRenderer {
@@ -286,7 +330,7 @@ impl Renderer for WebGlRenderer {
 
         if job.get_bundles().len() > 0 {
             for (_, bundle) in &self.bundles {
-                for row in bundle {
+                for row in &bundle.buffers {
                     if job.is_blacklisted(row.handle) { continue; }
 
                     gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&row.buffer));
@@ -354,48 +398,12 @@ impl Renderer for WebGlRenderer {
         let mut vec = Vec::with_capacity(data.len());
 
         for row in data {
-            let buffer = self.context.create_buffer().unwrap();
-            self.context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
-            let points;
-
-            unsafe {
-                use std::iter::once;
-
-                let data: Vec<f32> = crate::data::get_trace_ret(row.handle, |t|
-                    t.get_data_in(from, to)
-                    .flat_map(|p| once(p.0).chain(once(p.1)))
-                    .collect()
-                );
-
-                let vert_array = js_sys::Float32Array::view(&data);
-
-                points = data.len() as i32 / 2;
-
-                self.context.buffer_data_with_array_buffer_view(
-                    WebGlRenderingContext::ARRAY_BUFFER,
-                    &vert_array,
-                    WebGlRenderingContext::STATIC_DRAW,
-                );
-            }
-
-            vec.push(
-                BufferEntry {
-                    points,
-                    handle: row.handle,
-                    buffer,
-                    width: row.width as f32,
-                    color: [
-                        row.color[0] as f32 / 255.0,
-                        row.color[1] as f32 / 255.0,
-                        row.color[2] as f32 / 255.0,
-                    ],
-                }
-            );
+            vec.push(WebGlRenderer::allocate_bundle_entry(&self.context, from, to, row));
         }
 
         let handle = self.bundles_counter;
         self.bundles_counter += 1;
-        self.bundles.insert(handle, vec);
+        self.bundles.insert(handle, BufferBundle { from, to, buffers: vec });
 
         handle
     }
@@ -403,10 +411,31 @@ impl Renderer for WebGlRenderer {
     fn dispose_bundle(&mut self, bundle: usize) {
         let bundle = self.bundles.remove(&bundle).unwrap();
 
-        for row in bundle {
+        for row in bundle.buffers {
             self.context.delete_buffer(Some(&row.buffer));
         }
 
+    }
+
+    fn rebundle(&mut self, bundle: usize, to_add: &[super::BundleEntry], to_del: &[DataIdx], to_mod: &[super::BundleEntry]) {
+        let b = self.bundles.get_mut(&bundle).unwrap();
+
+        for row in to_add {
+            b.buffers.push(WebGlRenderer::allocate_bundle_entry(&self.context, b.from, b.to, row));
+        }
+
+        b.buffers.retain(|e| !to_del.iter().any(|t| *t == e.handle));
+
+        for row in to_mod {
+            if let Some(buffer) = b.buffers.iter_mut().find(|e| e.handle == row.handle) {
+                buffer.width = row.width as f32;
+                buffer.color =  [
+                    row.color[0] as f32 / 255.0,
+                    row.color[1] as f32 / 255.0,
+                    row.color[2] as f32 / 255.0,
+                ];
+            }
+        }
     }
 }
 

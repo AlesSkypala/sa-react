@@ -146,6 +146,47 @@ class GraphComponent
 
                 redraw = false;
             } else {
+                const toAdd: Trace[] = []; // TODO:
+                const toDel: number[] = [];
+                const toMod: Trace[] = []; // TODO:
+
+                const prev = new Set(prevProps.traces.map(t => t.id));
+                const next = new Set(this.props.traces.map(t => t.id));
+
+                for (const trace of prevProps.traces) {
+                    if (!next.has(trace.id)) {
+                        toDel.push(trace.handle);
+                    }
+                }
+
+                for (const trace of this.props.traces) {
+                    if (!prev.has(trace.id)) {
+                        toAdd.push(trace);
+                    }
+                }
+                
+                for (const bundle of this.renderer?.bundles ?? []) {
+                    const toAddHere = [] as Trace[]; // TODO: be smart about this and reduce number of traces for a new bundle
+                    const toDelHere = toDel.filter(r => bundle.traces.has(r));
+                    const toModHere = toMod.filter(r => bundle.traces.has(r.handle));
+
+                    if (toDelHere.length > 0) {
+                        console.log(`rebundling ${bundle.handle}`);
+                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                        const rebundle = this.renderer!.rebundle(bundle.handle, toAddHere.length, toDelHere.length, toModHere.length);
+                        
+                        toAddHere.forEach(t => rebundle.addTrace(t));
+                        toDelHere.forEach(t => rebundle.deleteTrace({ handle: t }));
+                        toModHere.forEach(t => rebundle.modifyTrace(t));
+
+                        await rebundle.invoke();
+                    }
+                }
+
+                if (toAdd.length > 0) {
+                    await this.renderer?.createBundle(this.props.xRange, toAdd);
+                }
+
                 redraw = true;
             }
         }

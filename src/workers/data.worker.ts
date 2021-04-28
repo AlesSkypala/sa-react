@@ -44,6 +44,14 @@ export class DataWorkerProxy {
         renderer.dispose_bundle(bundle);
     }
 
+    public rebundle(handle: number, bundle: number, toDel: ArrayBuffer, toAdd: ArrayBuffer, toMod: ArrayBuffer) {
+        const renderer = this.renderers[handle];
+
+        if (!renderer) throw new Error('Renderer with given handle does not exist.');
+
+        renderer.rebundle(bundle, new Uint8Array(toDel), new Uint8Array(toAdd), new Uint8Array(toMod));
+    }
+
     public invokeRenderJob(handle: number, x_type: string, content: RenderJob['content'], traces: ArrayBuffer, bundles: number[], blacklist: ArrayBuffer) {
         const renderer = this.renderers[handle];
 

@@ -52,9 +52,22 @@ class RendererHandle {
 
         return handle;
     }
+
+    public rebundle(bundle: number, additions: number, deletions: number, modifs: number) {
+        return new RebundleJob(this, bundle, additions, deletions, modifs);
+    }
 }
 
 const TRACE_LEN = 2 * Uint32Array.BYTES_PER_ELEMENT + 3 * Uint8Array.BYTES_PER_ELEMENT;
+
+const writeTrace = (trace: Pick<Trace, 'handle' | 'style'>, view: DataView, cursor: number) => {
+    view.setUint32(cursor, trace.handle);
+    view.setUint32(cursor + 4, trace.style.width);
+    view.setUint8( cursor + 8, trace.style.color[0]);
+    view.setUint8( cursor + 9, trace.style.color[1]);
+    view.setUint8( cursor + 10, trace.style.color[2]);
+};
+
 export class RenderJob {
 
     public content: Partial<Omit<WasmRenderJob, 'free'>> = {};
@@ -69,7 +82,7 @@ export class RenderJob {
     private blacklistCursor = 0;
 
 
-    constructor(private handle: RendererHandle, public x_type: string, expectedTraceCount: number, blacklistSize: number) {
+    constructor(private renderer: RendererHandle, public x_type: string, expectedTraceCount: number, blacklistSize: number) {
         this.traces = new ArrayBuffer(expectedTraceCount * TRACE_LEN);
         this.blacklist = new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * blacklistSize); 
         this.tracesView = new DataView(this.traces);
@@ -80,7 +93,7 @@ export class RenderJob {
         delete this.tracesView;
         delete this.blacklistView;
 
-        await dataWorker.invokeRenderJob(this.handle.raw_handle, this.x_type, this.content, transfer(this.traces, [ this.traces ]), this.bundles, transfer(this.blacklist, [ this.blacklist ]));
+        await dataWorker.invokeRenderJob(this.renderer.raw_handle, this.x_type, this.content, transfer(this.traces, [ this.traces ]), this.bundles, transfer(this.blacklist, [ this.blacklist ]));
     }
 
     public clear(val: boolean): RenderJob {
@@ -111,13 +124,7 @@ export class RenderJob {
     }
 
     public addTrace(trace: Trace) {
-
-        this.tracesView!.setUint32(this.tracesCursor, trace.handle);
-        this.tracesView!.setUint32(this.tracesCursor + 4, trace.style.width);
-        this.tracesView!.setUint8( this.tracesCursor + 8, trace.style.color[0]);
-        this.tracesView!.setUint8( this.tracesCursor + 9, trace.style.color[1]);
-        this.tracesView!.setUint8( this.tracesCursor + 10, trace.style.color[2]);
-
+        writeTrace(trace, this.tracesView!, this.tracesCursor);
         this.tracesCursor += TRACE_LEN;
         return this;
     }
@@ -133,6 +140,58 @@ export class RenderJob {
         this.bundles.push(bundle);
         
         return this;
+    }
+}
+
+export class RebundleJob {
+    private addition: ArrayBuffer;
+    private additionView: DataView | undefined;
+    private additionCursor = 0;
+
+    private deletion: ArrayBuffer;
+    private deletionView: DataView | undefined;
+    private deletionCursor = 0;
+
+    private modif: ArrayBuffer;
+    private modifView: DataView | undefined;
+    private modifCursor = 0;
+
+    constructor(private renderer: RendererHandle, private bundle: number, additions: number, deletions: number, modifs: number) {
+        this.addition = new ArrayBuffer(TRACE_LEN * additions);
+        this.deletion = new ArrayBuffer(Uint32Array.BYTES_PER_ELEMENT * deletions);
+        this.modif    = new ArrayBuffer(TRACE_LEN * modifs);
+
+        this.additionView = new DataView(this.addition);
+        this.deletionView = new DataView(this.deletion);
+        this.modifView    = new DataView(this.modif);
+    }
+
+    public addTrace(trace: Pick<Trace, 'handle' | 'style'>) {
+        writeTrace(trace, this.additionView!, this.additionCursor);
+        this.additionCursor += TRACE_LEN;
+        return this;
+    }
+
+    public modifyTrace(trace: Pick<Trace, 'handle' | 'style'>) {
+        writeTrace(trace, this.modifView!, this.modifCursor);
+        this.modifCursor += TRACE_LEN;
+        return this;
+    }
+
+    public deleteTrace(trace: Pick<Trace, 'handle'>) {
+        this.deletionView!.setUint32(this.deletionCursor, trace.handle);
+        this.deletionCursor += Uint32Array.BYTES_PER_ELEMENT;
+        return this;
+    }
+
+    public async invoke(): Promise<void> {
+        await dataWorker.rebundle(
+            this.renderer.raw_handle,
+            this.bundle,
+            transfer(this.deletion, [ this.deletion ]),
+            transfer(this.addition, [ this.addition ]),
+            transfer(this.modif,    [ this.modif ]),
+        );
     }
 }
 
