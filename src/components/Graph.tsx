@@ -13,7 +13,7 @@ import { Menu, useContextMenu, Submenu, Item, ItemParams } from 'react-contexify
 
 import { dataWorker } from '..';
 import { transfer } from 'comlink';
-import { AppEvents, DialogService } from '../services';
+import { AppEvents, Deserialization, DialogService } from '../services';
 
 import './Graph.css';
 import { t } from '../locale';
@@ -22,6 +22,7 @@ import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, Dispatc
 import { ConfirmModal, GraphEditModal } from './Modals';
 import RendererHandle from '../services/RendererHandle';
 import { PendingDataJob } from '../redux/jobs';
+import moment from 'moment';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {
     const elem = document.getElementById('context-menu');
@@ -405,6 +406,18 @@ class GraphComponent
         }
     }
 
+    private getXTickString = (val: number) => {
+        if (this.props.xType === 'datetime') {
+            return moment(Deserialization.parseTimestamp(val)).format('DD.MM. hh:mm');
+        } else {
+            return val.toString();
+        }
+    }
+
+    private getYTickString = (val: number) => {
+        return val.toString();
+    }
+
     public render() {
         const { title, traces, jobs, failedJobs, metadata, xRange } = this.props;
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
@@ -501,7 +514,7 @@ class GraphComponent
                     </div>
                     <div className='xticks' style={{ width: `calc(100% - ${2 * margin + yLabelSpace}px)`, top: `calc(100% - ${margin + xLabelSpace + X_TICK_SPACE}px)`, left: margin + yLabelSpace}}>
                         {this.state.xTicks.map((tick, i) => (
-                            <span className='tick' style={{ left: `${100 * tick.pos}%` }} key={i}>{tick.val}</span>
+                            <span className='tick' style={{ left: `${100 * tick.pos}%` }} key={i}>{this.getXTickString(tick.val)}</span>
                         ))}
                     </div>
                     <div className='ylabel' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, maxWidth: '1.8em', top: margin, whiteSpace: 'nowrap' }}>
@@ -509,7 +522,7 @@ class GraphComponent
                     </div>
                     <div className='yticks' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, top: margin, right: `calc(100% - ${margin + yLabelSpace}px)`}}>
                         {this.state.yTicks.map((tick, i) => (
-                            <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{tick.val}</span>
+                            <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{this.getYTickString(tick.val)}</span>
                         ))}
                     </div>
                 </div>

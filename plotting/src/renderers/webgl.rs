@@ -277,13 +277,6 @@ impl WebGlRenderer {
         );
     }
 
-    #[allow(dead_code)]
-    fn date_formatter(date: &f32) -> String {
-        chrono::NaiveDateTime::from_timestamp(*date as i64, 0u32)
-            .format("%d.%m. %H:%M")
-            .to_string()
-    }
-
     fn allocate_bundle_entry(context: &WebGlRenderingContext, from: f32, to: f32, entry: &super::BundleEntry) -> BufferEntry {
         let buffer = context.create_buffer().unwrap();
         context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
@@ -327,7 +320,7 @@ impl Renderer for WebGlRenderer {
     fn render(&mut self, job: RenderJob) -> RenderJobResult {
         let gl = &self.context;
 
-        let x_ticks = Box::new([]);
+        let x_ticks = webgl_utils::calc_ticks(job.x_from, job.x_to - job.x_from);
         let y_ticks = webgl_utils::calc_ticks(job.y_from, job.y_to - job.y_from);
 
         // TODO:

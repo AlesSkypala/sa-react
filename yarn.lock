@@ -5130,11 +5130,6 @@ extsprintf@^1.2.0:
   resolved "https://registry.yarnpkg.com/extsprintf/-/extsprintf-1.4.0.tgz#e2689f8f356fad62cca65a3a91c5df5f9551692f"
   integrity sha1-4mifjzVvrWLMplo6kcXfX5VRaS8=
 
-fast-array-diff@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/fast-array-diff/-/fast-array-diff-1.0.1.tgz#463bacfeddaa3f5d56b79f6847fe322f15581c92"
-  integrity sha512-pU83E/Y7+c/hRrDlmIiPYHy0Ugt+QypqzHKZI5qFOWMJAspWdmOyIeN/1FbdnGPlROp6FeGLLfhMO075DBqb4A==
-
 fast-deep-equal@^3.1.1:
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz#3a7d56b559d6cbc3eb512325244e619a65c6c525"
@@ -7646,11 +7641,6 @@ mkdirp@^1.0.3, mkdirp@^1.0.4:
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-1.0.4.tgz#3eb5ed62622756d79a5f0e2a221dfebad75c2f7e"
   integrity sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==
-
-ml-savitzky-golay-generalized@^2.0.3:
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/ml-savitzky-golay-generalized/-/ml-savitzky-golay-generalized-2.0.3.tgz#3d71d9c96e6f8165dbe46973951f9a4b253a2cc6"
-  integrity sha512-iaNSiVQeKekOvcrCzDJ2QoOuxRZEZcmZbf8EiI3+bN7riIBLSb6wj3u8LgxmTft2vZdJvw26DEdZvwUYx0T9xQ==
 
 moment@*, moment@^2.29.1:
   version "2.29.1"
