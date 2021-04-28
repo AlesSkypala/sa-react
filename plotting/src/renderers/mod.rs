@@ -4,6 +4,7 @@ use std::{convert::TryInto, mem::size_of};
 
 use wasm_bindgen::prelude::*;
 use web_sys::OffscreenCanvas;
+use serde::{Serialize, Deserialize};
 
 use crate::structs::RenderJob;
 pub use canvas::OffscreenGraphRenderer;
@@ -15,8 +16,20 @@ pub struct BundleEntry {
     color: [u8; 3],
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct AxisTick {
+    val: f32,
+    pos: f32,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct RenderJobResult {
+    x_ticks: Box<[AxisTick]>,
+    y_ticks: Box<[AxisTick]>,
+}
+
 pub trait Renderer {
-    fn render(&mut self, job: RenderJob);
+    fn render(&mut self, job: RenderJob) -> RenderJobResult;
     fn size_changed(&mut self, width: u32, height: u32);
     fn create_bundle(&mut self, from: f32, to: f32, data: &[BundleEntry]) -> usize;
     fn rebundle(&mut self, bundle: usize, to_add: &[BundleEntry], to_del: &[crate::data::DataIdx], to_mod: &[BundleEntry]);
@@ -42,8 +55,8 @@ impl RendererContainer {
         }
     }
 
-    pub fn render(&mut self, job: RenderJob) {
-        self.renderer.render(job)
+    pub fn render(&mut self, job: RenderJob) -> JsValue {
+        JsValue::from_serde(&RenderJobResult::from(self.renderer.render(job))).unwrap()
     }
 
     pub fn size_changed(&mut self, width: u32, height: u32) {

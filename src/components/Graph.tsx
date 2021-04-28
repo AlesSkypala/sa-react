@@ -91,7 +91,7 @@ class GraphComponent
         enabledOffbundle.forEach(t => job.addTrace(t));
         disabled.forEach(t => job.blacklistTrace(t));
 
-        await job.invoke();
+        console.log(await job.invoke());
 
         this.setState({ rendering: false });
     }

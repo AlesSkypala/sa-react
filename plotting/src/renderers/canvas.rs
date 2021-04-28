@@ -8,7 +8,7 @@ use web_sys::OffscreenCanvas;
 
 use crate::structs::RenderJob;
 
-use super::Renderer;
+use super::{RenderJobResult, Renderer};
 
 pub struct OffscreenGraphRenderer {
     backend: Rc<RefCell<OffscreenCanvasBackend>>,
@@ -67,7 +67,7 @@ impl OffscreenGraphRenderer {
 }
 
 impl Renderer for OffscreenGraphRenderer {
-    fn render(&mut self, job: RenderJob) {
+    fn render(&mut self, job: RenderJob) -> RenderJobResult {
         if job.clear {
             self.clear();
         }
@@ -104,6 +104,11 @@ impl Renderer for OffscreenGraphRenderer {
                     )
                     .expect("Failed to draw a trace")
             );
+        }
+
+        RenderJobResult {
+            x_ticks: Box::new([]),
+            y_ticks: Box::new([]),
         }
     }
 

@@ -89,11 +89,11 @@ export class RenderJob {
         this.blacklistView = new DataView(this.blacklist);
     }
 
-    public async invoke(): Promise<void> {
+    public invoke() {
         delete this.tracesView;
         delete this.blacklistView;
 
-        await dataWorker.invokeRenderJob(this.renderer.raw_handle, this.x_type, this.content, transfer(this.traces, [ this.traces ]), this.bundles, transfer(this.blacklist, [ this.blacklist ]));
+        return dataWorker.invokeRenderJob(this.renderer.raw_handle, this.x_type, this.content, transfer(this.traces, [ this.traces ]), this.bundles, transfer(this.blacklist, [ this.blacklist ]));
     }
 
     public clear(val: boolean): RenderJob {

@@ -5,7 +5,7 @@ use web_sys::{OffscreenCanvas, WebGlBuffer, WebGlProgram, WebGlRenderingContext,
 
 use crate::{data::DataIdx, structs::RenderJob};
 
-use super::Renderer;
+use super::{AxisTick, RenderJobResult, Renderer};
 
 struct BufferEntry {
     points: i32,
@@ -143,7 +143,7 @@ impl WebGlRenderer {
         self.context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
     }
 
-    pub fn render_axes(&self, job: &RenderJob) {
+    pub fn render_axes(&self, job: &RenderJob, x_ticks: &[AxisTick], y_ticks: &[AxisTick]){
         let gl = &self.context;
 
         gl.viewport(0, 0, self.width as i32, self.height as i32);
@@ -154,12 +154,17 @@ impl WebGlRenderer {
         gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&self.trace_buffer));
         gl.line_width(2.0);
 
+        let graph_left = (job.y_label_space + job.margin) as f32;
+        let graph_bottom = (job.x_label_space + job.margin) as f32;
+        let graph_top = (self.height - job.margin) as f32;
+        let graph_right = (self.width - job.margin) as f32;
+
         unsafe {
 
             let data: Vec<f32> = vec![
-                (job.y_label_space + job.margin) as f32 - 1.0, (self.height - job.margin) as f32,
-                (job.y_label_space + job.margin) as f32 - 1.0, (job.x_label_space + job.margin) as f32 - 1.0,
-                (self.width - job.margin) as f32, (job.margin + job.x_label_space) as f32 - 1.0,
+                graph_left - 1.0, graph_top,
+                graph_left - 1.0, graph_bottom - 1.0,
+                graph_right,      graph_bottom - 1.0,
             ];
 
             let vert_array = js_sys::Float32Array::view(&data);
@@ -178,9 +183,46 @@ impl WebGlRenderer {
             0,
             3
         );
+
+        const TICK_LEN: f32 = 4.0;
+        let points = (x_ticks.len() + y_ticks.len()) * 2;
+
+        fn lerp(from: f32, to: f32, val: f32) -> f32 { from + (to - from) * val }
+
+        unsafe {
+            let mut data: Vec<f32> = Vec::with_capacity(2 * points);
+
+            for tick in x_ticks {
+                data.push(lerp(graph_left, graph_right, tick.pos));
+                data.push(graph_bottom);
+                data.push(lerp(graph_left, graph_right, tick.pos));
+                data.push(graph_bottom - TICK_LEN);
+            }
+
+            for tick in y_ticks {
+                data.push(graph_left);
+                data.push(lerp(graph_bottom, graph_top, tick.pos));
+                data.push(graph_left - TICK_LEN);
+                data.push(lerp(graph_bottom, graph_top, tick.pos));
+            }
+
+            let vert_array = js_sys::Float32Array::view(&data);
+
+            gl.buffer_data_with_array_buffer_view(
+                WebGlRenderingContext::ARRAY_BUFFER,
+                &vert_array,
+                WebGlRenderingContext::STATIC_DRAW,
+            );
+        }
+
+        gl.draw_arrays(
+            WebGlRenderingContext::LINES,
+            0,
+            points as i32
+        );
     }
 
-    pub fn render_grid(&self, job: &RenderJob) {
+    pub fn render_grid(&self, job: &RenderJob, x_ticks: &[AxisTick], y_ticks: &[AxisTick]) {
         let gl = &self.context;
 
         gl.viewport(
@@ -198,37 +240,23 @@ impl WebGlRenderer {
         gl.line_width(1.0);
 
         gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&self.trace_buffer));
-
-        const SIZES: [f32; 4] = [1.0, 2.0, 5.0, 10.0];
-    
-        let mut y0: f32 = 0.0;
-        let mut dy: f32 = 1.0;
-        let n;
-
-        {
-            let y_span = job.y_to - job.y_from;
-            let order = y_span.log10().floor() - 1.0;
-            
-            for size in SIZES.iter() {
-                dy = (10.0f32).powf(order) * size;
-                y0 = (job.y_from / dy).floor() * dy;
-
-                if y_span / dy < 10.0 { break; }
-            }
-
-            n = (y_span / dy) as i32;
-        }
+        let points = (x_ticks.len() + y_ticks.len()) * 2;
 
         unsafe {
-            let mut data: Vec<f32> = Vec::with_capacity(n as usize * 4);
+            let mut data: Vec<f32> = Vec::with_capacity(2 * points);
 
-            let (_dx, dy) = ((job.x_to - job.x_from) / n as f32, (job.y_to - job.y_from) / n as f32);
+            for tick in x_ticks {
+                data.push(tick.val);
+                data.push(job.y_from);
+                data.push(tick.val);
+                data.push(job.y_to);
+            }
 
-            for i in 1..=n {
+            for tick in y_ticks {
                 data.push(job.x_from);
-                data.push(y0 + i as f32 * dy);
+                data.push(tick.val);
                 data.push(job.x_to);
-                data.push(y0 + i as f32 * dy);
+                data.push(tick.val);
             }
 
             let vert_array = js_sys::Float32Array::view(&data);
@@ -245,7 +273,7 @@ impl WebGlRenderer {
         gl.draw_arrays(
             WebGlRenderingContext::LINES,
             0,
-            4 * n
+            points as i32
         );
     }
 
@@ -296,19 +324,24 @@ impl WebGlRenderer {
 }
 
 impl Renderer for WebGlRenderer {
-    fn render(&mut self, job: RenderJob) {
+    fn render(&mut self, job: RenderJob) -> RenderJobResult {
         let gl = &self.context;
+
+        let x_ticks = Box::new([]);
+        let y_ticks = webgl_utils::calc_ticks(job.y_from, job.y_to - job.y_from);
+
+        // TODO:
 
         if job.clear {
             self.clear();
         }
 
         if job.render_axes {
-            self.render_axes(&job);
+            self.render_axes(&job, &x_ticks[..], &y_ticks[..]);
         }
 
         if job.render_grid {
-            self.render_grid(&job);
+            self.render_grid(&job, &x_ticks[..], &y_ticks[..]);
         }
 
         if job.render_labels {
@@ -385,6 +418,11 @@ impl Renderer for WebGlRenderer {
                 );
             }
         }
+
+        RenderJobResult {
+            x_ticks,
+            y_ticks,
+        }
     }
 
     fn size_changed(&mut self, width: u32, height: u32) {
@@ -452,6 +490,8 @@ impl Drop for WebGlRenderer {
 mod webgl_utils {
     use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader};
 
+    use crate::renderers::AxisTick;
+
     pub fn compile_shader(
         context: &WebGlRenderingContext,
         shader_type: u32,
@@ -500,5 +540,27 @@ mod webgl_utils {
                 .get_program_info_log(&program)
                 .unwrap_or_else(|| String::from("Unknown error creating program object")))
         }
+    }
+
+    pub fn calc_ticks(start: f32, width: f32) -> Box<[AxisTick]> {
+        const SIZES: [f32; 4] = [1.0, 2.0, 5.0, 10.0];
+    
+        let mut y0: f32 = 0.0;
+        let mut dy: f32 = 1.0;
+
+        {
+            let order = width.log10().floor() - 1.0;
+            
+            for size in SIZES.iter() {
+                dy = (10.0f32).powf(order) * size;
+                y0 = (start / dy).floor() * dy;
+
+                if (width + start - y0) / dy < 10.0 { break; }
+            }
+        }
+
+        (1..((width + start - y0) / dy).floor() as usize)
+            .map(|i| AxisTick { val: y0 + dy * i as f32, pos: (y0 + dy * i as f32 - start) / width })
+            .collect()
     }
 }

@@ -4,6 +4,11 @@ import DataService from '../services/data';
 import type { RendererContainer } from '../plotting';
 import type { RenderJob, DataJob } from '../services';
 
+type RenderJobResult = {
+    x_ticks: { val: number, pos: number }[],
+    y_ticks: { val: number, pos: number }[],
+};
+
 let plotting: typeof import('../plotting');
 import('../plotting').then(wasm => plotting = wasm);
 
@@ -52,7 +57,7 @@ export class DataWorkerProxy {
         renderer.rebundle(bundle, new Uint8Array(toDel), new Uint8Array(toAdd), new Uint8Array(toMod));
     }
 
-    public invokeRenderJob(handle: number, x_type: string, content: RenderJob['content'], traces: ArrayBuffer, bundles: number[], blacklist: ArrayBuffer) {
+    public invokeRenderJob(handle: number, x_type: string, content: RenderJob['content'], traces: ArrayBuffer, bundles: number[], blacklist: ArrayBuffer): RenderJobResult {
         const renderer = this.renderers[handle];
 
         if (!renderer) throw new Error('Renderer with given handle does not exist.');
@@ -70,7 +75,7 @@ export class DataWorkerProxy {
 
         wmjob.deserialize_blacklist(new Uint8Array(blacklist));
 
-        renderer.render(wmjob);
+        return renderer.render(wmjob);
     }
 
     public async invokeDataJob(job: DataJob): Promise<DataJobResult> {
