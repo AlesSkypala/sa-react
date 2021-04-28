@@ -559,7 +559,7 @@ mod webgl_utils {
             }
         }
 
-        (1..((width + start - y0) / dy).floor() as usize)
+        (1..=((width + start - y0) / dy).floor() as usize)
             .map(|i| AxisTick { val: y0 + dy * i as f32, pos: (y0 + dy * i as f32 - start) / width })
             .collect()
     }
