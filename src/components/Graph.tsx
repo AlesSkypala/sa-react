@@ -48,6 +48,8 @@ type Props = DispatchProps<typeof dispatchProps> & Graph & {
 type State = {
     revision: number;
     rendering: boolean;
+    xTicks: { pos: number, val: number }[];
+    yTicks: { pos: number, val: number }[];
 }
 
 class GraphComponent
@@ -56,6 +58,9 @@ class GraphComponent
     public state: State = {
         revision: 0,
         rendering: false,
+
+        xTicks: [],
+        yTicks: [],
     }
 
     private canvasRef = React.createRef<HTMLCanvasElement>();
@@ -91,9 +96,9 @@ class GraphComponent
         enabledOffbundle.forEach(t => job.addTrace(t));
         disabled.forEach(t => job.blacklistTrace(t));
 
-        console.log(await job.invoke());
+        const result = await job.invoke();
 
-        this.setState({ rendering: false });
+        this.setState({ rendering: false, xTicks: result.x_ticks, yTicks: result.y_ticks });
     }
 
     public async componentDidMount() {
@@ -109,7 +114,6 @@ class GraphComponent
             const offscreen = canvas.transferControlToOffscreen();
 
             this.renderer = await RendererHandle.create(transfer(offscreen, [ offscreen ] ));
-            setTimeout(() => this.updateSize(), 40);
         } else {
             throw new Error('Underlying canvas element was not initialized for this graph.');
         }
@@ -495,8 +499,18 @@ class GraphComponent
                     <div className='xlabel' style={{ left: margin + yLabelSpace, right: margin, maxHeight: xLabelSpace }}>
                         {this.props.xLabel}
                     </div>
-                    <div className='ylabel' style={{ height: `calc(100% - ${2 * margin + xLabelSpace}px)`, maxWidth: yLabelSpace, top: margin }}>
+                    <div className='xticks' style={{ width: `calc(100% - ${2 * margin + yLabelSpace}px)`, top: `calc(100% - ${margin + xLabelSpace + X_TICK_SPACE}px)`, left: margin + yLabelSpace}}>
+                        {this.state.xTicks.map((tick, i) => (
+                            <span className='tick' style={{ left: `${100 * tick.pos}%` }} key={i}>{tick.val}</span>
+                        ))}
+                    </div>
+                    <div className='ylabel' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, maxWidth: '1.8em', top: margin, whiteSpace: 'nowrap' }}>
                         <span style={{ transform: 'rotate(-90deg)' }} >{this.props.yLabel}</span>
+                    </div>
+                    <div className='yticks' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, top: margin, right: `calc(100% - ${margin + yLabelSpace}px)`}}>
+                        {this.state.yTicks.map((tick, i) => (
+                            <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{tick.val}</span>
+                        ))}
                     </div>
                 </div>
             </div>

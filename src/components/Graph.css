@@ -68,6 +68,25 @@
     left: 0;
 }
 
+.graph-content .yticks, .graph-content .xticks {
+    position: absolute;
+}
+
+.graph-content .tick {
+    position: absolute;
+    white-space: nowrap;
+}
+
+.graph-content .xticks > .tick {
+    top: 0.4em;
+    transform: translate(-50%, 0);
+}
+
+.graph-content .yticks > .tick {
+    right: 0.4em;
+    transform: translate(0, 50%);
+}
+
 .graph-resize-overlay {
     position: absolute;
     left: 0;
