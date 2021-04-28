@@ -7,33 +7,40 @@
     flex: 1
 }
 
-.trace-row {
+.trace-row-outer {
     background-color: white;
     padding: 0.3rem;
     display: flex;
-    align-items: center;
     height: 35px;
     user-select: none;
 }
-.trace-row > .trace-row-title {
+
+.trace-row-inner {
+    flex-grow: 1;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+.trace-row-inner > .trace-row-title {
     font-size: 0.85em;
     flex-shrink: 1;
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
 }
-.trace-row > .btn {
+.trace-row-inner > .btn {
     flex-grow: 0;
     flex-shrink: 1;
 }
 
-.trace-row:not(:last-child) {
+.trace-row-inner:not(:last-child) {
     border-bottom: 1px black solid;
 }
-.trace-row.active {
+.trace-row-inner.active {
     background-color: rgb(67, 149, 255);
 }
-.trace-row:hover:not(.active) {
+.trace-row-inner:hover:not(.active) {
     background-color: rgb(199, 223, 255);
 }
 

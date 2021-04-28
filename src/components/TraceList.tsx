@@ -142,6 +142,7 @@ class TraceList extends React.PureComponent<Props, State> {
         const ldevId = `${source}::${ldev.substr(0, 8)}`.toLowerCase();
 
         const ldevName = this.state.ldevMap[ldevId];
+        const rowTitle = t.title + (ldevName ? ` [${ldevName}]` : '');
         const isActive = t.active;
 
         return (
@@ -150,44 +151,25 @@ class TraceList extends React.PureComponent<Props, State> {
                 data-id={t.id}
                 data-active={isActive ? 'true' : 'false'}
                 style={props.style}
-                className={`trace-row ${this.state.active === t.id ? 'active' : ''}`}
+                className={`trace-row-outer ${this.state.active === t.id ? 'active' : ''}`}
                 onClick={this.traceClicked}
             >
-                <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
-                <span className='btn-select mr-1'>
-                    <FontAwesomeIcon icon={isActive ? faCheckSquare : faSquare} />
-                </span>
-                <span className='trace-row-title'>{t.title}{ldevName && ` [${ldevName}]`}</span>
-                { hasMap && (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
-            </li>
-        );
-
-        const rowTitle = `${t.title}${ldevName && ` [${ldevName}]`}`;
-
-        return (
-
-            <OverlayTrigger
-                trigger={[ 'focus', 'hover' ]}
-                placement='right'
-                container={document.getElementById('context-menu')}
-                overlay={<Tooltip id={`trace-row-tooltip-${ldevId}`}>{rowTitle}</Tooltip>}
-            >
-                <li
-                    key={props.key}
-                    data-id={t.id}
-                    style={props.style}
-                    className={`trace-row ${this.state.active === t.id ? 'active' : ''}`}
-                    onClick={this.traceClicked}
+                <OverlayTrigger
+                    trigger={[ 'focus', 'hover' ]}
+                    placement='right'
+                    container={document.getElementById('context-menu')}
+                    overlay={<Tooltip id={`trace-row-tooltip-${ldevId}`}>{rowTitle}</Tooltip>}
                 >
-                    <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
-                    <span className='btn-select mr-1'>
-                        <FontAwesomeIcon icon={this.props.activeTraces.includes(t.id) ? faCheckSquare : faSquare} />
-                    </span>
-                    <span className='trace-row-title'>{rowTitle}</span>
-                    { hasMap && (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
-                </li>
-
-            </OverlayTrigger>
+                    <div className="trace-row-inner">
+                        <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
+                        <span className='btn-select mr-1'>
+                            <FontAwesomeIcon icon={isActive ? faCheckSquare : faSquare} />
+                        </span>
+                        <span className='trace-row-title'>{rowTitle}</span>
+                        { hasMap && (<button className='btn ldev btn-sm' data-trace={t.id} onClick={this.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
+                    </div>
+                </OverlayTrigger>
+            </li>
         );
     }
 
