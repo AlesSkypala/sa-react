@@ -105,7 +105,36 @@ class Data {
         const set = source?.datasets.find(ds => ds.id === setid);
 
         return (source?.features.includes('ldev_map') ?? false) && (set?.id.startsWith('LDEV_') ?? false);
+    }
 
+    public getCompleteLdevMap = async (traces: Trace[]): Promise<{ [source: string]: LdevInfo[] }> => {
+        const queue: { [key: string]: string[] } = {};
+        const sources = await this.getSources();
+
+        traces.forEach(t => {
+            const split  = t.id.split('::');
+            if (split.length < 3 || !split[1].startsWith('LDEV_')) return;
+
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const [ source, dataset, variant ] = split;
+            
+            if (!(source in queue)) {
+                if (sources.find(s => s.id === source)?.features.includes('ldev_map') ?? false) {
+                    queue[source] = [];
+                } else {
+                    return;
+                }
+            }
+
+            queue[source].push(variant);
+        });
+
+        const result: { [source: string]: LdevInfo[] } = {};
+        for (const source in queue) {
+            result[source] = await this.getLdevMap(source, queue[source]);
+        }
+
+        return result;
     }
 }
 

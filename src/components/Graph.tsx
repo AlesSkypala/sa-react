@@ -9,20 +9,21 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTrash, faWrench, faExclamationTriangle, faChartLine, faDesktop, faArrowsAltH, faCamera } from '@fortawesome/free-solid-svg-icons';
 
 import { Button, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
-import { Menu, useContextMenu, Submenu, Item, ItemParams } from 'react-contexify';
+import { Menu, useContextMenu, Submenu, Item, ItemParams, Separator } from 'react-contexify';
 
 import { dataWorker } from '..';
 import { transfer } from 'comlink';
-import { AppEvents, Deserialization, DialogService } from '../services';
+import { AppEvents, DialogService } from '../services';
 
 import './Graph.css';
 import { t } from '../locale';
 import { timestampToLongDate } from '../locale/date';
-import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, DispatchProps } from '../redux';
-import { ConfirmModal, GraphEditModal } from './Modals';
+import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps } from '../redux';
+import { ConfirmModal, GraphEditModal, LdevSelectModal } from './Modals';
 import RendererHandle from '../services/RendererHandle';
 import { PendingDataJob } from '../redux/jobs';
 import moment from 'moment';
+import { parseTimestamp } from '../utils/datetime';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {
     const elem = document.getElementById('context-menu');
@@ -36,6 +37,7 @@ const dispatchProps = {
     clone_graph,
     remove_graphs,
     edit_graph,
+    toggle_traces
 };
 
 type Props = DispatchProps<typeof dispatchProps> & Graph & {
@@ -394,6 +396,18 @@ class GraphComponent
     private onClone = ({ data }: ItemParams<unknown, 'active' | 'all'>) => {
         this.props.clone_graph({ id: this.props.id, activeOnly: data === 'active' });
     }
+    private onLdevFilter = () => {
+        DialogService.open(
+            LdevSelectModal,
+            res => res && this.props.toggle_traces({
+                id: this.props.id,
+                traces: new Set(res.map(t => t.id)),
+                val: true,
+                negateRest: true,
+            }),
+            { traces: this.props.traces }
+        );
+    }
 
     private takeScreenshot = () => {
         if (this.graphRef.current) {
@@ -408,7 +422,7 @@ class GraphComponent
 
     private getXTickString = (val: number) => {
         if (this.props.xType === 'datetime') {
-            return moment(Deserialization.parseTimestamp(val)).format('DD.MM. hh:mm');
+            return moment(parseTimestamp(val)).format('DD.MM. hh:mm');
         } else {
             return val.toString();
         }
@@ -494,6 +508,8 @@ class GraphComponent
                                 <Item onClick={this.onClone} data='all' data-clone="all">{t('graph.cloneAll')}</Item>
                                 <Item onClick={this.onClone} data='active' data-clone="active" disabled={!this.props.traces.find(t => t.active)}>{t('graph.cloneActive')}</Item>
                             </Submenu>
+                            <Separator />
+                            <Item onClick={this.onLdevFilter}>{t('graph.ldevSelect')}</Item>
                         </Menu>
                     </MenuPortal>
                     {!this.props.layoutLocked ? (

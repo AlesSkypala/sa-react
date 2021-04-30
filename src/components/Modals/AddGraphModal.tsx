@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { Button, Col, ModalTitle, Row, Form, Spinner, ButtonGroup, Dropdown } from 'react-bootstrap';
 import { ModalComponent } from '.';
-import { DataService, Deserialization } from '../../services';
+import { DataService } from '../../services';
 import DataJob from '../../services/DataJob';
 import { default as moment } from 'moment';
 import DateTimeRange from '../DateTimeRange';
@@ -11,6 +11,7 @@ import { Props } from './ModalComponent';
 import './AddGraphModal.css';
 import { t } from '../../locale';
 import { generate_graph_id } from '../../redux';
+import { dateToTimestamp, parseTimestamp } from '../../utils/datetime';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
@@ -74,8 +75,8 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
         if (this.state.selectedSource) {
             this.setState({
                 selectedRange: [
-                    Deserialization.dateToTimestamp(start) as XTypeTypeMap[XType],
-                    Deserialization.dateToTimestamp(end) as XTypeTypeMap[XType],
+                    dateToTimestamp(start) as XTypeTypeMap[XType],
+                    dateToTimestamp(end) as XTypeTypeMap[XType],
                 ]
             });
         }
@@ -135,7 +136,7 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
 
         const [from, to] = this.state.selectedRange as [number, number];
 
-        return `${moment(Deserialization.parseTimestamp(from)).format(dateFormat)} - ${moment(Deserialization.parseTimestamp(to)).format(dateFormat)}`;
+        return `${moment(parseTimestamp(from)).format(dateFormat)} - ${moment(parseTimestamp(to)).format(dateFormat)}`;
     }
 
     protected renderBody(): JSX.Element {
@@ -191,8 +192,8 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
                             </Dropdown.Menu>
                         </Dropdown>
                         <DateTimeRange
-                            bounds={(availableRange?.map(v => Deserialization.parseTimestamp(v)) as ([Date, Date] | undefined)) ?? defaultRange}
-                            value={selectedRange?.map(v => Deserialization.parseTimestamp(v)) as ([Date, Date] | undefined)}
+                            bounds={(availableRange?.map(v => parseTimestamp(v)) as ([Date, Date] | undefined)) ?? defaultRange}
+                            value={selectedRange?.map(v => parseTimestamp(v)) as ([Date, Date] | undefined)}
 
                             disabled={timeDisabled}
                             onChange={this.onRangeChange}
@@ -222,42 +223,6 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
             </Form>
         );
     }
-
-    // private generateTraces = async (dataset: Dataset): Promise<Trace[]> => {
-    //     if (dataset.variantCount <= 1) {
-    //         return [
-    //             {
-    //                 id: `${dataset.source}:${dataset.id}`,
-
-    //                 title: this.getTitle(this.state.selectedSource?.type ?? '', dataset.id),
-    //                 pipeline: {
-    //                     type: 'data',
-    //                     dataset: {
-    //                         source: dataset.source,
-    //                         id: dataset.id,
-    //                     }
-    //                 },
-    //             }
-    //         ];
-    //     }
-
-    //     const variants: string[] = await DataService.getTraceVariants(dataset);
-
-    //     return variants.map(v => (
-    //         {
-    //             id: `${dataset.source}:${dataset.id}:${v}`,
-    //             title: v,
-    //             pipeline: {
-    //                 type: 'data',
-    //                 dataset: {
-    //                     source: dataset.source,
-    //                     id: dataset.id,
-    //                     variant: v,
-    //                 }
-    //             },
-    //         }
-    //     ));
-    // }
 
     private singleClicked = () => {
         const datasets = this.state.selectedDatasets;
