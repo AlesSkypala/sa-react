@@ -135,10 +135,10 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
             <Form>
                 <Form.Group>
                     <Form.Control as='select' onChange={this.modeSelect} value={this.state.mode}>
-                        <option value='mpu'>MPU</option>
                         <option value='hostgroup'>Host Group</option>
-                        <option value='pool'>Pool</option>
                         <option value='port'>Host Port</option>
+                        <option value='pool'>Pool</option>
+                        <option value='mpu'>MPU</option>
                         <option value='wwn'>WWN</option>
                     </Form.Control>
                 </Form.Group>

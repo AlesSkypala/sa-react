@@ -405,7 +405,7 @@ class GraphComponent
                 val: true,
                 negateRest: true,
             }),
-            { traces: this.props.traces }
+            { traces: this.props.traces.filter(t => t.active) }
         );
     }
 

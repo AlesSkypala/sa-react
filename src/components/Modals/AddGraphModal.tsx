@@ -171,15 +171,15 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
                         <Form.Label>{t('modals.addGraph.range')}</Form.Label>
                         <Form.Control name='timeRange' readOnly autoComplete='off' value={this.getRangeString()}></Form.Control>
                         <Dropdown as={ButtonGroup} className='my-2'>
-                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={24 * 3600}>{t('modals.addGraph.day')}</Button>
-                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={7 * 24 * 3600}>{t('modals.addGraph.week')}</Button>
-                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={4 * 7 * 24 * 3600}>{t('modals.addGraph.month')}</Button>
+                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={24 * 60}>{t('modals.addGraph.day')}</Button>
+                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={7 * 24 * 60}>{t('modals.addGraph.week')}</Button>
+                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={4 * 7 * 24 * 60}>{t('modals.addGraph.month')}</Button>
 
                             <Dropdown.Toggle disabled={timeDisabled} />
                             <Dropdown.Menu>
-                                <Dropdown.Item onClick={this.onRangeButton} data-range={91 * 24 * 3600}>{t('modals.addGraph.quarter')}</Dropdown.Item>
-                                <Dropdown.Item onClick={this.onRangeButton} data-range={183 * 24 * 3600}>{t('modals.addGraph.halfYear')}</Dropdown.Item>
-                                <Dropdown.Item onClick={this.onRangeButton} data-range={365 * 24 * 3600}>{t('modals.addGraph.year')}</Dropdown.Item>
+                                <Dropdown.Item onClick={this.onRangeButton} data-range={91 * 24 * 60}>{t('modals.addGraph.quarter')}</Dropdown.Item>
+                                <Dropdown.Item onClick={this.onRangeButton} data-range={183 * 24 * 60}>{t('modals.addGraph.halfYear')}</Dropdown.Item>
+                                <Dropdown.Item onClick={this.onRangeButton} data-range={365 * 24 * 60}>{t('modals.addGraph.year')}</Dropdown.Item>
                                 {existingRanges.length > 0 && (
                                     <>
                                         <Dropdown.Divider />

@@ -1,7 +1,8 @@
 import { Md5 } from 'ts-md5';
 import { dataWorker } from '..';
 import { TraceSearchModal } from '../components/Modals';
-import { DialogService } from '../services';
+import { DataService, DialogService } from '../services';
+import { splitTraceId } from '../utils/trace';
 import { GraphsState } from './graphs';
 
 const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: string): void => {
@@ -16,19 +17,12 @@ const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: s
                 title: `${titlePrefix} ${selected.length} křivek`,
                 style: { width: 1, color: [ 255, 255, 255 ] },
                 active: true,
-                // features: [],
-                // pipeline: {
-                //     type: idPrefix,
-                //     children: selected.map(s => JSON.parse(JSON.stringify(s.pipeline))),
-                //     options: undefined,
-                // }
             }
         ];
     }
 };
 
 type ActionLogic<T = unknown> = ((state: GraphsState, graph: Graph) => unknown) | {
-    // eslint-disable-next-line @typescript-eslint/ban-types
     asynch(state: Readonly<GraphsState>, graph: Readonly<Graph>): Promise<T>;
     post(state: GraphsState, graph: Graph, data: T): unknown; 
 };
@@ -96,7 +90,70 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
     },
 
     'name-sync': () => { /* TODO: */ },
-    'bind-sync': () => { /* TODO: */ },
+    'bind-sync': {
+        asynch: async (state, graph) => {
+            const map = await DataService.getCompleteLdevMap(graph.traces.filter(t => t.active));
+            const ports: Set<string> = new Set();
+            const ldevs: Set<string> = new Set();
+
+            for (const source in map) {
+                for (const ldev of map[source]) {
+                    ldevs.add(ldev.id);
+
+
+                    ldev.wwns.forEach(w => {
+                        const { port } = w;
+                        ports.add(`CL${port[0]}-${port.substr(1)}`);
+                    });
+                }
+            }
+
+            const result: { [graph: string]: Set<string> } = {};
+
+            for (const g of state.items) {
+                if (g.id === graph.id) continue;
+
+                result[g.id] = new Set();
+
+                for (const trace of g.traces) {
+                    const [ source, dataset, variant ] = splitTraceId(trace.id);
+
+                    if (!(source in map) || !dataset || !variant) { trace.active = false; continue; }
+
+                    let active = false;
+
+                    if (dataset.startsWith('LDEV_')) {
+                        active = ldevs.has(variant.substr(0, 8));
+                    } else if (dataset.startsWith('Port_')) {
+                        const port = variant.split('.')[0];
+                        active = ports.has(port);
+                    }
+
+                    if (active) {
+                        result[g.id].add(trace.id);
+                    }
+                }
+
+                if (result[g.id].size <= 0) {
+                    delete result[g.id];
+                }
+            }
+
+            return result;
+        },
+        post: (state, graph, data: { [key: string]: Set<string> }) => {
+            for (const id in data) {
+                const graph = state.items.find(g => g.id === id);
+                const set = data[id];
+
+                if (graph) {
+                    graph.traces.forEach(t => {
+                        t.active = set.has(t.id);
+                    });
+                }
+            }
+        }
+    },
     'zoom-sync': (state, graph) => {
         const zoom = graph.zoom;
         for (const graph of state.items) {

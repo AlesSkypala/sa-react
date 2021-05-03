@@ -1,3 +1,5 @@
+import { splitTraceId } from '../utils/trace';
+
 class Data {
     private sources: DataSource[] | undefined = undefined;
 
@@ -112,12 +114,10 @@ class Data {
         const sources = await this.getSources();
 
         traces.forEach(t => {
-            const split  = t.id.split('::');
-            if (split.length < 3 || !split[1].startsWith('LDEV_')) return;
+            const [ source, dataset, variant ] = splitTraceId(t);
 
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const [ source, dataset, variant ] = split;
-            
+            if (!dataset || !variant || !dataset.startsWith('LDEV_')) return;
+
             if (!(source in queue)) {
                 if (sources.find(s => s.id === source)?.features.includes('ldev_map') ?? false) {
                     queue[source] = [];

@@ -178,18 +178,3 @@ pub fn get_extents(data_ptr: DataIdx, from: f32, to: f32) -> Box<[f32]> {
 
     Box::new([from, to, result.0, result.1])
 }
-
-// #[wasm_bindgen]
-// pub fn get_extents_all(data_ptr: Box<[usize]>, from: f32, to: f32) -> Box<[f32]> {
-//     unsafe {
-//         let data = data_ptr.as_ref().unwrap();
-
-//         let (min, max) = data
-//             .get_data_in(from, to)
-//             .fold((f32::MAX, f32::MIN), |acc, (_, y)| {
-//                 (acc.0.min(*y), acc.1.max(*y))
-//             });
-
-//         Box::new([from, to, min, max])
-//     }
-// }
