@@ -1,3 +1,4 @@
+import { toLdevInternal, toLdevInternalFromVariant } from '../utils/ldev';
 import { splitTraceId } from '../utils/trace';
 
 class Data {
@@ -39,30 +40,17 @@ class Data {
         )).arrayBuffer();
     }
   
-    public getLdevMap = async (source: string, ldev: string | string[]): Promise<LdevInfo[]> => {
-        if (!Array.isArray(ldev)) {
-            return [ await (await fetch(
-                this.getApiPath('data', source, 'features', 'ldev_map'),
-                {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ id: ldev }),
-                    method: 'post'
-                }
-            )).json() ];
-        } else {
-            return await (await fetch(
-                this.getApiPath('data', source, 'features', 'ldev_map'),
-                {
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ ids: ldev }),
-                    method: 'post'
-                }
-            )).json();
-        }
+    public getLdevMap = async (source: string, ids: string | string[], mode: LdevMapMode): Promise<LdevInfo[]> => {
+        return  await (await fetch(
+            this.getApiPath('data', source, 'features', 'ldev_map'),
+            {
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: Array.isArray(ids) ? JSON.stringify({ ids, mode }) : JSON.stringify({ id: ids, mode }),
+                method: 'post'
+            }
+        )).json();
     }
 
     public getTraceVariants = async (dataset: { source: string, id: string }): Promise<string[]> => {
@@ -126,15 +114,23 @@ class Data {
                 }
             }
 
-            queue[source].push(variant);
+            queue[source].push(toLdevInternalFromVariant(variant, 'ldev'));
         });
 
         const result: { [source: string]: LdevInfo[] } = {};
         for (const source in queue) {
-            result[source] = await this.getLdevMap(source, queue[source]);
+            result[source] = await this.getLdevMap(source, queue[source], 'ldev');
         }
 
         return result;
+    }
+
+    public getHomogenousLdevMap = async (traces: Pick<Trace, 'id'>[], mode: LdevMapMode): Promise<LdevInfo[]> => {
+        if (traces.length < 0) return [];
+
+        const source = splitTraceId(traces[0].id)[0];
+
+        return this.getLdevMap(source, traces.map(t => toLdevInternal(t, mode)), mode);
     }
 }
 

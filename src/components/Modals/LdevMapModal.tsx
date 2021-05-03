@@ -25,7 +25,7 @@ class LdevMapModal extends ModalComponent<void, Args, State> {
 
     public componentDidMount() {
         const { source, ldev } = this.props;
-        DataService.getLdevMap(source, ldev).then(ldevInfo => this.setState({ ldevInfo: ldevInfo[0] }));
+        DataService.getLdevMap(source, ldev, 'ldev').then(ldevInfo => this.setState({ ldevInfo: ldevInfo[0] }));
     }
 
     protected renderHeader(): JSX.Element {

@@ -53,3 +53,12 @@ interface WWNInfo
     nickname: string;
     location: string;
 }
+
+type LdevMapMode =
+    | 'ldev'
+    | 'hostgroup'
+    | 'port'
+    | 'pool'
+    | 'mpu'
+    | 'wwn'
+;

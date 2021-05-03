@@ -8,6 +8,8 @@ import { faCheckSquare, faSitemap, faSquare } from '@fortawesome/free-solid-svg-
 import { colorToHex } from '../utils/color';
 
 import './TraceList.css';
+import { getLdevMode, toLdevInternal, toLdevInternalFromVariant } from '../utils/ldev';
+import { splitTraceId } from '../utils/trace';
 // import { withHotKeys } from 'react-hotkeys';
 
 
@@ -84,10 +86,10 @@ class TraceList extends React.PureComponent<Props, State> {
 
             for (const source of sources) {
                 const ldevs = this.props.traces
-                    .filter(t => t.id.startsWith(source))
-                    .map(t => t.id.split('::').reverse()[0]);
+                    .filter(t => getLdevMode(t) === 'ldev')
+                    .map(t => toLdevInternal(t, 'ldev'));
 
-                const map = await DataService.getLdevMap(source, ldevs);
+                const map = await DataService.getLdevMap(source, ldevs, 'ldev');
 
                 for (const ldev of map) {
                     ldevMap[`${source}::${ldev.id}`.toLowerCase()] = ldev.name;
@@ -118,8 +120,9 @@ class TraceList extends React.PureComponent<Props, State> {
     }
 
     getLdevId = (trace: Trace) => {
-        const split = trace.id.split('::');
-        return { source: split[0], ldev: split[2] };
+        const [ source,, variant] = splitTraceId(trace);
+
+        return { source, ldev: toLdevInternalFromVariant(variant as string, 'ldev') };
     }
 
     onLdevClick = (e: React.MouseEvent<HTMLButtonElement>) => {

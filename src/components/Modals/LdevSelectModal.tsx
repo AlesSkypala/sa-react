@@ -60,7 +60,7 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
                     map[trace.id] = entry;
 
                     mpus.add(entry.mpu);
-                    pools.add(entry.poolName);
+                    pools.add(entry.eccGroup);
                     entry.hostPorts.forEach(port => { ports.add(port.port); hostgroups.add(port.hostgroup); });
                     entry.wwns.forEach(wwn => { wwns.add(wwn.wwn); hostgroups.add(wwn.hostgroup); });
                 }
@@ -166,7 +166,7 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
                     case 'mpu':
                         return selected.includes(entry.mpu);
                     case 'pool':
-                        return selected.includes(entry.poolName);
+                        return selected.includes(entry.eccGroup);
                     case 'hostgroup':
                         return entry.hostPorts.findIndex(p => selected.includes(p.hostgroup)) >= 0;
                     case 'wwn':

@@ -2,7 +2,8 @@ import { Md5 } from 'ts-md5';
 import { dataWorker } from '..';
 import { TraceSearchModal } from '../components/Modals';
 import { DataService, DialogService } from '../services';
-import { splitTraceId } from '../utils/trace';
+import { getLdevModeFromDataset, toLdevInternalFromVariant } from '../utils/ldev';
+import { isHomogenous, splitTraceId } from '../utils/trace';
 import { GraphsState } from './graphs';
 
 const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: string): void => {
@@ -92,21 +93,36 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
     'name-sync': () => { /* TODO: */ },
     'bind-sync': {
         asynch: async (state, graph) => {
-            const map = await DataService.getCompleteLdevMap(graph.traces.filter(t => t.active));
-            const ports: Set<string> = new Set();
-            const ldevs: Set<string> = new Set();
+            const activeTraces = graph.traces.filter(t => t.active);
 
-            for (const source in map) {
-                for (const ldev of map[source]) {
-                    ldevs.add(ldev.id);
+            if (!isHomogenous(activeTraces)) { console.log('not a homogenous set of traces!'); return {}; }
 
+            const [ source, dataset ] = splitTraceId(activeTraces[0]);
+            const mode = getLdevModeFromDataset(dataset ?? '');
 
-                    ldev.wwns.forEach(w => {
-                        const { port } = w;
-                        ports.add(`CL${port[0]}-${port.substr(1)}`);
-                    });
-                }
+            if (!mode) { console.log('not a valid ldev set!'); return {}; }
+
+            const map = await DataService.getHomogenousLdevMap(activeTraces, mode);
+
+            const modemap: { [key in Exclude<LdevMapMode, 'hostgroup'>]: Set<string> } = {
+                port: new Set(),
+                ldev: new Set(),
+                pool: new Set(),
+                mpu: new Set(),
+                wwn: new Set(),
+            };
+
+            for (const ldev of map) {
+                modemap.ldev.add(ldev.id);
+                modemap.pool.add(ldev.eccGroup);
+                modemap.mpu .add(ldev.mpu);
+                ldev.wwns.forEach(w => {
+                    modemap.wwn.add(w.wwn);
+                    modemap.port.add(w.port);
+                });
             }
+
+            console.log(modemap);
 
             const result: { [graph: string]: Set<string> } = {};
 
@@ -116,20 +132,15 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
                 result[g.id] = new Set();
 
                 for (const trace of g.traces) {
-                    const [ source, dataset, variant ] = splitTraceId(trace.id);
+                    const [ tSource, tDataset, tVariant ] = splitTraceId(trace);
 
-                    if (!(source in map) || !dataset || !variant) { trace.active = false; continue; }
+                    if (source !== tSource || !tDataset || !tVariant) continue;
 
-                    let active = false;
+                    const tMode = getLdevModeFromDataset(tDataset);
 
-                    if (dataset.startsWith('LDEV_')) {
-                        active = ldevs.has(variant.substr(0, 8));
-                    } else if (dataset.startsWith('Port_')) {
-                        const port = variant.split('.')[0];
-                        active = ports.has(port);
-                    }
-
-                    if (active) {
+                    if (!tMode) continue;
+                
+                    if (modemap[tMode].has(toLdevInternalFromVariant(tVariant, tMode))) {
                         result[g.id].add(trace.id);
                     }
                 }

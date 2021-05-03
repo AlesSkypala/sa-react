@@ -1,5 +1,5 @@
 import * as Comlink from 'comlink';
-import DataService from '../services/data';
+import DataService from '../services/DataApi';
 
 import type { RendererContainer } from '../plotting';
 import type { RenderJob, DataJob } from '../services';
