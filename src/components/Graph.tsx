@@ -24,6 +24,8 @@ import RendererHandle from '../services/RendererHandle';
 import { PendingDataJob } from '../redux/jobs';
 import moment from 'moment';
 import { parseTimestamp } from '../utils/datetime';
+import { isHomogenous } from '../utils/trace';
+import { getLdevMode } from '../utils/ldev';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {
     const elem = document.getElementById('context-menu');
@@ -49,8 +51,8 @@ type Props = DispatchProps<typeof dispatchProps> & Graph & {
 }
 
 type State = {
-    revision: number;
     rendering: boolean;
+    ldevSelectAvailable: boolean;
     xTicks: { pos: number, val: number }[];
     yTicks: { pos: number, val: number }[];
 }
@@ -59,9 +61,8 @@ class GraphComponent
     extends React.Component<Props, State> {
 
     public state: State = {
-        revision: 0,
         rendering: false,
-
+        ldevSelectAvailable: false,
         xTicks: [],
         yTicks: [],
     }
@@ -196,6 +197,10 @@ class GraphComponent
 
                 redraw = true;
             }
+
+            this.setState({
+                ldevSelectAvailable: isHomogenous(this.props.traces) && getLdevMode(this.props.traces[0]) === 'ldev'
+            });
         }
 
         if (this.props.layoutLocked !== prevProps.layoutLocked && this.props.layoutLocked) {
@@ -405,7 +410,7 @@ class GraphComponent
                 val: true,
                 negateRest: true,
             }),
-            { traces: this.props.traces.filter(t => t.active) }
+            { traces: this.props.traces }
         );
     }
 
@@ -508,8 +513,12 @@ class GraphComponent
                                 <Item onClick={this.onClone} data='all' data-clone="all">{t('graph.cloneAll')}</Item>
                                 <Item onClick={this.onClone} data='active' data-clone="active" disabled={!this.props.traces.find(t => t.active)}>{t('graph.cloneActive')}</Item>
                             </Submenu>
-                            <Separator />
-                            <Item onClick={this.onLdevFilter}>{t('graph.ldevSelect')}</Item>
+                            {this.state.ldevSelectAvailable && (
+                                <>
+                                    <Separator />
+                                    <Item onClick={this.onLdevFilter}>{t('graph.ldevSelect')}</Item>
+                                </>
+                            )}
                         </Menu>
                     </MenuPortal>
                     {!this.props.layoutLocked ? (

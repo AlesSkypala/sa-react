@@ -1,10 +1,11 @@
 
 import * as React from 'react';
-import { Button, Form, ModalTitle } from 'react-bootstrap';
+import { Button, Col, Form, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
 import { t } from '../../locale';
 import { DataService } from '../../services';
 import { splitTraceId } from '../../utils/trace';
+import fuse from 'fuse.js';
 
 interface Args {
     traces: Trace[],
@@ -14,8 +15,11 @@ interface State {
     ldevInfo: LdevInfo[] | undefined,
     map: { [id: string]: LdevInfo },
 
-    mode: 'hostgroup' | 'mpu' | 'pool' | 'port' | 'wwn',
+    mode: LdevMapMode,
     selected: string[],
+
+    search: string,
+    activeOnly: boolean,
 
     mpus:  Set<string>,
     pools: Set<string>,
@@ -31,6 +35,9 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
         selected: [],
         map: {},
 
+        search: '',
+        activeOnly: true,
+
         mpus:  new Set(),
         pools: new Set(),
         ports: new Set(),
@@ -39,7 +46,21 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
     };
 
     public componentDidMount() {
-        DataService.getCompleteLdevMap(this.props.traces).then(ldevInfo => {
+        this.buildTree();
+    }
+
+    public componentDidUpdate(prevProps: unknown, prevState: State) {
+        if (prevState.activeOnly !== this.state.activeOnly) {
+            this.buildTree();
+        }
+    }
+
+    private buildTree = () => {
+        this.setState({ ldevInfo: undefined });
+
+        const traces = this.state.activeOnly ? this.props.traces.filter(t => t.active) : this.props.traces;
+
+        DataService.getCompleteLdevMap(traces).then(ldevInfo => {
             const map: State['map'] = {};
             const mpus:  Set<string> = new Set();
             const pools: Set<string> = new Set();
@@ -47,9 +68,7 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
             const wwns:  Set<string> = new Set();
             const hostgroups: Set<string> = new Set();
 
-            console.log(ldevInfo);
-
-            for (const trace of this.props.traces) {
+            for (const trace of traces) {
                 const [ source, set ,variant ] = splitTraceId(trace);
 
                 if (!set || !variant) continue;
@@ -83,7 +102,7 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
     protected renderHeader(): JSX.Element {
         return (
             <ModalTitle>
-                {t('modals.ldevMap.title')}
+                {t('modals.ldevSelect.title')}
             </ModalTitle>
         );
     }
@@ -96,8 +115,11 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
         this.setState({ selected: Array.from(e.currentTarget.selectedOptions, i => i.value) });
     }
 
+    private toggleActive = () => this.setState({ activeOnly: !this.state.activeOnly });
+    private setSearch = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ search: e.currentTarget.value });
+
     protected renderBody(): JSX.Element {
-        const { ldevInfo } = this.state;
+        const { ldevInfo, search, activeOnly } = this.state;
 
         if (!ldevInfo) {
             return (
@@ -131,16 +153,29 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
                 break;
         }
 
+        if (search.length > 0) {
+            const fs = new fuse(items, { threshold: 0.3, ignoreLocation: true });
+            items = fs.search(search).map(f => f.item);
+        }
+
         return (
             <Form>
+                <Form.Row className='align-items-center'>
+                    <Form.Group as={Col} sm='8'>
+                        <Form.Control as='select' onChange={this.modeSelect} value={this.state.mode}>
+                            <option value='hostgroup'>{t('modals.ldevSelect.hostgroup')}</option>
+                            <option value='port'>{t('modals.ldevSelect.port')}</option>
+                            <option value='pool'>{t('modals.ldevSelect.pool')}</option>
+                            <option value='mpu'>{t('modals.ldevSelect.mpu')}</option>
+                            <option value='wwn'>{t('modals.ldevSelect.wwn')}</option>
+                        </Form.Control>
+                    </Form.Group>
+                    <Form.Group as={Col}>
+                        <Form.Check type='checkbox' label={t('modals.ldevSelect.activeOnly')} checked={activeOnly} onChange={this.toggleActive} />
+                    </Form.Group>
+                </Form.Row>
                 <Form.Group>
-                    <Form.Control as='select' onChange={this.modeSelect} value={this.state.mode}>
-                        <option value='hostgroup'>Host Group</option>
-                        <option value='port'>Host Port</option>
-                        <option value='pool'>Pool</option>
-                        <option value='mpu'>MPU</option>
-                        <option value='wwn'>WWN</option>
-                    </Form.Control>
+                    <Form.Control type='text' placeholder={t('modals.ldevSelect.search')} value={search} onChange={this.setSearch}/>
                 </Form.Group>
                 <Form.Group>
                     <Form.Control as='select' multiple onChange={this.entrySelect} value={this.state.selected} style={{ height: '50vh' }}>

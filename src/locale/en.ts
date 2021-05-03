@@ -38,7 +38,8 @@ const en_lang = {
         noTraces: 'No active traces',
         redrawNotice: 'The graph will be rerendered after you lock the layout',
         cloneAll: 'Clone All Series',
-        cloneActive: 'Clone Active Series'
+        cloneActive: 'Clone Active Series',
+        ldevSelect: 'LDEV Select',
     },
 
     modals: {
@@ -89,6 +90,18 @@ const en_lang = {
         ldevMap: {
             title: 'LDEV Map',
             loading: 'Loading the LDEV',
+        },
+
+        ldevSelect: {
+            title: 'LDEV Select',
+            activeOnly: 'Show active only',
+            search: 'Search keywords...',
+
+            hostgroup: 'Host Group',
+            port: 'Host Port',
+            pool: 'Pool',
+            mpu: 'MPU',
+            wwn: 'WWN',
         },
 
         traceSearch: {
