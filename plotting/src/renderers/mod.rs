@@ -6,7 +6,7 @@ use wasm_bindgen::prelude::*;
 use web_sys::OffscreenCanvas;
 use serde::{Serialize, Deserialize};
 
-use crate::structs::RenderJob;
+use crate::structs::{RangePrec, RenderJob};
 pub use canvas::OffscreenGraphRenderer;
 pub use webgl::WebGlRenderer;
 
@@ -18,8 +18,8 @@ pub struct BundleEntry {
 
 #[derive(Serialize, Deserialize)]
 pub struct AxisTick {
-    val: f32,
-    pos: f32,
+    val: RangePrec,
+    pos: RangePrec,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -31,7 +31,7 @@ pub struct RenderJobResult {
 pub trait Renderer {
     fn render(&mut self, job: RenderJob) -> RenderJobResult;
     fn size_changed(&mut self, width: u32, height: u32);
-    fn create_bundle(&mut self, from: f32, to: f32, data: &[BundleEntry]) -> usize;
+    fn create_bundle(&mut self, from: RangePrec, to: RangePrec, data: &[BundleEntry]) -> usize;
     fn rebundle(&mut self, bundle: usize, to_add: &[BundleEntry], to_del: &[crate::data::DataIdx], to_mod: &[BundleEntry]);
     fn dispose_bundle(&mut self, bundle: usize);
 }
@@ -63,7 +63,7 @@ impl RendererContainer {
         self.renderer.size_changed(width, height);
     }
 
-    pub fn create_bundle_from_stream(&mut self, from: f32, to: f32, stream: &[u8]) -> usize {
+    pub fn create_bundle_from_stream(&mut self, from: RangePrec, to: RangePrec, stream: &[u8]) -> usize {
         let mut vec = Vec::with_capacity(stream.len() / 11);
 
         for row in stream.chunks_exact(11) {

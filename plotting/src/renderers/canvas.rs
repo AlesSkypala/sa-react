@@ -6,7 +6,7 @@ use std::ops::Range;
 use std::rc::Rc;
 use web_sys::OffscreenCanvas;
 
-use crate::structs::RenderJob;
+use crate::structs::{RenderJob, RangePrec};
 
 use super::{RenderJobResult, Renderer};
 
@@ -45,12 +45,12 @@ impl OffscreenGraphRenderer {
                 .y_label_area_size(60)
                 .build_cartesian_2d(
                     Range {
-                        start: job.x_from,
-                        end: job.x_to,
+                        start: job.x_from as f32,
+                        end:   job.x_to as f32,
                     },
                     Range {
-                        start: job.y_from,
-                        end: job.y_to,
+                        start: job.y_from as f32,
+                        end:   job.y_to as f32,
                     },
                 )
                 .expect("Failed to build range.")
@@ -125,7 +125,7 @@ impl Renderer for OffscreenGraphRenderer {
         }
     }
 
-    fn create_bundle(&mut self, _from: f32, _to: f32, _data: &[super::BundleEntry]) -> usize {
+    fn create_bundle(&mut self, _from: RangePrec, _to: RangePrec, _data: &[super::BundleEntry]) -> usize {
         todo!()
     }
 

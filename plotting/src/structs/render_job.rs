@@ -4,16 +4,18 @@ use wasm_bindgen::prelude::*;
 
 use crate::data::DataIdx;
 
+use super::RangePrec;
+
 #[wasm_bindgen]
 pub struct RenderJob {
     pub clear: bool,
 
     x_type: String,
 
-    pub x_from: f32,
-    pub x_to: f32,
-    pub y_from: f32,
-    pub y_to: f32,
+    pub x_from: RangePrec,
+    pub x_to:   RangePrec,
+    pub y_from: RangePrec,
+    pub y_to:   RangePrec,
 
     pub render_grid: bool,
     pub render_axes: bool,
@@ -38,9 +40,9 @@ impl RenderJob {
             x_type,
 
             x_from: 0.0,
-            x_to: 0.0,
+            x_to:   0.0,
             y_from: 0.0,
-            y_to: 0.0,
+            y_to:   0.0,
 
             render_axes: true,
             render_grid: true,

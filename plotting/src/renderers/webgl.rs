@@ -3,7 +3,7 @@ use std::{collections::HashMap};
 use wasm_bindgen::{JsCast};
 use web_sys::{OffscreenCanvas, WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlUniformLocation};
 
-use crate::{data::DataIdx, structs::RenderJob};
+use crate::{data::DataIdx, structs::{RangePrec, RenderJob}};
 
 use super::{AxisTick, RenderJobResult, Renderer};
 
@@ -16,8 +16,8 @@ struct BufferEntry {
 }
 
 struct BufferBundle {
-    from: f32,
-    to: f32,
+    from: RangePrec,
+    to:   RangePrec,
     buffers: Vec<BufferEntry>,
 }
 
@@ -193,17 +193,17 @@ impl WebGlRenderer {
             let mut data: Vec<f32> = Vec::with_capacity(2 * points);
 
             for tick in x_ticks {
-                data.push(lerp(graph_left, graph_right, tick.pos));
+                data.push(lerp(graph_left, graph_right, tick.pos as f32));
                 data.push(graph_bottom);
-                data.push(lerp(graph_left, graph_right, tick.pos));
+                data.push(lerp(graph_left, graph_right, tick.pos as f32));
                 data.push(graph_bottom - TICK_LEN);
             }
 
             for tick in y_ticks {
                 data.push(graph_left);
-                data.push(lerp(graph_bottom, graph_top, tick.pos));
+                data.push(lerp(graph_bottom, graph_top, tick.pos as f32));
                 data.push(graph_left - TICK_LEN);
-                data.push(lerp(graph_bottom, graph_top, tick.pos));
+                data.push(lerp(graph_bottom, graph_top, tick.pos as f32));
             }
 
             let vert_array = js_sys::Float32Array::view(&data);
@@ -225,6 +225,11 @@ impl WebGlRenderer {
     pub fn render_grid(&self, job: &RenderJob, x_ticks: &[AxisTick], y_ticks: &[AxisTick]) {
         let gl = &self.context;
 
+        let x_from = job.x_from as f32;
+        let x_to = job.x_to as f32;
+        let y_from = job.y_from as f32;
+        let y_to = job.y_to as f32;
+
         gl.viewport(
             (job.margin + job.y_label_space) as i32,
             (job.margin + job.x_label_space) as i32,
@@ -233,8 +238,8 @@ impl WebGlRenderer {
         );
 
         gl.use_program(Some(&self.trace_program));
-        gl.uniform2f(Some(&self.tp_origin_pos), job.x_from, job.y_from);
-        gl.uniform2f(Some(&self.tp_size_pos), job.x_to - job.x_from, job.y_to - job.y_from);
+        gl.uniform2f(Some(&self.tp_origin_pos), x_from, y_from);
+        gl.uniform2f(Some(&self.tp_size_pos), x_to - x_from, y_to - y_from);
         gl.uniform2f(Some(&self.tp_transform_pos), 1.0, 0.0);
         gl.uniform3f(Some(&self.tp_color_pos), 0.8, 0.8, 0.8);
         gl.line_width(1.0);
@@ -246,17 +251,17 @@ impl WebGlRenderer {
             let mut data: Vec<f32> = Vec::with_capacity(2 * points);
 
             for tick in x_ticks {
-                data.push(tick.val);
-                data.push(job.y_from);
-                data.push(tick.val);
-                data.push(job.y_to);
+                data.push(tick.val as f32);
+                data.push(y_from);
+                data.push(tick.val as f32);
+                data.push(y_to);
             }
 
             for tick in y_ticks {
-                data.push(job.x_from);
-                data.push(tick.val);
-                data.push(job.x_to);
-                data.push(tick.val);
+                data.push(x_from);
+                data.push(tick.val as f32);
+                data.push(x_to);
+                data.push(tick.val as f32);
             }
 
             let vert_array = js_sys::Float32Array::view(&data);
@@ -277,7 +282,7 @@ impl WebGlRenderer {
         );
     }
 
-    fn allocate_bundle_entry(context: &WebGlRenderingContext, from: f32, to: f32, entry: &super::BundleEntry) -> BufferEntry {
+    fn allocate_bundle_entry(context: &WebGlRenderingContext, from: RangePrec, to: RangePrec, entry: &super::BundleEntry) -> BufferEntry {
         let buffer = context.create_buffer().unwrap();
         context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
         let points;
@@ -286,7 +291,7 @@ impl WebGlRenderer {
             use std::iter::once;
 
             let data: Vec<f32> = crate::data::get_trace_ret(entry.handle, |t|
-                t.get_data_in(from, to)
+                t.get_data_with_origin(from, to, from, 0.0)
                 .flat_map(|p| once(p.0).chain(once(p.1)))
                 .collect()
             );
@@ -320,6 +325,11 @@ impl Renderer for WebGlRenderer {
     fn render(&mut self, job: RenderJob) -> RenderJobResult {
         let gl = &self.context;
 
+        let x_from = job.x_from as f32;
+        let x_to = job.x_to as f32;
+        let y_from = job.y_from as f32;
+        let y_to = job.y_to as f32;
+
         let x_ticks = webgl_utils::calc_ticks(job.x_from, job.x_to - job.x_from);
         let y_ticks = webgl_utils::calc_ticks(job.y_from, job.y_to - job.y_from);
 
@@ -350,12 +360,13 @@ impl Renderer for WebGlRenderer {
 
 
         gl.use_program(Some(&self.trace_program));
-        gl.uniform2f(Some(&self.tp_origin_pos), job.x_from, job.y_from);
-        gl.uniform2f(Some(&self.tp_size_pos), job.x_to - job.x_from, job.y_to - job.y_from);
+        gl.uniform2f(Some(&self.tp_size_pos), x_to - x_from, y_to - y_from);
         gl.uniform2f(Some(&self.tp_transform_pos), 1.0, 0.0);
 
         if job.get_bundles().len() > 0 {
             for (_, bundle) in &self.bundles {
+                gl.uniform2f(Some(&self.tp_origin_pos), (job.x_from - bundle.from) as f32, y_from);
+
                 for row in &bundle.buffers {
                     if job.is_blacklisted(row.handle) { continue; }
 
@@ -373,6 +384,8 @@ impl Renderer for WebGlRenderer {
                 }
             }
         }
+
+        gl.uniform2f(Some(&self.tp_origin_pos), x_from, y_from);
 
         if job.get_traces().len() > 0 {
             gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&self.trace_buffer));
@@ -425,7 +438,7 @@ impl Renderer for WebGlRenderer {
         self._canvas.set_height(height);
     }
 
-    fn create_bundle(&mut self, from: f32, to: f32, data: &[super::BundleEntry]) -> usize{
+    fn create_bundle(&mut self, from: RangePrec, to: RangePrec, data: &[super::BundleEntry]) -> usize{
         let mut vec = Vec::with_capacity(data.len());
 
         for row in data {
@@ -483,7 +496,7 @@ impl Drop for WebGlRenderer {
 mod webgl_utils {
     use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader};
 
-    use crate::renderers::AxisTick;
+    use crate::{renderers::AxisTick, structs::RangePrec};
 
     pub fn compile_shader(
         context: &WebGlRenderingContext,
@@ -535,17 +548,17 @@ mod webgl_utils {
         }
     }
 
-    pub fn calc_ticks(start: f32, width: f32) -> Box<[AxisTick]> {
-        const SIZES: [f32; 4] = [1.0, 2.0, 5.0, 10.0];
+    pub fn calc_ticks(start: RangePrec, width: RangePrec) -> Box<[AxisTick]> {
+        const SIZES: [RangePrec; 4] = [1.0, 2.0, 5.0, 10.0];
     
-        let mut y0: f32 = 0.0;
-        let mut dy: f32 = 1.0;
+        let mut y0: RangePrec = 0.0;
+        let mut dy: RangePrec = 1.0;
 
         {
             let order = width.log10().floor() - 1.0;
             
             for size in SIZES.iter() {
-                dy = (10.0f32).powf(order) * size;
+                dy = (10.0 as RangePrec).powf(order) * size;
                 y0 = (start / dy).floor() * dy;
 
                 if (width + start - y0) / dy < 10.0 { break; }
@@ -553,7 +566,7 @@ mod webgl_utils {
         }
 
         (1..=((width + start - y0) / dy).floor() as usize)
-            .map(|i| AxisTick { val: y0 + dy * i as f32, pos: (y0 + dy * i as f32 - start) / width })
+            .map(|i| AxisTick { val: y0 + dy * i as RangePrec, pos: (y0 + dy * i as RangePrec - start) / width })
             .collect()
     }
 }
