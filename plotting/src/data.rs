@@ -141,11 +141,11 @@ pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box
 
     for (d, handle) in out.drain(0..).zip(ptrs.iter()) {
         get_trace_once(*handle, move |trace|
-            trace.push_segment(crate::structs::DataSegment {
+            trace.push_segment(Box::new(crate::structs::DataSegment {
                 from: start,
                 to: cur,
-                data: crate::structs::SegmentState::Complete(d),
-            })
+                data: d,
+            }))
         );
     }
 }
@@ -173,7 +173,7 @@ pub fn get_extents(data_ptr: DataIdx, from: f32, to: f32) -> Box<[f32]> {
         |trace|
         result = trace.get_data_in(from, to)
         .fold((f32::MAX, f32::MIN), |acc, (_, y)| {
-            (acc.0.min(*y), acc.1.max(*y))
+            (acc.0.min(y), acc.1.max(y))
         }));
 
     Box::new([from, to, result.0, result.1])

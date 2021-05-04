@@ -99,7 +99,7 @@ impl Renderer for OffscreenGraphRenderer {
                     .draw_path(
                             trace
                             .get_data_in(job.x_from, job.x_to)
-                            .map(|point| chart.backend_coord(point)),
+                            .map(|point| chart.backend_coord(&point)),
                         &color,
                     )
                     .expect("Failed to draw a trace")
