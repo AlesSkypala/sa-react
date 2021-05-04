@@ -4,7 +4,7 @@ export function getLdevMode(trace: Pick<Trace, 'id'>): LdevMapMode | undefined {
     return getLdevModeFromDataset(splitTraceId(trace)[1] as string);
 }
 
-export function getLdevModeFromDataset(dataset: string): Exclude<LdevMapMode, 'hostgroup'> | undefined {
+export function getLdevModeFromDataset(dataset: string): Exclude<LdevMapMode, 'hostgroup' | 'pool'> | undefined {
     const MPUSets = [
         'PHY_Short_MP',
         'PHY_Cache_Allocate_Each_of_MPU',
@@ -16,7 +16,7 @@ export function getLdevModeFromDataset(dataset: string): Exclude<LdevMapMode, 'h
     if (dataset.startsWith('LDEV_')) return 'ldev';
     if (dataset.startsWith('Port_')) return 'port';
     if (dataset.startsWith('PPCGWWN_')) return 'wwn';
-    if (dataset.startsWith('PHY_Short_PG')) return 'pool';
+    if (dataset.startsWith('PHY_Short_PG')) return 'ecc';
 
     if (MPUSets.includes(dataset)) return 'mpu';
 

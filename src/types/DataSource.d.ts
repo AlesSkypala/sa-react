@@ -59,6 +59,7 @@ type LdevMapMode =
     | 'hostgroup'
     | 'port'
     | 'pool'
+    | 'ecc'
     | 'mpu'
     | 'wwn'
 ;

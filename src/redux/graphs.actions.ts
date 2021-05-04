@@ -104,17 +104,17 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
 
             const map = await DataService.getHomogenousLdevMap(activeTraces, mode);
 
-            const modemap: { [key in Exclude<LdevMapMode, 'hostgroup'>]: Set<string> } = {
+            const modemap: { [key in Exclude<LdevMapMode, 'hostgroup' | 'pool'>]: Set<string> } = {
                 port: new Set(),
                 ldev: new Set(),
-                pool: new Set(),
+                ecc: new Set(),
                 mpu: new Set(),
                 wwn: new Set(),
             };
 
             for (const ldev of map) {
                 modemap.ldev.add(ldev.id);
-                modemap.pool.add(ldev.eccGroup);
+                modemap.ecc.add(ldev.eccGroup);
                 modemap.mpu .add(ldev.mpu);
                 ldev.wwns.forEach(w => {
                     modemap.wwn.add(w.wwn);

@@ -100,6 +100,7 @@ const en_lang = {
             hostgroup: 'Host Group',
             port: 'Host Port',
             pool: 'Pool',
+            ecc: 'Parity Group',
             mpu: 'MPU',
             wwn: 'WWN',
         },
