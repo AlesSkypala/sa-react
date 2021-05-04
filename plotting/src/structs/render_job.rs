@@ -13,9 +13,9 @@ pub struct RenderJob {
     x_type: String,
 
     pub x_from: RangePrec,
-    pub x_to:   RangePrec,
+    pub x_to: RangePrec,
     pub y_from: RangePrec,
-    pub y_to:   RangePrec,
+    pub y_to: RangePrec,
 
     pub render_grid: bool,
     pub render_axes: bool,
@@ -40,9 +40,9 @@ impl RenderJob {
             x_type,
 
             x_from: 0.0,
-            x_to:   0.0,
+            x_to: 0.0,
             y_from: 0.0,
-            y_to:   0.0,
+            y_to: 0.0,
 
             render_axes: true,
             render_grid: true,
@@ -81,7 +81,7 @@ impl RenderJob {
             self.add_trace(
                 usize::from_be_bytes(row[0..4].try_into().unwrap()),
                 &row[8..11],
-                u32::from_be_bytes(row[4..8].try_into().unwrap())
+                u32::from_be_bytes(row[4..8].try_into().unwrap()),
             );
         }
     }

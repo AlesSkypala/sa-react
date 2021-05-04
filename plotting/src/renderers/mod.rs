@@ -2,9 +2,9 @@ mod canvas;
 mod webgl;
 use std::{convert::TryInto, mem::size_of};
 
+use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use web_sys::OffscreenCanvas;
-use serde::{Serialize, Deserialize};
 
 use crate::structs::{RangePrec, RenderJob};
 pub use canvas::OffscreenGraphRenderer;
@@ -32,7 +32,13 @@ pub trait Renderer {
     fn render(&mut self, job: RenderJob) -> RenderJobResult;
     fn size_changed(&mut self, width: u32, height: u32);
     fn create_bundle(&mut self, from: RangePrec, to: RangePrec, data: &[BundleEntry]) -> usize;
-    fn rebundle(&mut self, bundle: usize, to_add: &[BundleEntry], to_del: &[crate::data::DataIdx], to_mod: &[BundleEntry]);
+    fn rebundle(
+        &mut self,
+        bundle: usize,
+        to_add: &[BundleEntry],
+        to_del: &[crate::data::DataIdx],
+        to_mod: &[BundleEntry],
+    );
     fn dispose_bundle(&mut self, bundle: usize);
 }
 
@@ -63,17 +69,20 @@ impl RendererContainer {
         self.renderer.size_changed(width, height);
     }
 
-    pub fn create_bundle_from_stream(&mut self, from: RangePrec, to: RangePrec, stream: &[u8]) -> usize {
+    pub fn create_bundle_from_stream(
+        &mut self,
+        from: RangePrec,
+        to: RangePrec,
+        stream: &[u8],
+    ) -> usize {
         let mut vec = Vec::with_capacity(stream.len() / 11);
 
         for row in stream.chunks_exact(11) {
-            vec.push(
-                BundleEntry {
-                    handle: u32::from_be_bytes(row[0..4].try_into().unwrap()) as usize,
-                    width: u32::from_be_bytes(row[4..8].try_into().unwrap()),
-                    color: row[8..11].try_into().unwrap()
-                }
-            );
+            vec.push(BundleEntry {
+                handle: u32::from_be_bytes(row[0..4].try_into().unwrap()) as usize,
+                width: u32::from_be_bytes(row[4..8].try_into().unwrap()),
+                color: row[8..11].try_into().unwrap(),
+            });
         }
 
         self.renderer.create_bundle(from, to, &vec)
@@ -89,23 +98,19 @@ impl RendererContainer {
         }
 
         for row in add.chunks_exact(11) {
-            to_add.push(
-                BundleEntry {
-                    handle: u32::from_be_bytes(row[0..4].try_into().unwrap()) as usize,
-                    width: u32::from_be_bytes(row[4..8].try_into().unwrap()),
-                    color: row[8..11].try_into().unwrap()
-                }
-            );
+            to_add.push(BundleEntry {
+                handle: u32::from_be_bytes(row[0..4].try_into().unwrap()) as usize,
+                width: u32::from_be_bytes(row[4..8].try_into().unwrap()),
+                color: row[8..11].try_into().unwrap(),
+            });
         }
 
         for row in modif.chunks_exact(11) {
-            to_mod.push(
-                BundleEntry {
-                    handle: u32::from_be_bytes(row[0..4].try_into().unwrap()) as usize,
-                    width: u32::from_be_bytes(row[4..8].try_into().unwrap()),
-                    color: row[8..11].try_into().unwrap()
-                }
-            );
+            to_mod.push(BundleEntry {
+                handle: u32::from_be_bytes(row[0..4].try_into().unwrap()) as usize,
+                width: u32::from_be_bytes(row[4..8].try_into().unwrap()),
+                color: row[8..11].try_into().unwrap(),
+            });
         }
 
         self.renderer.rebundle(bundle, &to_add, &to_del, &to_mod);

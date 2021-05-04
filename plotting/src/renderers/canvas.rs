@@ -6,7 +6,7 @@ use std::ops::Range;
 use std::rc::Rc;
 use web_sys::OffscreenCanvas;
 
-use crate::structs::{RenderJob, RangePrec};
+use crate::structs::{RangePrec, RenderJob};
 
 use super::{RenderJobResult, Renderer};
 
@@ -46,11 +46,11 @@ impl OffscreenGraphRenderer {
                 .build_cartesian_2d(
                     Range {
                         start: job.x_from as f32,
-                        end:   job.x_to as f32,
+                        end: job.x_to as f32,
                     },
                     Range {
                         start: job.y_from as f32,
-                        end:   job.y_to as f32,
+                        end: job.y_to as f32,
                     },
                 )
                 .expect("Failed to build range.")
@@ -93,17 +93,17 @@ impl Renderer for OffscreenGraphRenderer {
         for trace in job.get_traces() {
             let color = RGBColor(trace.color[0], trace.color[1], trace.color[2]);
 
-            crate::data::get_trace(trace.idx, |trace|
+            crate::data::get_trace(trace.idx, |trace| {
                 (*self.backend)
                     .borrow_mut()
                     .draw_path(
-                            trace
+                        trace
                             .get_data_in(job.x_from, job.x_to)
                             .map(|point| chart.backend_coord(&point)),
                         &color,
                     )
                     .expect("Failed to draw a trace")
-            );
+            });
         }
 
         RenderJobResult {
@@ -125,7 +125,12 @@ impl Renderer for OffscreenGraphRenderer {
         }
     }
 
-    fn create_bundle(&mut self, _from: RangePrec, _to: RangePrec, _data: &[super::BundleEntry]) -> usize {
+    fn create_bundle(
+        &mut self,
+        _from: RangePrec,
+        _to: RangePrec,
+        _data: &[super::BundleEntry],
+    ) -> usize {
         todo!()
     }
 
@@ -133,7 +138,13 @@ impl Renderer for OffscreenGraphRenderer {
         todo!()
     }
 
-    fn rebundle(&mut self, _bundle: usize, _to_add: &[super::BundleEntry], _to_del: &[crate::data::DataIdx], _to_mod: &[super::BundleEntry]) {
+    fn rebundle(
+        &mut self,
+        _bundle: usize,
+        _to_add: &[super::BundleEntry],
+        _to_del: &[crate::data::DataIdx],
+        _to_mod: &[super::BundleEntry],
+    ) {
         todo!()
     }
 }

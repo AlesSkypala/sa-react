@@ -1,5 +1,5 @@
-use std::{cell::RefCell, collections::HashMap};
 use std::convert::TryInto;
+use std::{cell::RefCell, collections::HashMap};
 
 use crate::structs::{DataPrec, RangePrec, TraceData};
 use lazy_static::lazy_static;
@@ -29,16 +29,36 @@ impl TypeDescriptor {
 }
 
 macro_rules! type_map {
-    ( "datetime" ) => { i32 };
-    ( "short" )    => { i16 };
-    ( "int" )      => { i32 };
-    ( "long" )     => { i64 };
-    ( "byte" )     => { u8  };
-    ( "ushort" )   => { u16 };
-    ( "uint" )     => { u32 };
-    ( "ulong" )    => { u64 };
-    ( "float" )    => { f32 };
-    ( "double" )   => { f64 };
+    ( "datetime" ) => {
+        i32
+    };
+    ( "short" ) => {
+        i16
+    };
+    ( "int" ) => {
+        i32
+    };
+    ( "long" ) => {
+        i64
+    };
+    ( "byte" ) => {
+        u8
+    };
+    ( "ushort" ) => {
+        u16
+    };
+    ( "uint" ) => {
+        u32
+    };
+    ( "ulong" ) => {
+        u64
+    };
+    ( "float" ) => {
+        f32
+    };
+    ( "double" ) => {
+        f64
+    };
 }
 
 macro_rules! type_desc {
@@ -86,13 +106,18 @@ pub fn create_trace(id: &str, x_type: &str, y_type: &str) -> DataIdx {
 
         AVAIL_HANDLE += 1;
 
-        DATA.with(|data| data.borrow_mut().insert(handle, TraceData {
-            id: String::from(id.clone()),
-            x_type: String::from(x_type.clone()),
-            y_type: String::from(y_type.clone()),
+        DATA.with(|data| {
+            data.borrow_mut().insert(
+                handle,
+                TraceData {
+                    id: String::from(id.clone()),
+                    x_type: String::from(x_type.clone()),
+                    y_type: String::from(y_type.clone()),
 
-            segments: vec![],
-        }));
+                    segments: vec![],
+                },
+            )
+        });
 
         handle
     }
@@ -138,7 +163,8 @@ pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box
             let dest_y = dest_x + x_desc.size;
 
             out[i][dest_x..(dest_x + x_desc.size)].copy_from_slice(&row[0..x_desc.size]);
-            out[i][dest_y..(dest_y + y_desc.size)].copy_from_slice(&row[data_pos..(data_pos + y_desc.size)]);
+            out[i][dest_y..(dest_y + y_desc.size)]
+                .copy_from_slice(&row[data_pos..(data_pos + y_desc.size)]);
         }
 
         row_idx += 1;
@@ -147,41 +173,62 @@ pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box
     macro_rules! create_segment {
         ( $xt:ty, $yt:ty, $d:expr ) => {
             unsafe {
-                let data = Vec::<($xt, $yt)>::from_raw_parts(std::mem::transmute($d.leak().as_mut_ptr()), points, points).into_boxed_slice();
+                let data = Vec::<($xt, $yt)>::from_raw_parts(
+                    std::mem::transmute($d.leak().as_mut_ptr()),
+                    points,
+                    points,
+                )
+                .into_boxed_slice();
                 Box::new(crate::structs::DataSegment::<$xt, $yt> {
                     from: start,
                     to: cur,
                     data,
                 })
             }
-        }
+        };
     }
 
     for (d, handle) in out.drain(0..).zip(ptrs.iter()) {
-        get_trace_once(*handle, move |trace|
-            trace.push_segment(
-                match (x_type, y_type) {
-                    ("datetime", "short") => create_segment!(type_map!("datetime"), type_map!("short"), d),
-                    ("datetime", "int") => create_segment!(type_map!("datetime"), type_map!("int"), d),
-                    ("datetime", "long") => create_segment!(type_map!("datetime"), type_map!("long"), d),
-                    ("datetime", "byte") => create_segment!(type_map!("datetime"), type_map!("byte"), d),
-                    ("datetime", "ushort") => create_segment!(type_map!("datetime"), type_map!("ushort"), d),
-                    ("datetime", "uint") => create_segment!(type_map!("datetime"), type_map!("uint"), d),
-                    ("datetime", "ulong") => create_segment!(type_map!("datetime"), type_map!("ulong"), d),
-                    ("datetime", "float") => create_segment!(type_map!("datetime"), type_map!("float"), d),
-                    ("datetime", "double") => create_segment!(type_map!("datetime"), type_map!("double"), d),
-
-                    _ => panic!("Unknown XY pair")
+        get_trace_once(*handle, move |trace| {
+            trace.push_segment(match (x_type, y_type) {
+                ("datetime", "short") => {
+                    create_segment!(type_map!("datetime"), type_map!("short"), d)
                 }
-            )
-        );
+                ("datetime", "int") => create_segment!(type_map!("datetime"), type_map!("int"), d),
+                ("datetime", "long") => {
+                    create_segment!(type_map!("datetime"), type_map!("long"), d)
+                }
+                ("datetime", "byte") => {
+                    create_segment!(type_map!("datetime"), type_map!("byte"), d)
+                }
+                ("datetime", "ushort") => {
+                    create_segment!(type_map!("datetime"), type_map!("ushort"), d)
+                }
+                ("datetime", "uint") => {
+                    create_segment!(type_map!("datetime"), type_map!("uint"), d)
+                }
+                ("datetime", "ulong") => {
+                    create_segment!(type_map!("datetime"), type_map!("ulong"), d)
+                }
+                ("datetime", "float") => {
+                    create_segment!(type_map!("datetime"), type_map!("float"), d)
+                }
+                ("datetime", "double") => {
+                    create_segment!(type_map!("datetime"), type_map!("double"), d)
+                }
+
+                _ => panic!("Unknown XY pair"),
+            })
+        });
     }
 }
 
 #[wasm_bindgen]
 pub fn is_zero(data_ptr: DataIdx, from: RangePrec, to: RangePrec) -> bool {
     let mut result = true;
-    get_trace(data_ptr, |trace| result = trace.get_data_in(from, to).any(|(_, y)| y.abs() > 1e-3));
+    get_trace(data_ptr, |trace| {
+        result = trace.get_data_in(from, to).any(|(_, y)| y.abs() > 1e-3)
+    });
 
     result
 }
@@ -189,7 +236,9 @@ pub fn is_zero(data_ptr: DataIdx, from: RangePrec, to: RangePrec) -> bool {
 #[wasm_bindgen]
 pub fn treshold(data_ptr: DataIdx, from: RangePrec, to: RangePrec, tres: DataPrec) -> bool {
     let mut result = true;
-    get_trace(data_ptr, |trace| result = trace.get_data_in(from, to).any(|(_, y)| y.abs() >= tres));
+    get_trace(data_ptr, |trace| {
+        result = trace.get_data_in(from, to).any(|(_, y)| y.abs() >= tres)
+    });
 
     result
 }
@@ -197,12 +246,13 @@ pub fn treshold(data_ptr: DataIdx, from: RangePrec, to: RangePrec, tres: DataPre
 #[wasm_bindgen]
 pub fn get_extents(data_ptr: DataIdx, from: RangePrec, to: RangePrec) -> Box<[RangePrec]> {
     let mut result = (0.0, 1.0);
-    get_trace(data_ptr,
-        |trace|
-        result = trace.get_data_in(from, to)
-        .fold((f32::MAX, f32::MIN), |acc, (_, y)| {
-            (acc.0.min(y), acc.1.max(y))
-        }));
+    get_trace(data_ptr, |trace| {
+        result = trace
+            .get_data_in(from, to)
+            .fold((f32::MAX, f32::MIN), |acc, (_, y)| {
+                (acc.0.min(y), acc.1.max(y))
+            })
+    });
 
     Box::new([from, to, result.0 as RangePrec, result.1 as RangePrec])
 }

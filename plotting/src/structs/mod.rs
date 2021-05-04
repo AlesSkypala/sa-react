@@ -2,4 +2,4 @@ mod render_job;
 mod tracedata;
 
 pub use render_job::RenderJob;
-pub use tracedata::{DataSegment, RangePrec, DataPrec, TraceData};
+pub use tracedata::{DataPrec, DataSegment, RangePrec, TraceData};
