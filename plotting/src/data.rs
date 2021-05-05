@@ -230,7 +230,7 @@ pub fn is_zero(data_ptr: DataIdx, from: RangePrec, to: RangePrec) -> bool {
         result = trace.get_data_in(from, to).any(|(_, y)| y.abs() > 1e-3)
     });
 
-    result
+    !result
 }
 
 #[wasm_bindgen]

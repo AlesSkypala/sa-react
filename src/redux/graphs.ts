@@ -72,7 +72,7 @@ export const graph_threshold_select = createAsyncThunk(
 
         if (!graph) return { id: payload, valid: undefined };
 
-        const fits_thresh = await dataWorker.threshold(graph.xRange[0], graph.xRange[1], payload.threshold, graph.traces.map(t => t.id)) as boolean[];
+        const fits_thresh = await dataWorker.threshold(graph.xRange[0], graph.xRange[1], payload.threshold, graph.traces.map(t => t.handle)) as boolean[];
 
         dispatch(graphsSlice.actions.toggle_traces({
             id: payload.id,

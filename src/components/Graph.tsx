@@ -33,6 +33,7 @@ function MenuPortal({ children }: { children: React.ReactNode }) {
 }
 
 const X_TICK_SPACE = 24;
+const COMPACT_RADIUS = 16;
 
 const dispatchProps = {
     graph_threshold_select,
@@ -137,23 +138,26 @@ class GraphComponent
         this.renderer && await this.renderer.dispose();
     }
 
+    private zoomRecommendation: Promise<Graph['zoom']> | undefined;
     public async componentDidUpdate(prevProps: Props) {
         let redraw: boolean | undefined = undefined;
 
         if (this.props.traces !== prevProps.traces) {
-            if (this.props.traces.length > 0 && this.props.zoom === undefined) {
-                const ids = this.props.traces.filter(t => t.active).map(t => t.id);
-                const [ from, to ] = this.props.xRange;
+            const handles = this.props.traces.filter(t => t.active).map(t => t.handle);
+            const [ from, to ] = this.props.xRange;
 
+            if (this.props.traces.length > 0 && this.props.zoom === undefined) {
                 await this.renderer?.createBundle(this.props.xRange, this.props.traces);
 
                 this.props.edit_graph({
                     id: this.props.id,
-                    zoom: await dataWorker.recommend_extents(from, to, ids)
+                    zoom: await (this.zoomRecommendation = dataWorker.recommend_extents(from, to, handles))
                 });
 
                 redraw = false;
             } else {
+                this.zoomRecommendation = dataWorker.recommend_extents(from, to, handles);
+
                 const toAdd: Trace[] = []; // TODO:
                 const toDel: number[] = [];
                 const toMod: Trace[] = []; // TODO:
@@ -314,62 +318,107 @@ class GraphComponent
     };
 
     private canvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        const canvas = this.guiCanvasRef.current?.getContext('2d');
-        if (!canvas) return;
+        const ctxt = this.guiCanvasRef.current?.getContext('2d');
+        if (!ctxt) return;
         const pos = this.positionInGraphSpace(e, true);
-        const { margin, yLabelSpace } = this.props.style;
+        const { margin, xLabelSpace, yLabelSpace } = this.props.style;
+
+        function drawPad(ctxt: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) {
+            ctxt.save();
+            ctxt.lineWidth = 2;
+            ctxt.beginPath();
+            ctxt.moveTo(fromX + margin + yLabelSpace, fromY + margin);
+            ctxt.lineTo(toX + margin + yLabelSpace, toY + margin);
+            ctxt.stroke();
+            ctxt.restore();
+        }
 
         if (this.props.threshold) {
             if (!pos) return;
 
-            canvas.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height);
-            canvas.beginPath();
-            canvas.moveTo(margin + yLabelSpace, pos[1] + margin);
-            canvas.lineTo(canvas.canvas.width - margin - 1, pos[1] + margin);
-            canvas.stroke();
-        } else if (this.downPos) {
+            ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height);
+            ctxt.beginPath();
+            ctxt.moveTo(margin + yLabelSpace, pos[1] + margin);
+            ctxt.lineTo(ctxt.canvas.width - margin - 1, pos[1] + margin);
+            ctxt.stroke();
+        } else if (this.downPos && pos) {
+            ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height);
 
-            if (pos) {
+            const start = [ ...this.downPos ];
 
-                const rect = {
-                    x: Math.min(pos[0], this.downPos[0]) + margin + yLabelSpace,
-                    y: Math.min(pos[1], this.downPos[1]) + margin,
-                    width: Math.abs(pos[0] - this.downPos[0]),
-                    height: Math.abs(pos[1] - this.downPos[1])
-                };
+            const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
+            const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
 
-                canvas.clearRect(0, 0, canvas.canvas.width, canvas.canvas.height);
-                canvas.beginPath();
-                canvas.setLineDash([5, 5]);
-                canvas.strokeRect(rect.x, rect.y, rect.width, rect.height);
-                canvas.stroke();
+            if (compactX && compactY) return;
+
+            if (compactY) {
+                drawPad(ctxt, start[0], start[1] - COMPACT_RADIUS, start[0], start[1] + COMPACT_RADIUS);
+                drawPad(ctxt, pos[0], start[1] - COMPACT_RADIUS, pos[0], start[1] + COMPACT_RADIUS);
+
+                start[1] = 0;
+                pos[1] = ctxt.canvas.clientHeight - 2 * margin - xLabelSpace - X_TICK_SPACE;
+            } else if (compactX) {
+                drawPad(ctxt, start[0] - COMPACT_RADIUS, start[1], start[0] + COMPACT_RADIUS, start[1]);
+                drawPad(ctxt, start[0] - COMPACT_RADIUS, pos[1], start[0] + COMPACT_RADIUS, pos[1]);
+
+                start[0] = 0;
+                pos[0] = ctxt.canvas.clientWidth - 2 * margin - yLabelSpace;
             }
+
+            const rect = {
+                x: Math.min(pos[0], start[0]) + margin + yLabelSpace,
+                y: Math.min(pos[1], start[1]) + margin,
+                width:  Math.abs(pos[0] - start[0]),
+                height: Math.abs(pos[1] - start[1])
+            };
+
+            ctxt.save();
+            if (e.shiftKey) { ctxt.strokeStyle = 'orange'; }
+            ctxt.beginPath();
+            ctxt.setLineDash([5, 5]);
+            ctxt.strokeRect(rect.x, rect.y, rect.width, rect.height);
+            ctxt.stroke();
+            ctxt.restore();
         }
     }
 
     private canvasMouseUp = (e: MouseEvent) => {
         if (this.downPos && this.guiCanvasRef.current) {
             const pos = this.positionInGraphSpace(e, true);
+            const start = [ ...this.downPos ];
 
             if (pos && this.props.zoom) {
                 const zoom = this.props.zoom as number[];
 
                 const area = this.graphArea();
 
-                if (Math.abs((this.downPos[0] - pos[0]) * (this.downPos[1] - pos[1])) > 16) {
+                const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
+                const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
+
+                if (!compactX || !compactY) {
                     const [ relXS, relXE, relYS, relYE ] = [
-                        Math.min(this.downPos[0], pos[0]) / area[0],
-                        Math.max(this.downPos[0], pos[0]) / area[0],
-                        1.0 - (Math.max(this.downPos[1], pos[1]) / area[1]),
-                        1.0 - (Math.min(this.downPos[1], pos[1]) / area[1])
+                        compactX ? 0 : Math.min(this.downPos[0], pos[0]) / area[0],
+                        compactX ? 1 : Math.max(this.downPos[0], pos[0]) / area[0],
+                        compactY ? 0 : 1.0 - (Math.max(this.downPos[1], pos[1]) / area[1]),
+                        compactY ? 1 : 1.0 - (Math.min(this.downPos[1], pos[1]) / area[1])
                     ];
 
-                    this.props.edit_graph({ id: this.props.id, zoom: [
-                        zoom[0] + relXS * (zoom[1] - zoom[0]),
-                        zoom[0] + relXE * (zoom[1] - zoom[0]),
-                        zoom[2] + relYS * (zoom[3] - zoom[2]),
-                        zoom[2] + relYE * (zoom[3] - zoom[2])
-                    ] });
+                    if (compactY && e.shiftKey) {
+                        dataWorker.recommend_extents(
+                            zoom[0] + relXS * (zoom[1] - zoom[0]),
+                            zoom[0] + relXE * (zoom[1] - zoom[0]),
+                            this.props.traces.filter(t => t.active).map(t => t.handle)
+                        ).then(zoom => {
+                            this.props.edit_graph({ id: this.props.id, zoom });
+                        });
+                    } else {
+                        this.props.edit_graph({ id: this.props.id, zoom: [
+                            zoom[0] + relXS * (zoom[1] - zoom[0]),
+                            zoom[0] + relXE * (zoom[1] - zoom[0]),
+                            zoom[2] + relYS * (zoom[3] - zoom[2]),
+                            zoom[2] + relYE * (zoom[3] - zoom[2])
+                        ] });
+                    }
                 }
             }
 
@@ -388,10 +437,10 @@ class GraphComponent
         }
     }
     private canvasDoubleClick = async () => {
-        const ids = this.props.traces.filter(t => t.active).map(t => t.id);
+        // const ids = this.props.traces.filter(t => t.active).map(t => t.id);
         const [ from, to ] = this.props.xRange;
 
-        const zoom = await dataWorker.recommend_extents(from, to, ids);
+        const zoom = this.zoomRecommendation ? await this.zoomRecommendation : [ from, to, 0.0, 1.0 ] as Graph['zoom'];
 
         this.props.edit_graph({
             id: this.props.id,
@@ -451,7 +500,7 @@ class GraphComponent
         return (
             <div className={`graph ${this.props.focused ? 'active' : ''}`} ref={this.graphRef}>
                 <div className='text-center position-relative'>
-                    <h4 className='mt-1 w-100 text-center'>{title}</h4>
+                    <h5 className='my-0 w-100 text-center'>{title}</h5>
                     <div style={{ right: 0, top: 0, bottom: 0 }} className='d-flex align-items-center position-absolute buttons'>
                         {jobs.length > 0 && (
                             <OverlayTrigger

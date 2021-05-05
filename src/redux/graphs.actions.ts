@@ -67,14 +67,14 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
     },
     'del-zero': {
         asynch: async (_, graph) => {
-            const ids = graph.traces.map(t => t.id);
+            const handles = graph.traces.map(t => t.handle);
 
-            const zero = await dataWorker.is_zero(graph.xRange[0], graph.xRange[1], ids) as boolean[];
+            const zero = await dataWorker.is_zero(graph.xRange[0], graph.xRange[1], handles) as boolean[];
 
-            return ids.filter((v, idx) => !zero[idx]);
+            return new Set(graph.traces.filter((v, idx) => !zero[idx]).map(t => t.id));
         },
-        post: (_, graph, data: Trace['id'][]) => {
-            graph.traces = graph.traces.filter(t => data.includes(t.id));
+        post: (_, graph, data: Set<Trace['id']>) => {
+            graph.traces = graph.traces.filter(t => data.has(t.id));
         }
     },
 
@@ -93,6 +93,8 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
     'name-sync': () => { /* TODO: */ },
     'bind-sync': {
         asynch: async (state, graph) => {
+            if (state.items.length <= 1) return {};
+
             const activeTraces = graph.traces.filter(t => t.active);
 
             if (!isHomogenous(activeTraces)) { console.log('not a homogenous set of traces!'); return {}; }
@@ -121,8 +123,6 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
                     modemap.port.add(w.port);
                 });
             }
-
-            console.log(modemap);
 
             const result: { [graph: string]: Set<string> } = {};
 
