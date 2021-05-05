@@ -89,6 +89,12 @@
     transform: translate(0, 50%);
 }
 
+.graph-content .ruler {
+    pointer-events: none;
+    position:absolute;
+    border-left: dashed 1px black;
+}
+
 .graph-resize-overlay {
     position: absolute;
     left: 0;

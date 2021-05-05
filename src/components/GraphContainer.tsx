@@ -16,14 +16,16 @@ class GraphContainerComponent
     }
 
     public render() {
+        const { layout, stacking, locked } = this.props;
+
         return (
             <div className='content-wrapper'>
                 <AutoSizer>
                     {({ height, width}) => (
                         <Grid
-                            layout={this.props.layout}
-                            isResizable={!this.props.locked}
-                            isDraggable={!this.props.locked}
+                            layout={layout}
+                            isResizable={!locked && stacking === 'freeform'}
+                            isDraggable={!locked}
                             useCSSTransforms
 
                             cols={Cols}
@@ -52,6 +54,7 @@ const dispatchProps = {
 
 const storeProps = (store: RootStore) => ({
     layout: store.graphs.layout,
+    stacking: store.graphs.stacking,
 });
 
 type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {

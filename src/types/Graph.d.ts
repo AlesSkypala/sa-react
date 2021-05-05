@@ -64,4 +64,6 @@ type TraceAction = 'sel-unq' | 'sel-all' | 'inv' | 'des' | 'tres' |
     'del-zero' | 'del-sel' | 'del-unsel' |
     'name-sync' | 'zoom-sync' | 'bind-sync';
 
-type StackingType = 'horizontal' | 'vertical' | 'freeform';
+type StackingType = 'horizontal' | 'vertical' | 'grid' | 'freeform';
+
+type RulerData = { xType: Graph['xType'], value: Graph['xRange'][0] };

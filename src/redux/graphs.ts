@@ -25,9 +25,32 @@ const relayout = ({ layout, items, stacking }: SliceStateDraft<typeof graphsSlic
                 w: 4, h: 4,
             }))
         ];
-    }
+    } 
 
     if (items.length <= 0) return [];
+
+    if (stacking === 'grid') {
+        const cols = Math.floor(Math.sqrt(items.length));
+        const rows = Math.ceil(items.length / cols);
+
+        const ret: Layout[] = [];
+
+        for (let row = 0; row < rows; ++row) {
+            const rowItems = items.slice(cols * row, Math.min(cols * (row + 1), items.length));
+
+            rowItems.forEach((i, idx) => {
+                ret.push({
+                    i: i.id,
+                    w: 12 / rowItems.length,
+                    h: 12 / rows,
+                    x: (12 / rowItems.length) * idx,
+                    y: (12 / cols) * row,
+                });
+            });
+        }
+
+        return ret;
+    }
 
     const horizontal = stacking === 'horizontal';
 
@@ -199,7 +222,7 @@ export const {
     add_graphs, remove_graphs,
     clone_graph, edit_graph,
     set_layout, set_stacking,
-    add_traces, toggle_traces
+    add_traces, toggle_traces,
 } = graphsSlice.actions;
 
 export default graphsSlice.reducer;

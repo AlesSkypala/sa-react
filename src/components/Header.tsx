@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as React from 'react';
-import { faPlus, faUnlock, faLock, faGripVertical, faMinusSquare } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faUnlock, faLock, faGripVertical, faMinusSquare, faLayerGroup, faThLarge, faClone } from '@fortawesome/free-solid-svg-icons';
 import { trashAll } from '../assets/icons/trash-all';
 import { Dropdown, Nav, NavItem, NavLink } from 'react-bootstrap';
 import { connect,  set_stacking, add_graphs, ReduxProps, remove_graphs, invoke_job } from '../redux';
@@ -54,6 +54,7 @@ class HeaderComponent
         );
 
     public render() {
+        const {graphIds, stacking, layoutUnlocked} = this.props;
         return (
             <header className="main-header">
 
@@ -72,18 +73,18 @@ class HeaderComponent
                                 </NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink title={t('header.minimizeGraphs')} onClick={this.minimizeAll} disabled={this.props.graphIds.length <= 0}>
+                                <NavLink title={t('header.minimizeGraphs')} onClick={this.minimizeAll} disabled={graphIds.length <= 0}>
                                     <FontAwesomeIcon color='white' icon={faMinusSquare} />
                                 </NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink title={t('header.removeGraphs')} onClick={this.clearAll} disabled={this.props.graphIds.length <= 0}>
+                                <NavLink title={t('header.removeGraphs')} onClick={this.clearAll} disabled={graphIds.length <= 0}>
                                     <FontAwesomeIcon color='white' icon={trashAll} />
                                 </NavLink>
                             </NavItem>
                             <NavItem>
                                 <NavLink title={t('header.toggleLock')} onClick={this.props.onToggleLock}>
-                                    <FontAwesomeIcon color='white' icon={this.props.layoutUnlocked ? faUnlock : faLock} />
+                                    <FontAwesomeIcon color='white' icon={layoutUnlocked ? faUnlock : faLock} />
                                 </NavLink>
                             </NavItem>
                             <Dropdown as={NavItem} onSelect={this.onSelectLayout}>
@@ -91,9 +92,10 @@ class HeaderComponent
                                     <FontAwesomeIcon color='white' icon={faGripVertical} />
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu>
-                                    <Dropdown.Item eventKey='vertical'>{t('stacking.vertical')}</Dropdown.Item>
-                                    <Dropdown.Item eventKey='horizontal'>{t('stacking.horizontal')}</Dropdown.Item>
-                                    <Dropdown.Item eventKey='freeform'>{t('stacking.freeform')}</Dropdown.Item>
+                                    <Dropdown.Item active={stacking === 'vertical'}   eventKey='vertical'>  <FontAwesomeIcon color='black' icon={faLayerGroup} className='mr-2' />{t('stacking.vertical')}</Dropdown.Item>
+                                    <Dropdown.Item active={stacking === 'horizontal'} eventKey='horizontal'><FontAwesomeIcon color='black' icon={faLayerGroup} className='mr-2' style={{ transform: 'rotate(-90deg)' }} />{t('stacking.horizontal')}</Dropdown.Item>
+                                    <Dropdown.Item active={stacking === 'grid'}       eventKey='grid'>      <FontAwesomeIcon color='black' icon={faThLarge}    className='mr-2' />{t('stacking.grid')}</Dropdown.Item>
+                                    <Dropdown.Item active={stacking === 'freeform'}   eventKey='freeform'>  <FontAwesomeIcon color='black' icon={faClone}      className='mr-2' />{t('stacking.freeform')}</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
                         </Nav>
@@ -115,6 +117,7 @@ const dispatchProps = {
 const storeProps = (store: RootStore) => ({
     graphs: store.graphs.items,
     graphIds: store.graphs.items.map(g => g.id),
+    stacking: store.graphs.stacking,
 });
 
 type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {

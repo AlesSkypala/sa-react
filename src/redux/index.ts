@@ -6,7 +6,7 @@ export {
     clone_graph, edit_graph,
     set_layout, set_stacking,
     graph_action, graph_threshold_select,
-    generate_graph_id, toggle_traces
+    generate_graph_id, toggle_traces,
 } from './graphs';
 
 export {

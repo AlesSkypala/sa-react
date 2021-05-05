@@ -35,20 +35,28 @@ function MenuPortal({ children }: { children: React.ReactNode }) {
 const X_TICK_SPACE = 24;
 const COMPACT_RADIUS = 16;
 
+let GLOBAL_RULER: RulerData | undefined = undefined;
+
 const dispatchProps = {
     graph_threshold_select,
     clone_graph,
     remove_graphs,
     edit_graph,
-    toggle_traces
+    toggle_traces,
 };
+
+const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    ...(state.graphs.items.find(g => g.id === props.id)!),
+    threshold: state.graphs.threshold,
+    jobs: state.jobs.items,
+});
 
 type Props = DispatchProps<typeof dispatchProps> & Graph & {
     focused?: boolean;
     layoutLocked: boolean;
     threshold: boolean;
-    jobs: PendingDataJob[];
-    failedJobs: PendingDataJob[];
+    jobs: { [handle: number]: PendingDataJob };
 }
 
 type State = {
@@ -111,6 +119,7 @@ class GraphComponent
         window.addEventListener('resize', this.debounceResize);
         window.addEventListener('mouseup', this.canvasMouseUp);
         AppEvents.onRelayout.on(this.onLayoutChange);
+        requestAnimationFrame(this.drawGui);
 
         // Ensure canvas init
         const canvas = this.canvasRef.current;
@@ -271,6 +280,90 @@ class GraphComponent
         ];
     };
 
+    public drawGui = () => {
+        window.requestAnimationFrame(this.drawGui);
+
+        const ruler = GLOBAL_RULER;
+        const { zoom } = this.props;
+        const { margin, xLabelSpace, yLabelSpace } = this.props.style;
+        const ctxt = this.guiCanvasRef.current?.getContext('2d');
+        const area = this.graphArea();
+        
+        const pos = this.currentPos ? [ ...this.currentPos ] : undefined;
+
+        function drawPad(ctxt: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) {
+            ctxt.save();
+            ctxt.lineWidth = 2;
+            ctxt.beginPath();
+            ctxt.moveTo(fromX + margin + yLabelSpace, fromY + margin);
+            ctxt.lineTo(toX + margin + yLabelSpace, toY + margin);
+            ctxt.stroke();
+            ctxt.restore();
+        }
+
+        if (ctxt) {
+            ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height);
+
+            if (this.props.threshold && pos) {
+                ctxt.beginPath();
+                ctxt.moveTo(margin + yLabelSpace, pos[1] + margin);
+                ctxt.lineTo(ctxt.canvas.width - margin - 1, pos[1] + margin);
+                ctxt.stroke();
+            } else if (this.downPos && pos) {
+                const start = [ ...this.downPos ];
+    
+                const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
+                const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
+    
+                if (compactX && compactY) return;
+
+                if (compactY) {
+                    start[1] = 0;
+                    pos[1] = ctxt.canvas.clientHeight - 2 * margin - xLabelSpace - X_TICK_SPACE;
+                } else if (compactX) {
+                    start[0] = 0;
+                    pos[0] = ctxt.canvas.clientWidth - 2 * margin - yLabelSpace;
+                }
+    
+                const rect = {
+                    x: Math.min(pos[0], start[0]) + margin + yLabelSpace,
+                    y: Math.min(pos[1], start[1]) + margin,
+                    width:  Math.abs(pos[0] - start[0]),
+                    height: Math.abs(pos[1] - start[1])
+                };
+    
+                ctxt.save();
+                if (this.shiftDown) { ctxt.strokeStyle = 'orange'; }
+                ctxt.beginPath();
+                ctxt.setLineDash([5, 5]);
+                ctxt.strokeRect(rect.x, rect.y, rect.width, rect.height);
+                ctxt.stroke();
+                ctxt.restore();
+
+                if (compactY) {
+                    start[1] = this.downPos[1];
+                    drawPad(ctxt, start[0], start[1] - COMPACT_RADIUS, start[0], start[1] + COMPACT_RADIUS);
+                    drawPad(ctxt, pos[0], start[1] - COMPACT_RADIUS, pos[0], start[1] + COMPACT_RADIUS);
+                } else if (compactX) {
+                    start[0] = this.downPos[0];
+                    drawPad(ctxt, start[0] - COMPACT_RADIUS, start[1], start[0] + COMPACT_RADIUS, start[1]);
+                    drawPad(ctxt, start[0] - COMPACT_RADIUS, pos[1], start[0] + COMPACT_RADIUS, pos[1]);
+                }
+            } else if (ruler && zoom && ruler.xType === this.props.xType && ruler.value >= zoom[0] && ruler.value <= zoom[1]) {
+                const relRulerPos = (ruler.value - zoom[0]) / (zoom[1] - zoom[0]);
+                const absRulerPos = margin + yLabelSpace + relRulerPos * area[0];
+
+                ctxt.save();
+                ctxt.setLineDash([ 4, 12 ]);
+                ctxt.beginPath();
+                ctxt.moveTo(absRulerPos, margin);
+                ctxt.lineTo(absRulerPos, margin + area[1]);
+                ctxt.stroke();
+                ctxt.restore();
+            }
+        }
+    }
+
     private debounceResize = debounce(this.updateSize, 300);
     private positionInGraphSpace = (e: { clientX: number, clientY: number }, clamp = false): [ number, number ] | undefined => {
         const rect = this.guiCanvasRef.current?.getBoundingClientRect();
@@ -298,6 +391,9 @@ class GraphComponent
     }
 
     private downPos?: [number, number] = undefined;
+    private currentPos: [number, number] | undefined = undefined;
+    private shiftDown = false;
+
     private canvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
         if (this.props.threshold) {
             if (!this.guiCanvasRef.current) return;
@@ -318,67 +414,15 @@ class GraphComponent
     };
 
     private canvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        const ctxt = this.guiCanvasRef.current?.getContext('2d');
-        if (!ctxt) return;
         const pos = this.positionInGraphSpace(e, true);
-        const { margin, xLabelSpace, yLabelSpace } = this.props.style;
+        this.shiftDown = e.shiftKey;
 
-        function drawPad(ctxt: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) {
-            ctxt.save();
-            ctxt.lineWidth = 2;
-            ctxt.beginPath();
-            ctxt.moveTo(fromX + margin + yLabelSpace, fromY + margin);
-            ctxt.lineTo(toX + margin + yLabelSpace, toY + margin);
-            ctxt.stroke();
-            ctxt.restore();
-        }
+        if (pos && this.props.zoom) {
+            this.currentPos = pos;
+            const { zoom, xType } = this.props;
+            const area = this.graphArea();
 
-        if (this.props.threshold) {
-            if (!pos) return;
-
-            ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height);
-            ctxt.beginPath();
-            ctxt.moveTo(margin + yLabelSpace, pos[1] + margin);
-            ctxt.lineTo(ctxt.canvas.width - margin - 1, pos[1] + margin);
-            ctxt.stroke();
-        } else if (this.downPos && pos) {
-            ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height);
-
-            const start = [ ...this.downPos ];
-
-            const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
-            const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
-
-            if (compactX && compactY) return;
-
-            if (compactY) {
-                drawPad(ctxt, start[0], start[1] - COMPACT_RADIUS, start[0], start[1] + COMPACT_RADIUS);
-                drawPad(ctxt, pos[0], start[1] - COMPACT_RADIUS, pos[0], start[1] + COMPACT_RADIUS);
-
-                start[1] = 0;
-                pos[1] = ctxt.canvas.clientHeight - 2 * margin - xLabelSpace - X_TICK_SPACE;
-            } else if (compactX) {
-                drawPad(ctxt, start[0] - COMPACT_RADIUS, start[1], start[0] + COMPACT_RADIUS, start[1]);
-                drawPad(ctxt, start[0] - COMPACT_RADIUS, pos[1], start[0] + COMPACT_RADIUS, pos[1]);
-
-                start[0] = 0;
-                pos[0] = ctxt.canvas.clientWidth - 2 * margin - yLabelSpace;
-            }
-
-            const rect = {
-                x: Math.min(pos[0], start[0]) + margin + yLabelSpace,
-                y: Math.min(pos[1], start[1]) + margin,
-                width:  Math.abs(pos[0] - start[0]),
-                height: Math.abs(pos[1] - start[1])
-            };
-
-            ctxt.save();
-            if (e.shiftKey) { ctxt.strokeStyle = 'orange'; }
-            ctxt.beginPath();
-            ctxt.setLineDash([5, 5]);
-            ctxt.strokeRect(rect.x, rect.y, rect.width, rect.height);
-            ctxt.stroke();
-            ctxt.restore();
+            GLOBAL_RULER = { xType, value: zoom[0] + (zoom[1] - zoom[0]) * pos[0] / area[0] };
         }
     }
 
@@ -424,17 +468,9 @@ class GraphComponent
 
             this.downPos = undefined;
         }
-
-        const ctx = this.guiCanvasRef.current?.getContext('2d');
-        if (ctx) {
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        }
     };
     private canvasMouseLeave = () => {
-        const ctx = this.guiCanvasRef.current?.getContext('2d');
-        if (this.downPos && ctx) {
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        }
+        GLOBAL_RULER = undefined;
     }
     private canvasDoubleClick = async () => {
         // const ids = this.props.traces.filter(t => t.active).map(t => t.id);
@@ -487,8 +523,11 @@ class GraphComponent
     }
 
     public render() {
-        const { title, traces, jobs, failedJobs, metadata, xRange } = this.props;
+        const { title, traces, metadata, xRange, } = this.props;
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
+
+        const pendingJobs = Object.values(this.props.jobs).filter(j => j.relatedGraphs.includes(this.props.id) && j.state === 'pending');
+        const failedJobs  = Object.values(this.props.jobs).filter(j => j.relatedGraphs.includes(this.props.id) && j.state === 'error');
 
         const menuShow = useContextMenu({ id: `graph-${this.props.id}-menu` }).show;
 
@@ -502,7 +541,7 @@ class GraphComponent
                 <div className='text-center position-relative'>
                     <h5 className='my-0 w-100 text-center'>{title}</h5>
                     <div style={{ right: 0, top: 0, bottom: 0 }} className='d-flex align-items-center position-absolute buttons'>
-                        {jobs.length > 0 && (
+                        {pendingJobs.length > 0 && (
                             <OverlayTrigger
                                 trigger={[ 'focus', 'hover' ]}
                                 placement='left'
@@ -510,7 +549,7 @@ class GraphComponent
 
                                 overlay={(
                                     <Tooltip id={`load-tooltip-${this.props.id}`}>
-                                        {t('graph.pendingJobs', { count: jobs.length })}
+                                        {t('graph.pendingJobs', { count: pendingJobs.length })}
                                     </Tooltip>
                                 )}
                             >
@@ -604,13 +643,5 @@ class GraphComponent
         );
     }
 }
-
-const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    ...(state.graphs.items.find(g => g.id === props.id)!),
-    threshold: state.graphs.threshold,
-    jobs: Object.values(state.jobs.items).filter(j => j.relatedGraphs.includes(props.id) && j.state === 'pending'),
-    failedJobs: Object.values(state.jobs.items).filter(j => j.relatedGraphs.includes(props.id) && j.state === 'error'),
-});
 
 export default connect(stateProps, dispatchProps)(GraphComponent);

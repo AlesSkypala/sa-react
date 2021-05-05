@@ -18,6 +18,7 @@ const en_lang = {
     stacking: {
         horizontal: 'Horizontal',
         vertical: 'Vertical',
+        grid: 'Grid',
         freeform: 'Freeform',
     },
 
