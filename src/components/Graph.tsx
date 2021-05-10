@@ -343,11 +343,11 @@ class GraphComponent
                 if (compactY) {
                     start[1] = this.downPos[1];
                     drawPad(ctxt, start[0], start[1] - COMPACT_RADIUS, start[0], start[1] + COMPACT_RADIUS);
-                    drawPad(ctxt, pos[0], start[1] - COMPACT_RADIUS, pos[0], start[1] + COMPACT_RADIUS);
+                    drawPad(ctxt, pos[0],   start[1] - COMPACT_RADIUS, pos[0],   start[1] + COMPACT_RADIUS);
                 } else if (compactX) {
                     start[0] = this.downPos[0];
                     drawPad(ctxt, start[0] - COMPACT_RADIUS, start[1], start[0] + COMPACT_RADIUS, start[1]);
-                    drawPad(ctxt, start[0] - COMPACT_RADIUS, pos[1], start[0] + COMPACT_RADIUS, pos[1]);
+                    drawPad(ctxt, start[0] - COMPACT_RADIUS, pos[1],   start[0] + COMPACT_RADIUS, pos[1]);
                 }
             } else if (ruler && zoom && ruler.xType === this.props.xType && ruler.value >= zoom[0] && ruler.value <= zoom[1]) {
                 const relRulerPos = (ruler.value - zoom[0]) / (zoom[1] - zoom[0]);

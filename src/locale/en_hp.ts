@@ -1,5 +1,6 @@
 export const titles = {
     // ZIP Files
+    'LDEV_Short': 'Short LDEV data',
     'LU_dat': 'Host Groups',
     'PG_dat': 'Logical disks',
     'PhyLDEV_dat': 'Internal Basic LDEV',
@@ -11,7 +12,8 @@ export const titles = {
     'PhyMPU_dat': 'Cache',
     'PhyPG_dat': 'Drives',
     'PhyProc_dat': 'Controller',
-    'PhyProc_cache_dat': 'Cache each of MPU',
+    'PhyProcDetail_dat': 'Detailed Controller',
+    'PhyProc_Cache_dat': 'Cache each of MPU',
     'Port_dat': 'Port',
     'portwwn_dat': 'WWN',
     'ppcgwwn_dat': 'Group of WWNs',

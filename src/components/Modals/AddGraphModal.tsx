@@ -12,6 +12,7 @@ import './AddGraphModal.css';
 import { t } from '../../locale';
 import { generate_graph_id } from '../../redux';
 import { dateToTimestamp, parseTimestamp } from '../../utils/datetime';
+import DatasetTree from '../DatasetTree';
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
@@ -100,10 +101,9 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
         }
     }
 
-    onSetSelected = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    onSetSelected = (val: Dataset['id'][]) => {
         if (this.state.selectedSource) {
-            const selected = Array.from(e.currentTarget.selectedOptions, i => this.state.selectedSource?.datasets.find(ds => ds.id === i.value)).filter(v => !!v) as Dataset[];
-            this.setState({ selectedDatasets: selected });
+            this.setState({ selectedDatasets: this.state.selectedSource.datasets.filter(ds => val.includes(ds.id)) });
         }
     }
 
@@ -199,26 +199,21 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
                             onChange={this.onRangeChange}
                         />
                     </Form.Group>
-                    <Form.Group as={Col} className='d-flex flex-column'>
+                    <Form.Group as={Col} className='d-flex flex-column' style={{ overflowX: 'hidden', flexBasis: 0 }}>
                         <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
-                        <Form.Control as='select' multiple onChange={this.onSetSelected} disabled={setsDisabled} className='h-100' >
-                            {selectedSource && (selectedRange ? selectedSource.datasets.filter(ds => ds.dataRange[ds.dataRange.length - 1][1] as number > selectedRange[0] && ds.dataRange[0][0] as number < selectedRange[1]) : selectedSource.datasets).map(s => (
-                                <option key={s.id} value={s.id}>{this.getTitle(selectedSource.type, s.id)}</option>
-                            ))}
-                        </Form.Control>
+                        {selectedSource && <DatasetTree disabled={setsDisabled} source={selectedSource} selected={(selectedDatasets ?? []).map(ds => ds.id)} onChange={this.onSetSelected} />}
                     </Form.Group>
-                    <Col>
-                        <Form.Group>
-                            <Form.Label>{t('modals.addGraph.traceCount')}</Form.Label>
-                            <Form.Control readOnly value={selectedDatasets?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
-                        </Form.Group>
-                        <Form.Group>
-                            <Form.Label>{t('modals.addGraph.description')}</Form.Label>
+                    <Form.Group as={Col} className='d-flex flex-column' >
+                        <Form.Label>{t('modals.addGraph.traceCount')}</Form.Label>
+                        <Form.Control readOnly value={selectedDatasets?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
+
+                        <Form.Label className='mt-3'>{t('modals.addGraph.description')}</Form.Label>
+                        <div style={{ flexBasis: 0, flexGrow: 1, overflowY: 'scroll' }}>
                             {selectedSource && selectedDatasets?.map(t => [ t.id, this.getDescription(selectedSource.type, t.id) ]).filter(t => t[1]).map(t => (
                                 <Form.Text key={t[0]}>{t[1]}</Form.Text>
                             ))}
-                        </Form.Group>
-                    </Col>
+                        </div>
+                    </Form.Group>
                 </Row>
             </Form>
         );
