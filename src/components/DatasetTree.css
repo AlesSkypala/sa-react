@@ -28,6 +28,12 @@
     text-align: center;
 }
 
+.dstree .item .icon {
+    display: inline-block;
+    width: 1rem;
+    text-align: center;
+}
+
 .dstree .item .label {
     cursor: pointer;
 }

@@ -1,9 +1,24 @@
-import { faAngleDown, faAngleRight } from '@fortawesome/free-solid-svg-icons';
+import { faAngleDown, faAngleRight, faChartLine, faCogs, faDatabase, faEyeDropper, faFolder, faHdd, faMemory, faMicrochip, IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as React from 'react';
 import { t } from '../locale';
 
 import './DatasetTree.css';
+
+const knownIcons: { [key: string]: { [key: string]: IconDefinition } } = {
+    'hp': {
+        'LDEV_Short': faDatabase,
+        'PhyProc_dat': faMicrochip,
+        'PhyMPU_dat': faMemory,
+        'PhyProc_Cache_dat': faMemory,
+        'PhyESW_dat': faMemory,
+        'PhyMainPK_dat': faMemory,
+        'PhyCMPK_dat': faMemory,
+        'PhyPG_dat': faHdd,
+        'Port_dat': faEyeDropper,
+        'PhyMPPK_dat': faCogs,
+    }
+};
 
 export interface Props {
     className?: string;
@@ -169,6 +184,19 @@ class LeafComponent extends React.Component<Leaf & { source: DataSource, selecte
         return t(`datasets.titles.${sourceType}.${id}`, id);
     }
 
+    getIcon = (sourceType: DataSource['type'], leaf: Leaf): IconDefinition => {
+        if (leaf.val) {
+            return faChartLine;
+        }
+
+        if (sourceType in knownIcons && leaf.text in knownIcons[sourceType]) {
+            return knownIcons[sourceType][leaf.text];
+        }
+
+        return faFolder;
+    }
+
+
     isActive = (leaf: Leaf, selected: string[]): boolean => {
         if (leaf.val) return selected.includes(leaf.val);
         if (leaf.children) return leaf.children.findIndex(c => !this.isActive(c, selected)) < 0;
@@ -181,11 +209,13 @@ class LeafComponent extends React.Component<Leaf & { source: DataSource, selecte
         const { source, selected, onToggle } = this.props;
         const { expanded } = this.state;
         const active = this.isActive(leaf, selected);
+        const title = this.getTitle(this.props.source.type, leaf.text);
 
         return (
-            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={leaf.val ?? leaf.text} data-val={leaf.val} data-cat={leaf.val ? undefined : leaf.text}>
+            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={leaf.val ?? leaf.text} title={title}>
                 <span className='expander' onClick={this.toggleExpand}>{leaf.children && (<FontAwesomeIcon icon={expanded ? faAngleDown : faAngleRight} />)}</span>
-                <span className='label'>{this.getTitle(this.props.source.type, leaf.text)}</span>
+                <FontAwesomeIcon className='icon ml-1 mr-2' icon={this.getIcon(this.props.source.type, leaf)} />
+                <span className='label'>{title}</span>
                 {leaf.children?.length && expanded && (
                     <div className='children'>{leaf.children.map((l, i) => (
                         <LeafComponent
