@@ -93,7 +93,7 @@ class GraphComponent
             if (!t.active) {
                 disabled.push(t);
             } else {
-                if ((this.renderer?.bundles.findIndex(b => b.traces.has(t.handle)) ?? -1) < 0) {
+                if (!this.renderer?.bundles.some(b => b.traces.has(t.handle))) {
                     enabledOffbundle.push(t);
                 }
             }

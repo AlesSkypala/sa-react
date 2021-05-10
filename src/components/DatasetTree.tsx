@@ -106,7 +106,7 @@ class DatasetTree extends React.Component<Props, State> {
         if (cat) {
             const cats = cat.split('::');
             const isInCat = (set: Dataset) => {
-                return set.category.length >= cats.length && cats.findIndex((c, i) => set.category[i] !== c) < 0;
+                return set.category.length >= cats.length && !cats.some((c, i) => set.category[i] !== c);
             };
             
             vals.push(...this.props.source.datasets.filter(ds => isInCat(ds)).map(ds => ds.id));
@@ -118,7 +118,7 @@ class DatasetTree extends React.Component<Props, State> {
 
         if (e.ctrlKey) {
             const set = new Set(this.props.selected);
-            if (vals.findIndex(v => !set.has(v)) >= 0) {
+            if (vals.some(v => !set.has(v))) {
                 vals.forEach(val => set.add(val));
             } else {
                 vals.forEach(val => set.delete(val));
@@ -199,7 +199,7 @@ class LeafComponent extends React.Component<Leaf & { source: DataSource, selecte
 
     isActive = (leaf: Leaf, selected: string[]): boolean => {
         if (leaf.val) return selected.includes(leaf.val);
-        if (leaf.children) return leaf.children.findIndex(c => !this.isActive(c, selected)) < 0;
+        if (leaf.children) return !leaf.children.some(c => !this.isActive(c, selected));
 
         return false;
     }

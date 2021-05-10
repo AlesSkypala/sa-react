@@ -17,7 +17,7 @@ export function isHomogenous(traces: Pick<Trace, 'id'>[]): [ string, string ] | 
 
     const prefix = traces[0].id.substr(0, traces[0].id.lastIndexOf('::') + 2);
 
-    if (traces.findIndex(t => !t.id.startsWith(prefix)) < 0) {
+    if (!traces.some(t => !t.id.startsWith(prefix))) {
         const [ source, dataset ] = splitTraceId(traces[0]);
 
         return [ source, dataset as string ];

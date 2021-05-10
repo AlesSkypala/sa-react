@@ -115,7 +115,7 @@ export const graphsSlice = createSlice({
     initialState: {
         items: [] as Readonly<Graph>[],
         layout: [] as Readonly<Layout>[],
-        stacking: 'vertical' as StackingType,
+        stacking: 'grid' as StackingType,
         threshold: false,
     },
     reducers: {

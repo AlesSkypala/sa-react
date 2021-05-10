@@ -73,7 +73,7 @@ class TraceList extends React.PureComponent<Props, State> {
             if (prevProps?.traces && this.props.traces && this.props.traces.length === prevProps.traces.length) {
                 const ids = new Set(this.props.traces.map(t => t.id));
 
-                if (prevProps.traces.findIndex(t => !ids.has(t.id)) < 0) {
+                if (!prevProps.traces.some(t => !ids.has(t.id))) {
                     return;
                 }
             }

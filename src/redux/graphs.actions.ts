@@ -165,10 +165,28 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
             }
         }
     },
-    'zoom-sync': (state, graph) => {
-        const zoom = graph.zoom;
-        for (const graph of state.items) {
-            graph.zoom = zoom ? [...zoom] : undefined;
+    'zoom-sync': {
+        asynch: async (state, graph) => {
+            const zoom = graph.zoom;
+    
+            if (!zoom) return {};
+
+            const ret: { [key: string]: Graph['zoom'] } = {};
+
+            for (const g of state.items) {
+                if (g.id === graph.id || zoom[0] < g.xRange[0] || zoom[1] > g.xRange[1]) continue;
+
+                ret[g.id] = await dataWorker.recommend_extents(zoom[0], zoom[1], g.traces.filter(t => t.active).map(t => t.handle));
+            }
+            
+            return ret;
+        },
+        post: (state, _graph, data: { [key: string]: Graph['zoom'] }) => {
+            state.items.forEach(g => {
+                if (g.id in data) {
+                    g.zoom = data[g.id];
+                }
+            });
         }
     }
 };

@@ -26,7 +26,7 @@ class HeaderComponent
                 ranges: this.props.graphs.reduce((v, next) => {
                     const [ from, to ] = next.xRange;
 
-                    if (v.findIndex(i => i[0] === from && i[1] === to) < 0) {
+                    if (!v.some(i => i[0] === from && i[1] === to)) {
                         v.push([ from, to ]);
                     }
 

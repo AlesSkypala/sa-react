@@ -215,11 +215,11 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
                     case 'pool':
                         return selected.includes(entry.poolName);
                     case 'hostgroup':
-                        return entry.hostPorts.findIndex(p => selected.includes(p.hostgroup)) >= 0;
+                        return entry.hostPorts.some(p => selected.includes(p.hostgroup));
                     case 'wwn':
-                        return entry.wwns.findIndex(p => selected.includes(p.wwn)) >= 0; 
+                        return entry.wwns.some(p => selected.includes(p.wwn)); 
                     case 'port':
-                        return entry.hostPorts.findIndex(p => selected.includes(p.port)) >= 0;
+                        return entry.hostPorts.some(p => selected.includes(p.port));
                     default:
                         return false;
                 }
