@@ -25,7 +25,7 @@ const relayout = ({ layout, items, stacking }: SliceStateDraft<typeof graphsSlic
                 w: 4, h: 4,
             }))
         ];
-    } 
+    }
 
     if (items.length <= 0) return [];
 
@@ -66,7 +66,7 @@ const relayout = ({ layout, items, stacking }: SliceStateDraft<typeof graphsSlic
         { w: 12, h: remSize }, { w: 12, h: mSize },
         (i: number) => ({ x: 0, y: Math.min(i, 1) * remSize + Math.max(i - 1, 0) * mSize }),
     ];
-    
+
     return items.map((g, i) => ({
         ...(i <= 0 ? fSize : size),
         ...position(i),
@@ -131,7 +131,7 @@ export const graphsSlice = createSlice({
 
         remove_graphs: (state, action: PayloadAction<Graph['id'] | Graph['id'][]>) => {
             const ids = Array.isArray(action.payload) ? action.payload : [ action.payload ];
-            
+
             state.items = state.items.filter(g => !ids.includes(g.id));
 
             state.layout = relayout(state);
@@ -177,7 +177,7 @@ export const graphsSlice = createSlice({
 
         clone_graph: (state, action: PayloadAction<{ id: Graph['id'], activeOnly?: boolean}>) => {
             const graph = state.items.find(g => g.id === action.payload.id);
-            
+
             if (graph) {
                 const clone = deepClone(graph);
                 clone.id = generate_graph_id();
@@ -199,13 +199,13 @@ export const graphsSlice = createSlice({
             emitRelayoutEvent(state.stacking, state.layout);
         },
     },
-    
+
     extraReducers: builder => {
         builder.addCase(graph_action.fulfilled, (state, action) => {
             const payload = action.payload;
             const graph = state.items.find(g => g.id === payload.id);
             const actionObj = actions[payload.action];
-    
+
             if (!graph) return;
 
             if (typeof actionObj === 'object') {

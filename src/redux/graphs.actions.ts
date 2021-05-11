@@ -25,7 +25,7 @@ const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: s
 
 type ActionLogic<T = unknown> = ((state: GraphsState, graph: Graph) => unknown) | {
     asynch(state: Readonly<GraphsState>, graph: Readonly<Graph>): Promise<T>;
-    post(state: GraphsState, graph: Graph, data: T): unknown; 
+    post(state: GraphsState, graph: Graph, data: T): unknown;
 };
 
 const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
@@ -139,7 +139,7 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
                     const tMode = getLdevModeFromDataset(tDataset);
 
                     if (!tMode) continue;
-                
+
                     if (modemap[tMode].has(toLdevInternalFromVariant(tVariant, tMode))) {
                         result[g.id].add(trace.id);
                     }
@@ -168,7 +168,7 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
     'zoom-sync': {
         asynch: async (state, graph) => {
             const zoom = graph.zoom;
-    
+
             if (!zoom) return {};
 
             const ret: { [key: string]: Graph['zoom'] } = {};
@@ -178,7 +178,7 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
 
                 ret[g.id] = await dataWorker.recommend_extents(zoom[0], zoom[1], g.traces.filter(t => t.active).map(t => t.handle));
             }
-            
+
             return ret;
         },
         post: (state, _graph, data: { [key: string]: Graph['zoom'] }) => {

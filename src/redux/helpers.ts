@@ -9,5 +9,5 @@ export type DispatchProps<T> = T extends ((dispatch: unknown) => infer X) ? Disp
     [k in keyof T]: T[k] extends { (...args: infer X): unknown } ? (...args: X) => void : never;
 };
 
-export type StateProps<T extends (state: S) => unknown, S = never> = ReturnType<T>; 
+export type StateProps<T extends (state: S) => unknown, S = never> = ReturnType<T>;
 export type ReduxProps<T extends (state: S) => unknown, R, S = never> = StateProps<T, S> & DispatchProps<R>;
