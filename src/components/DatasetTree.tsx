@@ -32,19 +32,18 @@ export interface Props {
 
 type Leaf = {
     icon?: string;
-    val?: Dataset['id'];
     text: string;
-    children?: Leaf[];
-    expanded?: boolean;
+    level: number;
+    value: Dataset['id'] | Leaf[];
 }
 
 export interface State {
-    tree: Leaf[];
+    tree: { nodes: Leaf[], levels: Leaf[][] };
 }
 
 class DatasetTree extends React.Component<Props, State> {
     public state: State = {
-        tree: [],
+        tree: { nodes: [], levels: [] },
     }
 
     public componentDidMount() {
@@ -58,62 +57,81 @@ class DatasetTree extends React.Component<Props, State> {
     }
 
     private buildTree = ({ source }: Props) => {
-        const tree: Leaf[] = [];
+        const nodes: Leaf[] = [];
+        const levels: Leaf[][] = [];
 
         const categories: { [cat: string]: Leaf } = {};
 
         for (const set of source.datasets) {
             const cat = set.category.join('::');
             const leaf: Leaf = {
-                val: set.id,
+                value: set.id,
                 text: set.id,
+                level: -1,
             };
 
             if (!cat) {
-                tree.push(leaf);
+                nodes.push(leaf);
             } else {
                 if (!(cat in categories)) {
                     let lvlCat = '';
-                    let prevLevel: Leaf[] = tree;
+                    let prevLevel: Leaf[] = nodes;
                     for (const lvl of set.category) {
                         lvlCat += lvlCat === '' ? lvl : `::${lvl}`;
 
                         if (!(lvlCat in categories)) {
                             prevLevel.push(categories[lvlCat] = {
                                 text: lvlCat,
-                                children: [],
+                                value: [],
+                                level: -1,
                             });
                         }
 
-                        prevLevel = categories[lvlCat].children ?? prevLevel;
+                        prevLevel = categories[lvlCat].value as Leaf[];
                     }
                 }
 
-                categories[cat].children?.push(leaf);
+                (categories[cat].value as Leaf[]).push(leaf);
             }
         }
 
-        this.setState({ tree });
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const createLevel = (level: Leaf[]) => level.filter(l => Array.isArray(l.value)).flatMap(l => l.value as Leaf[]);
+
+        nodes.forEach(n => n.level = 0);
+        levels.push(nodes);
+        
+        for (let levelIdx = 1, level = createLevel(nodes); level.length > 0; ++levelIdx) {
+            level.forEach(n => n.level = levelIdx);
+            levels.push(level);
+            
+            level = createLevel(level);
+        }
+
+        this.setState({ tree: { nodes, levels } });
     }
 
-    private leafClicked = (isCat: boolean, _val: string, e: React.MouseEvent<HTMLElement>) => {
+    prevClick: Leaf | undefined;
+
+    private leafClicked = (leaf: Leaf, e: React.MouseEvent<HTMLElement>) => {
         if (!this.props.onChange) return;
 
-        const val = isCat ? undefined : _val;
-        const cat = isCat ? _val : undefined;
-        const vals: Dataset['id'][] = [];
+        const collectValues = (leaf: Leaf): string[] => Array.isArray(leaf.value) ? leaf.value.flatMap(v => collectValues(v)) : [ leaf.text ];
+        let vals: Dataset['id'][];
 
-        if (cat) {
-            const cats = cat.split('::');
-            const isInCat = (set: Dataset) => {
-                return set.category.length >= cats.length && !cats.some((c, i) => set.category[i] !== c);
-            };
-            
-            vals.push(...this.props.source.datasets.filter(ds => isInCat(ds)).map(ds => ds.id));
-        } else if (val) {
-            vals.push(val);
+        if (e.shiftKey) {
+            if (!this.prevClick || this.prevClick.level !== leaf.level) return;
+
+            const level = this.state.tree.levels[leaf.level];
+
+            const prevIdx = level.indexOf(this.prevClick);
+            const nextIdx = level.indexOf(leaf);
+
+            vals = level.slice(Math.min(prevIdx, nextIdx), Math.max(prevIdx, nextIdx) + 1).flatMap(v => collectValues(v));
+
         } else {
-            return;
+            vals = collectValues(leaf);
+            this.prevClick = leaf;
         }
 
         if (e.ctrlKey) {
@@ -135,14 +153,14 @@ class DatasetTree extends React.Component<Props, State> {
 
     public render() {
         const { className, disabled, source, selected } = this.props;
-        const { tree } = this.state;
+        const { nodes } = this.state.tree;
 
         return (
             <div className={`dstree ${disabled ? 'disabled' : ''} ${className ?? ''}`}>
-                {tree.map((leaf, i) => (
+                {nodes.map((leaf, i) => (
                     <LeafComponent
-                        {...leaf}
                         key={i}
+                        leaf={leaf}
                         source={source}
                         selected={selected}
                         onToggle={this.leafClicked}
@@ -152,7 +170,15 @@ class DatasetTree extends React.Component<Props, State> {
     }
 }
 
-class LeafComponent extends React.Component<Leaf & { source: DataSource, selected: string[], onToggle?(cat: boolean, val: string, e: React.MouseEvent<HTMLElement>): void }, { expanded: boolean }> {
+type LeafProps = {
+    leaf: Leaf,
+    source: DataSource,
+    selected: string[],
+    
+    onToggle?(leaf: Leaf, e: React.MouseEvent<HTMLElement>): void
+}
+
+class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
     public state = {
         expanded: false,
     };
@@ -160,16 +186,16 @@ class LeafComponent extends React.Component<Leaf & { source: DataSource, selecte
     private onClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
 
-        const { val, text, onToggle } = this.props;
+        const { onToggle } = this.props;
 
         if (onToggle) {
-            onToggle(!val, val ?? text, e);
+            onToggle(this.props.leaf, e);
         }
     };
 
     private toggleExpand = (e: React.MouseEvent<HTMLElement>) => {
         e.stopPropagation();
-        this.props.children && this.setState({ expanded: !this.state.expanded });
+        Array.isArray(this.props.leaf.value) && this.setState({ expanded: !this.state.expanded });
     }
 
     getTitle = (sourceType: DataSource['type'], id: Dataset['id']) => {
@@ -185,7 +211,7 @@ class LeafComponent extends React.Component<Leaf & { source: DataSource, selecte
     }
 
     getIcon = (sourceType: DataSource['type'], leaf: Leaf): IconDefinition => {
-        if (leaf.val) {
+        if (!Array.isArray(leaf.value)) {
             return faChartLine;
         }
 
@@ -198,28 +224,26 @@ class LeafComponent extends React.Component<Leaf & { source: DataSource, selecte
 
 
     isActive = (leaf: Leaf, selected: string[]): boolean => {
-        if (leaf.val) return selected.includes(leaf.val);
-        if (leaf.children) return !leaf.children.some(c => !this.isActive(c, selected));
-
-        return false;
+        if (!Array.isArray(leaf.value)) return selected.includes(leaf.value);
+        return !leaf.value.some(c => !this.isActive(c, selected));
     }
 
     public render() {
-        const leaf = this.props as Readonly<Leaf>;
-        const { source, selected, onToggle } = this.props;
+        const { leaf, source, selected, onToggle } = this.props;
         const { expanded } = this.state;
         const active = this.isActive(leaf, selected);
         const title = this.getTitle(this.props.source.type, leaf.text);
+        const hasChildren = Array.isArray(leaf.value);
 
         return (
-            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={leaf.val ?? leaf.text} title={title}>
-                <span className='expander' onClick={this.toggleExpand}>{leaf.children && (<FontAwesomeIcon icon={expanded ? faAngleDown : faAngleRight} />)}</span>
+            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={leaf.text} title={title}>
+                <span className='expander' onClick={this.toggleExpand}>{hasChildren && (<FontAwesomeIcon icon={expanded ? faAngleDown : faAngleRight} />)}</span>
                 <FontAwesomeIcon className='icon ml-1 mr-2' icon={this.getIcon(this.props.source.type, leaf)} />
                 <span className='label'>{title}</span>
-                {leaf.children?.length && expanded && (
-                    <div className='children'>{leaf.children.map((l, i) => (
+                {hasChildren && expanded && (
+                    <div className='children'>{(leaf.value as Leaf[]).map((l, i) => (
                         <LeafComponent
-                            {...l}
+                            leaf={l}
                             key={i}
                             source={source}
                             selected={selected}
