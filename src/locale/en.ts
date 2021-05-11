@@ -59,7 +59,8 @@ const en_lang = {
             source: 'Data source',
             range: 'Time range',
             datasets: 'Datasets',
-            traceCount: 'Trace count',
+            traceCount: 'Up to {{count}} trace',
+            traceCount_plural: 'Up to {{count}} traces',
             description: 'Description',
 
             singleGraph: 'As a single graph',

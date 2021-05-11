@@ -28,6 +28,7 @@ export interface Props {
     disabled?: boolean;
 
     onChange?(newsel: Props['selected']): void;
+    onDoubleClick?(target: Dataset['id']): void;
 }
 
 type Leaf = {
@@ -151,6 +152,12 @@ class DatasetTree extends React.Component<Props, State> {
         }
     }
 
+    private leafDoubleClicked = (leaf: Leaf) => {
+        if (!Array.isArray(leaf.value) && this.props.onDoubleClick) {
+            this.props.onDoubleClick(leaf.value);
+        }
+    }
+
     public render() {
         const { className, disabled, source, selected } = this.props;
         const { nodes } = this.state.tree;
@@ -164,6 +171,7 @@ class DatasetTree extends React.Component<Props, State> {
                         source={source}
                         selected={selected}
                         onToggle={this.leafClicked}
+                        onDoubleClick={this.leafDoubleClicked}
                     />))}
             </div>
         );
@@ -175,7 +183,8 @@ type LeafProps = {
     source: DataSource,
     selected: string[],
     
-    onToggle?(leaf: Leaf, e: React.MouseEvent<HTMLElement>): void
+    onToggle?(leaf: Leaf, e: React.MouseEvent<HTMLElement>): void;
+    onDoubleClick?(leaf: Leaf, e: React.MouseEvent<HTMLElement>): void;
 }
 
 class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
@@ -222,24 +231,27 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
         return faFolder;
     }
 
-
     isActive = (leaf: Leaf, selected: string[]): boolean => {
         if (!Array.isArray(leaf.value)) return selected.includes(leaf.value);
         return !leaf.value.some(c => !this.isActive(c, selected));
     }
 
+    onDoubleClick = (e: React.MouseEvent<HTMLElement>) => {
+        this.props.onDoubleClick && this.props.onDoubleClick(this.props.leaf, e);
+    }
+
     public render() {
-        const { leaf, source, selected, onToggle } = this.props;
+        const { leaf, source, selected, onToggle, onDoubleClick } = this.props;
         const { expanded } = this.state;
         const active = this.isActive(leaf, selected);
-        const title = this.getTitle(this.props.source.type, leaf.text);
+        const title = this.getTitle(source.type, leaf.text);
         const hasChildren = Array.isArray(leaf.value);
 
         return (
             <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={leaf.text} title={title}>
                 <span className='expander' onClick={this.toggleExpand}>{hasChildren && (<FontAwesomeIcon icon={expanded ? faAngleDown : faAngleRight} />)}</span>
-                <FontAwesomeIcon className='icon ml-1 mr-2' icon={this.getIcon(this.props.source.type, leaf)} />
-                <span className='label'>{title}</span>
+                <FontAwesomeIcon className='icon ml-1 mr-2' icon={this.getIcon(source.type, leaf)} />
+                <span className='label' onDoubleClick={this.onDoubleClick}>{title}</span>
                 {hasChildren && expanded && (
                     <div className='children'>{(leaf.value as Leaf[]).map((l, i) => (
                         <LeafComponent
@@ -248,6 +260,7 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
                             source={source}
                             selected={selected}
                             onToggle={onToggle}
+                            onDoubleClick={onDoubleClick}
                         />
                     ))}</div>
                 )}

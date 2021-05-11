@@ -9,6 +9,7 @@ import { AddGraphModal, ConfirmModal } from './Modals';
 import { t } from '../locale';
 
 import './Header.css';
+import { Args } from './Modals/AddGraphModal';
 
 class HeaderComponent
     extends React.Component<Props, State> {
@@ -16,12 +17,8 @@ class HeaderComponent
     addGraph = () =>
         DialogService.open(
             AddGraphModal,
-            res => {
-                if (res) {
-                    this.props.add_graphs(res[0]);
-                    res[1].forEach(j => this.props.invoke_job(j));
-                }
-            },
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            _a => { /* */ },
             {
                 ranges: this.props.graphs.reduce((v, next) => {
                     const [ from, to ] = next.xRange;
@@ -31,8 +28,16 @@ class HeaderComponent
                     }
 
                     return v;
-                }, [] as Graph['xRange'][])
-            }
+                }, [] as Graph['xRange'][]),
+
+
+                onAddGraphs: res => {
+                    if (res) {
+                        this.props.add_graphs(res[0]);
+                        res[1].forEach(j => this.props.invoke_job(j));
+                    }
+                }
+            } as Args
         );
 
     onSelectLayout = (key: unknown) => {

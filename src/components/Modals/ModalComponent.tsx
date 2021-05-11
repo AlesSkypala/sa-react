@@ -37,8 +37,8 @@ abstract class ModalComponent<Result, Args = unknown, State = unknown>
 
 // export type ModalConstructor<T extends ModalComponent<unknown>> = T extends ModalComponent<infer Result, infer Args> ? new (props: Props<Result, Args>) => T : never;
 
-export type Props<R, T> = T & {
-    onClose(result?: R): void;
+export type Props<Result, Args> = Args & {
+    onClose(result?: Result): void;
 }
 
 export default ModalComponent;

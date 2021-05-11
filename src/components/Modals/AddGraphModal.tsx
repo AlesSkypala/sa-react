@@ -8,13 +8,17 @@ import DateTimeRange from '../DateTimeRange';
 import { Props } from './ModalComponent';
 import { t } from '../../locale';
 import { generate_graph_id } from '../../redux';
-import { dateToTimestamp } from '../../utils/datetime';
+import { dateToTimestamp, getDayFromEnd, rangeIntersectsBounds } from '../../utils/datetime';
 import DatasetTree from '../DatasetTree';
 
 import './AddGraphModal.css';
 
+let PREV_SOURCE: DataSource['id'] | undefined = undefined;
+let PREV_TIMERANGE: Graph['xRange'] | undefined = undefined;
+
 export interface Args {
     ranges: Graph['xRange'][];
+    onAddGraphs?(result: ImportResult): void;
 }
 
 interface State {
@@ -27,7 +31,7 @@ interface State {
 
 export type ImportResult = [ Graph[], DataJob[] ];
 
-class InfoModal extends ModalComponent<ImportResult, Args, State> {
+class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
     public state: State = {};
 
     constructor(props: Props<ImportResult, Args> | Readonly<Props<ImportResult, Args>>) {
@@ -36,7 +40,13 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
     }
 
     public componentDidMount(): void {
-        DataService.getSources().then((sources: DataSource[]) => { this.setState({ sources }); });
+        DataService.getSources().then((sources: DataSource[]) => {
+            this.setState({
+                sources,
+                selectedSource: sources.find(s => s.id === PREV_SOURCE),
+                selectedRange: PREV_TIMERANGE
+            });
+        });
     }
 
     getTitle = (sourceType: DataSource['type'], id: Trace['id']) => {
@@ -60,14 +70,31 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
             return undefined;
     }
 
-    onRangeChange = (range: Graph['xRange']) => this.setState({ selectedRange: range });
+    onRangeChange = (range: Graph['xRange']) => {
+        PREV_TIMERANGE = range;
+        this.setState({ selectedRange: range });
+    }
 
     onSourceSelected = (e: React.ChangeEvent<HTMLSelectElement>) => {
         e.preventDefault();
         const selectedSource = this.state.sources?.find(s => s.id === e.currentTarget.value);
 
         if (selectedSource !== this.state.selectedSource) {
-            this.setState({ selectedRange: undefined, selectedSource, selectedDatasets: undefined });
+            PREV_SOURCE = selectedSource?.id;
+            let selectedRange = this.state.selectedRange;
+
+            if (selectedSource?.datasets.length) {
+                const dataRange = selectedSource.datasets[0].dataRange as [number, number][];
+                const lastRange = dataRange[dataRange.length - 1];
+                
+                PREV_TIMERANGE = selectedRange = !selectedRange || !rangeIntersectsBounds(selectedRange, dataRange) ? getDayFromEnd(lastRange, 0) : selectedRange;
+            }
+
+            this.setState({
+                selectedRange,
+                selectedSource,
+                selectedDatasets: undefined
+            });
         }
     }
 
@@ -122,6 +149,7 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
 
         const job = new DataJob(xRange).relate(id);
         datasets.forEach( t => job.downloadBulk({ source: t.source, id: t.id }) );
+        this.props.onAddGraphs && this.props.onAddGraphs([ [ graph ], [ job ] ]);
         this.props.onClose([ [ graph ], [ job ] ]);
     }
 
@@ -173,7 +201,56 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
             jobs.push(new DataJob(xRange).downloadBulk({ source: dataset.source, id: dataset.id }).relate(id));
         });
 
+        this.props.onAddGraphs && this.props.onAddGraphs([ graphs, jobs ]);
         this.props.onClose([ graphs, jobs ]);
+    }
+
+    onSetQuick = (sid: Dataset['id']) => {
+        const datasets = this.state.selectedSource ? [ this.state.selectedSource.datasets.find(s => s.id === sid) as Dataset ] : undefined;
+        if (!datasets || datasets.length <= 0 || !datasets[0]) return;
+        if (this.state.selectedRange === undefined) throw new Error('Unexpected error: No range selected when creating a graph.');
+        if (this.state.selectedSource === undefined) throw new Error('Unexpected error: No source selected when creating a graph.');
+
+        const xRange = [...this.state.selectedRange] as Graph['xRange'];
+        const id = generate_graph_id();
+
+        const sourceType = this.state.selectedSource.type;
+        const sourceName = this.state.selectedSource.name;
+
+        // TODO convert units if possible
+        const units = new Set<string>();
+        datasets.forEach( d => units.add(d.units) );
+
+        const graph: Graph = {
+            id,
+
+            title:  t('graph.new'),
+            xLabel: t('graph.xAxis'),
+            yLabel: t('graph.yAxis'),
+
+            // !
+            // TODO: this must be reworked to take into account the real xtype of selected traces
+            xType: 'datetime',
+
+            style: {
+                margin: 5,
+                xLabelSpace: 24,
+                yLabelSpace: 60,
+            },
+
+            metadata: {
+                sourceNames: [ sourceName ],
+                datasetNames: datasets.map( d => this.getTitle(sourceType, d.id) ),
+                units: [...units],
+            },
+
+            xRange,
+            traces: [],
+        };
+
+        const job = new DataJob(xRange).relate(id);
+        datasets.forEach( t => job.downloadBulk({ source: t.source, id: t.id }) );
+        this.props.onAddGraphs && this.props.onAddGraphs([ [ graph ], [ job ] ]);
     }
 
     cancelClicked = (e: React.MouseEvent) => { e.preventDefault(); this.resolve(undefined); }
@@ -224,12 +301,17 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
                     </Form.Group>
                     <Form.Group as={Col} className='d-flex flex-column' style={{ overflowX: 'hidden', flexBasis: 0 }}>
                         <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
-                        {selectedSource && <DatasetTree disabled={setsDisabled} source={selectedSource} selected={(selectedDatasets ?? []).map(ds => ds.id)} onChange={this.onSetSelected} />}
+                        {selectedSource &&
+                            <DatasetTree
+                                disabled={setsDisabled}
+                                source={selectedSource}
+                                selected={(selectedDatasets ?? []).map(ds => ds.id)}
+                                
+                                onChange={this.onSetSelected}
+                                onDoubleClick={this.onSetQuick}
+                            />}
                     </Form.Group>
-                    <Form.Group as={Col} className='d-flex flex-column' >
-                        <Form.Label>{t('modals.addGraph.traceCount')}</Form.Label>
-                        <Form.Control readOnly value={selectedDatasets?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
-
+                    <Form.Group as={Col} className='d-flex flex-column'>
                         <Form.Label className='mt-3'>{t('modals.addGraph.description')}</Form.Label>
                         <div style={{ flexBasis: 0, flexGrow: 1, overflowY: 'scroll' }}>
                             {selectedSource && selectedDatasets?.map(t => [ t.id, this.getDescription(selectedSource.type, t.id) ]).filter(t => t[1]).map(t => (
@@ -248,6 +330,9 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
 
         return (
             <>
+                <div style={{ marginRight: 'auto' }}>
+                    {t('modals.addGraph.traceCount', { count: selectedDatasets?.reduce((val, set) => val + set.variantCount, 0) ?? 0 })}
+                </div>
                 <Dropdown as={ButtonGroup}>
                     <Button variant='primary' onClick={this.multiClicked} disabled={addDisabled}>
                         {t('modals.add')}
@@ -265,4 +350,4 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
     }
 }
 
-export default InfoModal;
+export default AddGraphModal;
