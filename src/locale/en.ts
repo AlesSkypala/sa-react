@@ -64,9 +64,15 @@ const en_lang = {
 
             singleGraph: 'As a single graph',
 
+            lastDay: 'Last day',
+            prevDay: '-1d',
+            prevPrevDay: '-2d',
+            customDate: 'Custom',
+
             day: 'Day',
             week: 'Week',
             month: 'Month',
+            customRange: 'Custom',
             quarter: 'Quarter',
             halfYear: 'Half year',
             year: 'Year',

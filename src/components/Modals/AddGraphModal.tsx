@@ -22,8 +22,6 @@ interface State {
 
     selectedSource?: DataSource;
     selectedDatasets?: Dataset[];
-
-    availableRange?: Graph['xRange'],
     selectedRange?:  Graph['xRange'],
 }
 
@@ -69,16 +67,7 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
         const selectedSource = this.state.sources?.find(s => s.id === e.currentTarget.value);
 
         if (selectedSource !== this.state.selectedSource) {
-            const additional: Pick<State, 'availableRange' | 'selectedRange'> = { availableRange: undefined, selectedRange: undefined };
-
-            if (selectedSource) {
-                additional.availableRange = [
-                    selectedSource.datasets.reduce((val, set) => Math.max(set.dataRange[0][0] as number, val), 0) as XTypeTypeMap[XType],
-                    selectedSource.datasets.reduce((val, set) => Math.max(set.dataRange[set.dataRange.length - 1][1] as number, val), 0) as XTypeTypeMap[XType],
-                ];
-            }
-
-            this.setState({ ...additional, selectedSource, selectedDatasets: undefined });
+            this.setState({ selectedRange: undefined, selectedSource, selectedDatasets: undefined });
         }
     }
 
@@ -205,11 +194,12 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
             );
         }
 
-        const { availableRange, selectedRange, selectedSource, selectedDatasets } = this.state;
+        const { selectedRange, selectedSource, selectedDatasets } = this.state;
         const timeDisabled = !selectedSource;
         const setsDisabled = !selectedRange;
         const now = new Date();
-        const defaultRange: Graph['xRange'] = [ dateToTimestamp(now), dateToTimestamp(now) ];
+        const defaultRange: Dataset['dataRange'] = [ [ dateToTimestamp(now), dateToTimestamp(now) ] ];
+        const availableRange = selectedSource?.datasets[0].dataRange;
 
         return (
             <Form>
@@ -225,7 +215,7 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
                     <Form.Group as={Col} className='d-flex flex-column'>
                         <Form.Label>{t('modals.addGraph.range')}</Form.Label>
                         <DateTimeRange
-                            bounds={[ availableRange ?? defaultRange ]}
+                            bounds={availableRange ?? defaultRange}
                             value={selectedRange}
 
                             disabled={timeDisabled}

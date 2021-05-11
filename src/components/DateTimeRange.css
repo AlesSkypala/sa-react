@@ -3,3 +3,11 @@
     flex-direction: column;
     align-items: stretch;
 }
+
+.react-calendar.disabled {
+    opacity: 0.4;
+}
+
+.react-calendar.disabled .react-calendar__tile {
+    pointer-events: none;
+}
