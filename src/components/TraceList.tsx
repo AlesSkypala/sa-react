@@ -231,8 +231,7 @@ class TraceListRow extends React.Component<RowProps, TraceListRowState> {
                     overlay={<Tooltip id={`trace-row-tooltip-${ldevId}`}>{rowTitle}</Tooltip>}
                 >
                     <div className="trace-row-inner">
-                        <span className='trace-color-indicator mr-1' style={{backgroundColor: color}}></span>
-                        <span className='btn-select mr-1'>
+                        <span className='btn-select mr-1 trace-color-indicator' style={{color}}>
                             <FontAwesomeIcon icon={isActive ? faCheckSquare : faSquare} />
                         </span>
                         <span className='trace-row-title' ref={this.spanRef}>{rowTitle}</span>

@@ -44,13 +44,6 @@
     background-color: rgb(199, 223, 255);
 }
 
-.trace-color-indicator {
-    display: inline-block;
-    height: 32px;
-    width: 0.4em;
-    min-width: 0.4em;
-}
-
 .ReactVirtualized__Grid {
     outline: none;
 }
