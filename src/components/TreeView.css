@@ -1,9 +1,14 @@
 .tree-view {
     --connection-color: #333;
+    --icon-color: #444;
 }
 
 ul.tree-view > li {
     list-style-type: none;
+}
+
+ul.tree-view > li > .icon {
+    color: var(--icon-color);
 }
 
 ul.tree-view ul.tree-view {
