@@ -4,17 +4,14 @@ import { Button, Col, ModalTitle, Row, Form, Spinner, ButtonGroup, Dropdown } fr
 import { ModalComponent } from '.';
 import { DataService } from '../../services';
 import DataJob from '../../services/DataJob';
-import { default as moment } from 'moment';
 import DateTimeRange from '../DateTimeRange';
 import { Props } from './ModalComponent';
-
-import './AddGraphModal.css';
 import { t } from '../../locale';
 import { generate_graph_id } from '../../redux';
-import { dateToTimestamp, parseTimestamp } from '../../utils/datetime';
+import { dateToTimestamp } from '../../utils/datetime';
 import DatasetTree from '../DatasetTree';
 
-const dateFormat = 'HH:mm DD.MM.YYYY';
+import './AddGraphModal.css';
 
 export interface Args {
     ranges: Graph['xRange'][];
@@ -27,7 +24,7 @@ interface State {
     selectedDatasets?: Dataset[];
 
     availableRange?: Graph['xRange'],
-    selectedRange?: Graph['xRange'],
+    selectedRange?:  Graph['xRange'],
 }
 
 export type ImportResult = [ Graph[], DataJob[] ];
@@ -42,12 +39,6 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
 
     public componentDidMount(): void {
         DataService.getSources().then((sources: DataSource[]) => { this.setState({ sources }); });
-    }
-
-    protected renderHeader(): JSX.Element {
-        return (
-            <ModalTitle>{t('modals.addGraph.title')}</ModalTitle>
-        );
     }
 
     getTitle = (sourceType: DataSource['type'], id: Trace['id']) => {
@@ -71,17 +62,7 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
             return undefined;
     }
 
-    // private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
-    private onRangeChange = (start: Date, end: Date) => {
-        if (this.state.selectedSource) {
-            this.setState({
-                selectedRange: [
-                    dateToTimestamp(start) as XTypeTypeMap[XType],
-                    dateToTimestamp(end) as XTypeTypeMap[XType],
-                ]
-            });
-        }
-    }
+    onRangeChange = (range: Graph['xRange']) => this.setState({ selectedRange: range });
 
     onSourceSelected = (e: React.ChangeEvent<HTMLSelectElement>) => {
         e.preventDefault();
@@ -107,119 +88,7 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
         }
     }
 
-    onRangeButton = (e: React.MouseEvent<HTMLButtonElement>) => {
-        if (!this.state.availableRange) return;
-
-        const { from, to, range } = e.currentTarget.dataset;
-
-        if (from && to) {
-            this.setState({
-                selectedRange: [
-                    parseInt(from),
-                    parseInt(to),
-                ]
-            });
-        } else if (range) {
-            this.setState({
-                selectedRange: [
-                    Math.max(
-                        (this.state.availableRange[1] as number) - parseInt(range),
-                        this.state.availableRange[0] as number
-                    ),
-                    this.state.availableRange[1]
-                ]
-            });
-        }
-    };
-    getRangeString = () => {
-        if (!this.state.selectedRange) return t('modals.addGraph.noRange');
-
-        const [from, to] = this.state.selectedRange as [number, number];
-
-        return `${moment(parseTimestamp(from)).format(dateFormat)} - ${moment(parseTimestamp(to)).format(dateFormat)}`;
-    }
-
-    protected renderBody(): JSX.Element {
-        if (!this.state.sources) {
-            return (
-                <>
-                    <p className='text-center'>{t('modals.addGraph.loading')}...</p>
-                    <div className='text-center my-3'><Spinner animation='border' variant='primary' /></div>
-                </>
-            );
-        }
-
-        const { availableRange, selectedRange, selectedSource, selectedDatasets } = this.state;
-        const timeDisabled = !selectedSource;
-        const setsDisabled = !selectedRange;
-        const now = new Date();
-        const defaultRange: [Date,Date] = [ now, now ];
-        const existingRanges = this.props.ranges; // this.props.existingGraphs ?? [];
-
-        return (
-            <Form>
-                <Row className='separated'>
-                    <Form.Group as={Col} className='d-flex flex-column'>
-                        <Form.Label>{t('modals.addGraph.source')}</Form.Label>
-                        <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100'>
-                            {this.state.sources.map(s => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
-                            ))}
-                        </Form.Control>
-                    </Form.Group>
-                    <Form.Group as={Col} className='d-flex flex-column'>
-                        <Form.Label>{t('modals.addGraph.range')}</Form.Label>
-                        <Form.Control name='timeRange' readOnly autoComplete='off' value={this.getRangeString()}></Form.Control>
-                        <Dropdown as={ButtonGroup} className='my-2'>
-                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={24 * 60}>{t('modals.addGraph.day')}</Button>
-                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={7 * 24 * 60}>{t('modals.addGraph.week')}</Button>
-                            <Button disabled={timeDisabled} onClick={this.onRangeButton} data-range={4 * 7 * 24 * 60}>{t('modals.addGraph.month')}</Button>
-
-                            <Dropdown.Toggle disabled={timeDisabled} />
-                            <Dropdown.Menu>
-                                <Dropdown.Item onClick={this.onRangeButton} data-range={91 * 24 * 60}>{t('modals.addGraph.quarter')}</Dropdown.Item>
-                                <Dropdown.Item onClick={this.onRangeButton} data-range={183 * 24 * 60}>{t('modals.addGraph.halfYear')}</Dropdown.Item>
-                                <Dropdown.Item onClick={this.onRangeButton} data-range={365 * 24 * 60}>{t('modals.addGraph.year')}</Dropdown.Item>
-                                {existingRanges.length > 0 && (
-                                    <>
-                                        <Dropdown.Divider />
-                                        <Dropdown.ItemText>{t('modals.addGraph.copy')}</Dropdown.ItemText>
-                                        {existingRanges.map((val, idx) => (
-                                            <Dropdown.Item key={idx} data-from={val[0]} data-to={val[1]} onClick={this.onRangeButton}>{idx}</Dropdown.Item>
-                                        ))}
-                                    </>
-                                )}
-                            </Dropdown.Menu>
-                        </Dropdown>
-                        <DateTimeRange
-                            bounds={(availableRange?.map(v => parseTimestamp(v)) as ([Date, Date] | undefined)) ?? defaultRange}
-                            value={selectedRange?.map(v => parseTimestamp(v)) as ([Date, Date] | undefined)}
-
-                            disabled={timeDisabled}
-                            onChange={this.onRangeChange}
-                        />
-                    </Form.Group>
-                    <Form.Group as={Col} className='d-flex flex-column' style={{ overflowX: 'hidden', flexBasis: 0 }}>
-                        <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
-                        {selectedSource && <DatasetTree disabled={setsDisabled} source={selectedSource} selected={(selectedDatasets ?? []).map(ds => ds.id)} onChange={this.onSetSelected} />}
-                    </Form.Group>
-                    <Form.Group as={Col} className='d-flex flex-column' >
-                        <Form.Label>{t('modals.addGraph.traceCount')}</Form.Label>
-                        <Form.Control readOnly value={selectedDatasets?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
-
-                        <Form.Label className='mt-3'>{t('modals.addGraph.description')}</Form.Label>
-                        <div style={{ flexBasis: 0, flexGrow: 1, overflowY: 'scroll' }}>
-                            {selectedSource && selectedDatasets?.map(t => [ t.id, this.getDescription(selectedSource.type, t.id) ]).filter(t => t[1]).map(t => (
-                                <Form.Text key={t[0]}>{t[1]}</Form.Text>
-                            ))}
-                        </div>
-                    </Form.Group>
-                </Row>
-            </Form>
-        );
-    }
-
-    private singleClicked = () => {
+    singleClicked = () => {
         const datasets = this.state.selectedDatasets;
         if (!datasets || datasets.length <= 0) return;
         if (this.state.selectedRange === undefined) throw new Error('Unexpected error: No range selected when creating a graph.');
@@ -267,9 +136,9 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
         this.props.onClose([ [ graph ], [ job ] ]);
     }
 
-    private multiClicked = () => {
+    multiClicked = () => {
         if (!this.state.selectedDatasets || this.state.selectedDatasets.length <= 0) return;
-        if (this.state.selectedRange === undefined) throw new Error('Unexpected error: No range selected when creating a graph.');
+        if (this.state.selectedRange === undefined)  throw new Error('Unexpected error: No range selected when creating a graph.');
         if (this.state.selectedSource === undefined) throw new Error('Unexpected error: No source selected when creating a graph.');
 
         const graphs: Graph[] = [];
@@ -318,7 +187,70 @@ class InfoModal extends ModalComponent<ImportResult, Args, State> {
         this.props.onClose([ graphs, jobs ]);
     }
 
-    private cancelClicked = (e: React.MouseEvent) => { e.preventDefault(); this.resolve(undefined); }
+    cancelClicked = (e: React.MouseEvent) => { e.preventDefault(); this.resolve(undefined); }
+
+    protected renderHeader(): JSX.Element {
+        return (
+            <ModalTitle>{t('modals.addGraph.title')}</ModalTitle>
+        );
+    }
+
+    protected renderBody(): JSX.Element {
+        if (!this.state.sources) {
+            return (
+                <>
+                    <p className='text-center'>{t('modals.addGraph.loading')}...</p>
+                    <div className='text-center my-3'><Spinner animation='border' variant='primary' /></div>
+                </>
+            );
+        }
+
+        const { availableRange, selectedRange, selectedSource, selectedDatasets } = this.state;
+        const timeDisabled = !selectedSource;
+        const setsDisabled = !selectedRange;
+        const now = new Date();
+        const defaultRange: Graph['xRange'] = [ dateToTimestamp(now), dateToTimestamp(now) ];
+
+        return (
+            <Form>
+                <Row className='separated'>
+                    <Form.Group as={Col} className='d-flex flex-column'>
+                        <Form.Label>{t('modals.addGraph.source')}</Form.Label>
+                        <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100'>
+                            {this.state.sources.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                        </Form.Control>
+                    </Form.Group>
+                    <Form.Group as={Col} className='d-flex flex-column'>
+                        <Form.Label>{t('modals.addGraph.range')}</Form.Label>
+                        <DateTimeRange
+                            bounds={[ availableRange ?? defaultRange ]}
+                            value={selectedRange}
+
+                            disabled={timeDisabled}
+                            onChange={this.onRangeChange}
+                        />
+                    </Form.Group>
+                    <Form.Group as={Col} className='d-flex flex-column' style={{ overflowX: 'hidden', flexBasis: 0 }}>
+                        <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
+                        {selectedSource && <DatasetTree disabled={setsDisabled} source={selectedSource} selected={(selectedDatasets ?? []).map(ds => ds.id)} onChange={this.onSetSelected} />}
+                    </Form.Group>
+                    <Form.Group as={Col} className='d-flex flex-column' >
+                        <Form.Label>{t('modals.addGraph.traceCount')}</Form.Label>
+                        <Form.Control readOnly value={selectedDatasets?.reduce((val, set) => val + set.variantCount, 0) ?? 0} />
+
+                        <Form.Label className='mt-3'>{t('modals.addGraph.description')}</Form.Label>
+                        <div style={{ flexBasis: 0, flexGrow: 1, overflowY: 'scroll' }}>
+                            {selectedSource && selectedDatasets?.map(t => [ t.id, this.getDescription(selectedSource.type, t.id) ]).filter(t => t[1]).map(t => (
+                                <Form.Text key={t[0]}>{t[1]}</Form.Text>
+                            ))}
+                        </div>
+                    </Form.Group>
+                </Row>
+            </Form>
+        );
+    }
 
     protected renderFooter(): JSX.Element {
         const { selectedDatasets } = this.state;

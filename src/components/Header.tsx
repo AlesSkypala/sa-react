@@ -40,21 +40,21 @@ class HeaderComponent
     };
 
     minimizeAll = () =>
-        this.props.graphIds.length > 0 && alert('society. we live in one');
+        this.props.graphs.length > 0 && alert('society. we live in one');
 
     clearAll = () =>
-        this.props.graphIds.length > 0 && DialogService.open(
+        this.props.graphs.length > 0 && DialogService.open(
             ConfirmModal,
-            res => res && this.props.remove_graphs(this.props.graphIds),
+            res => res && this.props.remove_graphs(this.props.graphs.map(g => g.id)),
             {
                 title: t('modals.removeGraphs.title'),
-                body: t('modals.removeGraphs.body', { count: this.props.graphIds.length }),
+                body: t('modals.removeGraphs.body', { count: this.props.graphs.length }),
                 okColor: 'danger',
             },
         );
 
     public render() {
-        const {graphIds, stacking, layoutUnlocked} = this.props;
+        const {graphs, stacking, layoutUnlocked} = this.props;
         return (
             <header className="main-header">
 
@@ -73,12 +73,12 @@ class HeaderComponent
                                 </NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink title={t('header.minimizeGraphs')} onClick={this.minimizeAll} disabled={graphIds.length <= 0}>
+                                <NavLink title={t('header.minimizeGraphs')} onClick={this.minimizeAll} disabled={graphs.length <= 0}>
                                     <FontAwesomeIcon color='white' icon={faMinusSquare} />
                                 </NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink title={t('header.removeGraphs')} onClick={this.clearAll} disabled={graphIds.length <= 0}>
+                                <NavLink title={t('header.removeGraphs')} onClick={this.clearAll} disabled={graphs.length <= 0}>
                                     <FontAwesomeIcon color='white' icon={trashAll} />
                                 </NavLink>
                             </NavItem>
@@ -92,9 +92,9 @@ class HeaderComponent
                                     <FontAwesomeIcon color='white' icon={faGripVertical} />
                                 </Dropdown.Toggle>
                                 <Dropdown.Menu>
+                                    <Dropdown.Item active={stacking === 'grid'}       eventKey='grid'>      <FontAwesomeIcon color='black' icon={faThLarge}    className='mr-2' />{t('stacking.grid')}</Dropdown.Item>
                                     <Dropdown.Item active={stacking === 'vertical'}   eventKey='vertical'>  <FontAwesomeIcon color='black' icon={faLayerGroup} className='mr-2' />{t('stacking.vertical')}</Dropdown.Item>
                                     <Dropdown.Item active={stacking === 'horizontal'} eventKey='horizontal'><FontAwesomeIcon color='black' icon={faLayerGroup} className='mr-2' style={{ transform: 'rotate(-90deg)' }} />{t('stacking.horizontal')}</Dropdown.Item>
-                                    <Dropdown.Item active={stacking === 'grid'}       eventKey='grid'>      <FontAwesomeIcon color='black' icon={faThLarge}    className='mr-2' />{t('stacking.grid')}</Dropdown.Item>
                                     <Dropdown.Item active={stacking === 'freeform'}   eventKey='freeform'>  <FontAwesomeIcon color='black' icon={faClone}      className='mr-2' />{t('stacking.freeform')}</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
@@ -116,7 +116,6 @@ const dispatchProps = {
 
 const storeProps = (store: RootStore) => ({
     graphs: store.graphs.items,
-    graphIds: store.graphs.items.map(g => g.id),
     stacking: store.graphs.stacking,
 });
 

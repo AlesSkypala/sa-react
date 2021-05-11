@@ -55,7 +55,7 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
             },
             { traces: graph.traces }
         ),
-    'tres': (state) => state.threshold = true,
+    'tres': (state) => state.threshold = !state.threshold,
     'sel-all': (_, graph) => {
         graph.traces.forEach(t => t.active = true);
     },
