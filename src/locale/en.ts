@@ -140,6 +140,10 @@ const en_lang = {
                 extradense: 'Even denser random dataset',
             },
         },
+
+        items: 'Items: {{count}}',
+        id: 'ID: {{id}}',
+        path: 'Path: {{path}}',
     }
 };
 

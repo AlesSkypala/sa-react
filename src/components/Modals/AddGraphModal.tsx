@@ -208,10 +208,11 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
     }
 
     onSetQuick = (sid: Dataset['id']) => {
-        const datasets = this.state.selectedSource ? [ this.state.selectedSource.datasets.find(s => s.id === sid) as Dataset ] : undefined;
-        if (!datasets || datasets.length <= 0 || !datasets[0]) return;
         if (this.state.selectedRange === undefined) throw new Error('Unexpected error: No range selected when creating a graph.');
         if (this.state.selectedSource === undefined) throw new Error('Unexpected error: No source selected when creating a graph.');
+
+        const dataset = this.state.selectedSource.datasets.find(s => s.id === sid);
+        if (!dataset) return;
 
         const xRange = [...this.state.selectedRange] as Graph['xRange'];
         const id = generate_graph_id();
@@ -219,15 +220,14 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         const sourceType = this.state.selectedSource.type;
         const sourceName = this.state.selectedSource.name;
 
-        // TODO convert units if possible
-        const units = new Set<string>();
-        datasets.forEach( d => units.add(d.units) );
+        const datasetName = this.getTitle(sourceType, dataset.id);
+        const title = `${datasetName} [${dataset.units === 'percent' ? '%' : dataset.units}]`;
 
         const graph: Graph = {
             id,
             visible: true,
+            title,
 
-            title:  t('graph.new'),
             xLabel: t('graph.xAxis'),
             yLabel: t('graph.yAxis'),
 
@@ -243,8 +243,8 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
 
             metadata: {
                 sourceNames: [ sourceName ],
-                datasetNames: datasets.map( d => this.getTitle(sourceType, d.id) ),
-                units: [...units],
+                datasetNames: [ this.getTitle(sourceType, dataset.id) ],
+                units: [ dataset.units ],
             },
 
             xRange,
@@ -252,11 +252,23 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         };
 
         const job = new DataJob(xRange).relate(id);
-        datasets.forEach( t => job.downloadBulk({ source: t.source, id: t.id }) );
+        job.downloadBulk({ source: dataset.source, id: dataset.id });
         this.props.onAddGraphs && this.props.onAddGraphs([ [ graph ], [ job ] ]);
     }
 
     cancelClicked = (e: React.MouseEvent) => { e.preventDefault(); this.resolve(undefined); }
+
+    generateSourceTooltip = (source: DataSource) => {
+        let tooltip = source.name + '\n\n';
+
+        tooltip += t('datasets.id', { id: source.id }) + '\n';
+
+        if ('path' in source.metadata) {
+            tooltip += t('datasets.path', { path: source.metadata['path'].replaceAll('/', '\\') }) + '\n';
+        }
+
+        return tooltip.trimEnd();
+    }
 
     protected renderHeader(): JSX.Element {
         return (
@@ -288,9 +300,10 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
                         <Form.Label>{t('modals.addGraph.source')}</Form.Label>
                         <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100'>
                             {this.state.sources.map(s => (
-                                <option key={s.id} value={s.id}>{s.name}</option>
+                                <option key={s.id} value={s.id} title={this.generateSourceTooltip(s)}>{s.name}</option>
                             ))}
                         </Form.Control>
+                        <small className='mt-2'>{t('datasets.path', { path: selectedSource && 'path' in selectedSource.metadata ? selectedSource.metadata['path'].replaceAll('/', '\\') : 'none' })}</small>
                     </Form.Group>
                     <Form.Group as={Col} className='d-flex flex-column'>
                         <Form.Label>{t('modals.addGraph.range')}</Form.Label>

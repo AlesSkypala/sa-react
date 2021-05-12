@@ -35,11 +35,14 @@
 }
 
 .dstree .item .label {
+    display: inline-block;
     cursor: pointer;
+    width: 100%;
+    margin: 1px 0 1px
 }
 
 .dstree .item.active .label {
-    background-color: #0069d9;
+    background-color: #3692f5;
     color: white;
 }
 

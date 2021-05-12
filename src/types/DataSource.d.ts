@@ -4,6 +4,7 @@ extends Identified {
     type: string;
     datasets: Dataset[];
     features: string[];
+    metadata: { [key: string]: string };
 }
 
 interface Dataset

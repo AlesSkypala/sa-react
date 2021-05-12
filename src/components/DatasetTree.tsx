@@ -35,7 +35,7 @@ type Leaf = {
     icon?: string;
     text: string;
     level: number;
-    value: Dataset['id'] | Leaf[];
+    value: Dataset | Leaf[];
 }
 
 export interface State {
@@ -66,7 +66,7 @@ class DatasetTree extends React.Component<Props, State> {
         for (const set of source.datasets) {
             const cat = set.category.join('::');
             const leaf: Leaf = {
-                value: set.id,
+                value: set,
                 text: set.id,
                 level: -1,
             };
@@ -154,7 +154,7 @@ class DatasetTree extends React.Component<Props, State> {
 
     private leafDoubleClicked = (leaf: Leaf) => {
         if (!Array.isArray(leaf.value) && this.props.onDoubleClick) {
-            this.props.onDoubleClick(leaf.value);
+            this.props.onDoubleClick(leaf.value.id);
         }
     }
 
@@ -232,7 +232,7 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
     }
 
     isActive = (leaf: Leaf, selected: string[]): boolean => {
-        if (!Array.isArray(leaf.value)) return selected.includes(leaf.value);
+        if (!Array.isArray(leaf.value)) return selected.includes(leaf.value.id);
         return !leaf.value.some(c => !this.isActive(c, selected));
     }
 
@@ -240,15 +240,34 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
         this.props.onDoubleClick && this.props.onDoubleClick(this.props.leaf, e);
     }
 
+    getTooltip = () => {
+        const { source, leaf } = this.props;
+        let tooltip = this.getTitle(source.type, leaf.text) + '\n\n';
+
+        if (Array.isArray(leaf.value)) {
+            tooltip += `${t('datasets.items', { count: leaf.value.length })}\n`;
+        } else {
+            if (source.type === 'hp') {
+                tooltip += `${t('datasets.path', { path: leaf.value.category.map(c => `${c}.ZIP\\`).join() + leaf.value.id + '.csv' })}\n`;
+            } else {
+                tooltip += `${t('datasets.id', { id: leaf.value })}\n`;
+            }
+        }
+
+
+        return tooltip.trimEnd();
+    }
+
     public render() {
         const { leaf, source, selected, onToggle, onDoubleClick } = this.props;
         const { expanded } = this.state;
         const active = this.isActive(leaf, selected);
         const title = this.getTitle(source.type, leaf.text);
+        const tooltip = this.getTooltip();
         const hasChildren = Array.isArray(leaf.value);
 
         return (
-            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={leaf.text} title={title}>
+            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={leaf.text} title={tooltip}>
                 <span className='expander' onClick={this.toggleExpand}>{hasChildren && (<FontAwesomeIcon icon={expanded ? faAngleDown : faAngleRight} />)}</span>
                 <FontAwesomeIcon className='icon ml-1 mr-2' icon={this.getIcon(source.type, leaf)} />
                 <span className='label' onDoubleClick={this.onDoubleClick}>{title}</span>
