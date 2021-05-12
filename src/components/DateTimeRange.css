@@ -4,10 +4,18 @@
     align-items: stretch;
 }
 
+.react-calendar {
+    width: 320px;
+}
+
 .react-calendar.disabled {
     opacity: 0.4;
 }
 
 .react-calendar.disabled .react-calendar__tile {
     pointer-events: none;
+}
+
+.react-calendar .react-calendar__tile {
+    padding: 0.5em 0.5em;
 }

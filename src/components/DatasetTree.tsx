@@ -192,6 +192,12 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
         expanded: false,
     };
 
+    public componentDidUpdate(prevProps: LeafProps) {
+        if (prevProps.leaf !== this.props.leaf) {
+            this.setState({ expanded: false });
+        }
+    }
+
     private onClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
 

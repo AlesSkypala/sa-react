@@ -34,7 +34,7 @@ export function toLdevInternalFromVariant(variant: string, mode: LdevMapMode): s
         case 'port':
             return variant[2] + variant[4];
         case 'mpu':
-            return variant.split('.')[0];
+            return variant.includes('.') ? variant.split('.')[0] : variant.split(' ')[0];
         case 'wwn':
         {
             const len = variant.indexOf('(');
