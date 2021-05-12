@@ -157,9 +157,10 @@ class TraceList extends React.PureComponent<Props, State> {
                         {({height, width}) => (
                             <VirtualizedList
                                 containerProps={{ className: 'list-group' }}
+                                style={{ background: 'white' }}
                                 height={height}
                                 width={width}
-                                rowHeight={35}
+                                rowHeight={25}
                                 rowCount={this.props.traces.length}
                                 rowRenderer={this.rowRenderer}
                                 map={this.state.ldevMap}

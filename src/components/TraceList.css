@@ -9,7 +9,6 @@
 
 .trace-row-outer {
     background-color: white;
-    padding: 0.3rem;
     display: flex;
     height: 35px;
     user-select: none;
@@ -18,6 +17,7 @@
 .trace-row-inner {
     flex-grow: 1;
     height: 100%;
+    padding: 0.3rem;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -32,6 +32,9 @@
 .trace-row-inner > .btn {
     flex-grow: 0;
     flex-shrink: 1;
+}
+.trace-row-inner > .ldev {
+    font-size: 0.9em;
 }
 
 .trace-row-inner:not(:last-child) {
