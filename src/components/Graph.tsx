@@ -6,7 +6,7 @@ import domtoimage from 'dom-to-image';
 
 import { icon } from '../utils/icon';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faWrench, faExclamationTriangle, faChartLine, faDesktop, faArrowsAltH, faCamera, faMinusSquare } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faWrench, faExclamationTriangle, faDesktop, faArrowsAltH, faCamera, faMinusSquare } from '@fortawesome/free-solid-svg-icons';
 
 import { Button, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
 import { Menu, useContextMenu, Submenu, Item, ItemParams, Separator } from 'react-contexify';
@@ -620,7 +620,6 @@ class GraphComponent
                     ))}
                     <div className='graph-details'>
                         { icon(faDesktop)   }{ metadata.sourceNames.join('; ') } <br/>
-                        { icon(faChartLine) }{ metadata.datasetNames.join('; ') } <br/>
                         { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) }
                     </div>
                     {/* <div style={{ }}>
