@@ -30,7 +30,7 @@ export function toLdevInternal({ id }: Pick<Trace, 'id'>, mode: LdevMapMode): st
 export function toLdevInternalFromVariant(variant: string, mode: LdevMapMode): string {
     switch (mode) {
         case 'ldev':
-            return variant.substr(0, 8);
+            return variant.substr(0, 8).toLowerCase();
         case 'port':
             return variant[2] + variant[4];
         case 'mpu':
