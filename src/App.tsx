@@ -17,7 +17,7 @@ class App extends React.Component<AppProps, AppState> {
     public componentDidMount() {
         window.addEventListener('beforeunload', this.handleUnload);
     }
-    
+
     public componentWillUnmount() {
         window.removeEventListener('beforeunload', this.handleUnload);
     }
@@ -59,6 +59,11 @@ class App extends React.Component<AppProps, AppState> {
         // const graph = this.props.graphs.find(g => g.id === this.state.focused);
         const makeAction = (action: TraceAction) => () => this.state.focused && this.props.graph_action({ id: this.state.focused, action });
 
+        const visibleGraphs = this.props.graphs.filter(g => g.visible);
+
+        console.log('Hewwo dear sir, uwu, your visible graphs are:');
+        visibleGraphs.forEach(g => console.log(g.title));
+
         return (
             <>
                 <Header
@@ -70,7 +75,7 @@ class App extends React.Component<AppProps, AppState> {
                     onTraceAddClick={this.onTraceAddClick}
                 />
                 <GraphContainer locked={this.state.locked}>
-                    {this.props.graphs.map(g => (
+                    {visibleGraphs.map(g => (
                         <div
                             key={g.id}
                             data-graph={g.id}

@@ -6,7 +6,7 @@ import domtoimage from 'dom-to-image';
 
 import { icon } from '../utils/icon';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faWrench, faExclamationTriangle, faChartLine, faDesktop, faArrowsAltH, faCamera } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faWrench, faExclamationTriangle, faChartLine, faDesktop, faArrowsAltH, faCamera, faMinusSquare } from '@fortawesome/free-solid-svg-icons';
 
 import { Button, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
 import { Menu, useContextMenu, Submenu, Item, ItemParams, Separator } from 'react-contexify';
@@ -18,7 +18,7 @@ import { AppEvents, DialogService } from '../services';
 import './Graph.css';
 import { t } from '../locale';
 import { timestampToLongDate } from '../locale/date';
-import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps } from '../redux';
+import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs } from '../redux';
 import { ConfirmModal, GraphEditModal, LdevSelectModal } from './Modals';
 import RendererHandle from '../services/RendererHandle';
 import { PendingDataJob } from '../redux/jobs';
@@ -43,6 +43,7 @@ const dispatchProps = {
     remove_graphs,
     edit_graph,
     toggle_traces,
+    hide_graphs
 };
 
 const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
@@ -185,7 +186,7 @@ class GraphComponent
                         toAdd.push(trace);
                     }
                 }
-                
+
                 for (const bundle of this.renderer?.bundles ?? []) {
                     const toAddHere = [] as Trace[]; // TODO: be smart about this and reduce number of traces for a new bundle
                     const toDelHere = toDel.filter(r => bundle.traces.has(r));
@@ -195,7 +196,7 @@ class GraphComponent
                         console.log(`rebundling ${bundle.handle}`);
                         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                         const rebundle = this.renderer!.rebundle(bundle.handle, toAddHere.length, toDelHere.length, toModHere.length);
-                        
+
                         toAddHere.forEach(t => rebundle.addTrace(t));
                         toDelHere.forEach(t => rebundle.deleteTrace({ handle: t }));
                         toModHere.forEach(t => rebundle.modifyTrace(t));
@@ -247,6 +248,8 @@ class GraphComponent
             { graph: this.props as Graph }
         );
 
+    private onHide = () => this.props.hide_graphs(this.props.id);
+
     private prevWidth = 0;
     private prevHeight = 0;
     private updateSize = async () => {
@@ -288,7 +291,7 @@ class GraphComponent
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
         const ctxt = this.guiCanvasRef.current?.getContext('2d');
         const area = this.graphArea();
-        
+
         const pos = this.currentPos ? [ ...this.currentPos ] : undefined;
 
         function drawPad(ctxt: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) {
@@ -311,10 +314,10 @@ class GraphComponent
                 ctxt.stroke();
             } else if (this.downPos && pos) {
                 const start = [ ...this.downPos ];
-    
+
                 const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
                 const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
-    
+
                 if (compactX && compactY) return;
 
                 if (compactY) {
@@ -324,14 +327,14 @@ class GraphComponent
                     start[0] = 0;
                     pos[0] = ctxt.canvas.clientWidth - 2 * margin - yLabelSpace;
                 }
-    
+
                 const rect = {
                     x: Math.min(pos[0], start[0]) + margin + yLabelSpace,
                     y: Math.min(pos[1], start[1]) + margin,
                     width:  Math.abs(pos[0] - start[0]),
                     height: Math.abs(pos[1] - start[1])
                 };
-    
+
                 ctxt.save();
                 if (this.shiftDown) { ctxt.strokeStyle = 'orange'; }
                 ctxt.beginPath();
@@ -577,6 +580,7 @@ class GraphComponent
                         )}
                         <Button size='sm' variant='none' onClick={this.takeScreenshot}><FontAwesomeIcon icon={faCamera} /></Button>
                         <Button size='sm' variant='none' onClick={this.onEdit}>  <FontAwesomeIcon icon={faWrench} /></Button>
+                        <Button size='sm' variant='none' onClick={this.onHide}><FontAwesomeIcon icon={faMinusSquare} /></Button>
                         <Button size='sm' variant='none' onClick={this.onRemove}><FontAwesomeIcon icon={faTrash}  /></Button>
                     </div>
                 </div>

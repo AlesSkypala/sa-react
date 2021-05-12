@@ -86,7 +86,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
             if (selectedSource?.datasets.length) {
                 const dataRange = selectedSource.datasets[0].dataRange as [number, number][];
                 const lastRange = dataRange[dataRange.length - 1];
-                
+
                 PREV_TIMERANGE = selectedRange = !selectedRange || !rangeIntersectsBounds(selectedRange, dataRange) ? getDayFromEnd(lastRange, 0) : selectedRange;
             }
 
@@ -122,6 +122,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
 
         const graph: Graph = {
             id,
+            visible: true,
 
             title:  t('graph.new'),
             xLabel: t('graph.xAxis'),
@@ -174,6 +175,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
 
             graphs.push({
                 id, title,
+                visible: true,
 
                 xLabel: t('graph.xAxis'),
                 yLabel: t('graph.yAxis'),
@@ -223,6 +225,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
 
         const graph: Graph = {
             id,
+            visible: true,
 
             title:  t('graph.new'),
             xLabel: t('graph.xAxis'),
@@ -306,7 +309,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
                                 disabled={setsDisabled}
                                 source={selectedSource}
                                 selected={(selectedDatasets ?? []).map(ds => ds.id)}
-                                
+
                                 onChange={this.onSetSelected}
                                 onDoubleClick={this.onSetQuick}
                             />}

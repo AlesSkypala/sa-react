@@ -2,6 +2,7 @@ interface Graph<T extends XType = XType> {
     id: string;
 
     // Appearance
+    visible: boolean;
     title: string;
     xLabel: string;
     yLabel: string;

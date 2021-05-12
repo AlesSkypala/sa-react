@@ -1,0 +1,23 @@
+.hidden-graph {
+    display: inline-flex;
+    align-items: center;
+
+    background: white;
+    border-radius: 3px;
+    margin: 0 0 0 1rem;
+    padding: .1rem .3rem;
+
+    cursor: pointer;
+}
+
+.hidden-graph-title {
+    max-width: 100px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: .8em;
+}
+
+.hidden-graph-icon {
+    margin: .2em;
+}

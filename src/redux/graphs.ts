@@ -11,11 +11,13 @@ import * as uid from 'uuid';
 const emitRelayoutEvent = debounce((type: StackingType, layout: Layout[]) => AppEvents.onRelayout.emit({ type, layout }), 300);
 
 const relayout = ({ layout, items, stacking }: SliceStateDraft<typeof graphsSlice>): Layout[] => {
+    const visibleItems = items.filter(g => g.visible);
+
     if (stacking === 'freeform') {
-        const gIds = items.map(g => g.id.toString());
+        const gIds = visibleItems.map(g => g.id.toString());
         const lIds = layout.map(s => s.i);
 
-        const missing = items.filter(g => !lIds.includes(g.id.toString()));
+        const missing = visibleItems.filter(g => !lIds.includes(g.id.toString()));
 
         return [
             ...layout.filter(s => gIds.includes(s.i)),
@@ -27,16 +29,16 @@ const relayout = ({ layout, items, stacking }: SliceStateDraft<typeof graphsSlic
         ];
     }
 
-    if (items.length <= 0) return [];
+    if (visibleItems.length <= 0) return [];
 
     if (stacking === 'grid') {
-        const cols = Math.floor(Math.sqrt(items.length));
-        const rows = Math.ceil(items.length / cols);
+        const cols = Math.floor(Math.sqrt(visibleItems.length));
+        const rows = Math.ceil(visibleItems.length / cols);
 
         const ret: Layout[] = [];
 
         for (let row = 0; row < rows; ++row) {
-            const rowItems = items.slice(cols * row, Math.min(cols * (row + 1), items.length));
+            const rowItems = visibleItems.slice(cols * row, Math.min(cols * (row + 1), visibleItems.length));
 
             rowItems.forEach((i, idx) => {
                 ret.push({
@@ -54,8 +56,8 @@ const relayout = ({ layout, items, stacking }: SliceStateDraft<typeof graphsSlic
 
     const horizontal = stacking === 'horizontal';
 
-    const mSize = Math.max(1, Math.floor(12 / items.length));
-    const remSize = Math.max(1, 12 - mSize * (items.length - 1));
+    const mSize = Math.max(1, Math.floor(12 / visibleItems.length));
+    const remSize = Math.max(1, 12 - mSize * (visibleItems.length - 1));
 
     const [ fSize, size, position ] = horizontal ? [
         // Horizontal
@@ -67,7 +69,7 @@ const relayout = ({ layout, items, stacking }: SliceStateDraft<typeof graphsSlic
         (i: number) => ({ x: 0, y: Math.min(i, 1) * remSize + Math.max(i - 1, 0) * mSize }),
     ];
 
-    return items.map((g, i) => ({
+    return visibleItems.map((g, i) => ({
         ...(i <= 0 ? fSize : size),
         ...position(i),
         i: g.id.toString()
@@ -133,6 +135,24 @@ export const graphsSlice = createSlice({
             const ids = Array.isArray(action.payload) ? action.payload : [ action.payload ];
 
             state.items = state.items.filter(g => !ids.includes(g.id));
+
+            state.layout = relayout(state);
+            emitRelayoutEvent(state.stacking, state.layout);
+        },
+
+        hide_graphs: (state, action: PayloadAction<Graph['id'] | Graph['id'][]>) => {
+            const ids = Array.isArray(action.payload) ? action.payload : [ action.payload ];
+
+            state.items.forEach(g => { if (ids.includes(g.id)) g.visible = false; });
+
+            state.layout = relayout(state);
+            emitRelayoutEvent(state.stacking, state.layout);
+        },
+
+        unhide_graphs: (state, action: PayloadAction<Graph['id'] | Graph['id'][]>) => {
+            const ids = Array.isArray(action.payload) ? action.payload : [ action.payload ];
+
+            state.items.forEach(g => { if (ids.includes(g.id)) g.visible = true; });
 
             state.layout = relayout(state);
             emitRelayoutEvent(state.stacking, state.layout);
@@ -222,6 +242,7 @@ export const generate_graph_id = () => uid.v4();
 export type GraphsState = SliceStateDraft<typeof graphsSlice>;
 export const {
     add_graphs, remove_graphs,
+    hide_graphs, unhide_graphs,
     clone_graph, edit_graph,
     set_layout, set_stacking,
     add_traces, toggle_traces,

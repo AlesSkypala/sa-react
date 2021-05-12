@@ -3,13 +3,16 @@ import * as React from 'react';
 import { faPlus, faUnlock, faLock, faGripVertical, faMinusSquare, faLayerGroup, faThLarge, faClone } from '@fortawesome/free-solid-svg-icons';
 import { trashAll } from '../assets/icons/trash-all';
 import { Dropdown, Nav, NavItem, NavLink } from 'react-bootstrap';
-import { connect,  set_stacking, add_graphs, ReduxProps, remove_graphs, invoke_job } from '../redux';
+import { connect,  set_stacking, add_graphs, hide_graphs, ReduxProps, remove_graphs, invoke_job } from '../redux';
 import { DialogService } from '../services';
 import { AddGraphModal, ConfirmModal } from './Modals';
 import { t } from '../locale';
 
 import './Header.css';
 import { Args } from './Modals/AddGraphModal';
+import HiddenGraphs from './HiddenGraphs';
+
+const noop = () => undefined;
 
 class HeaderComponent
     extends React.Component<Props, State> {
@@ -17,8 +20,7 @@ class HeaderComponent
     addGraph = () =>
         DialogService.open(
             AddGraphModal,
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            _a => { /* */ },
+            noop,
             {
                 ranges: this.props.graphs.reduce((v, next) => {
                     const [ from, to ] = next.xRange;
@@ -44,8 +46,9 @@ class HeaderComponent
         this.props.set_stacking(key as StackingType);
     };
 
-    minimizeAll = () =>
-        this.props.graphs.length > 0 && alert('society. we live in one');
+    hideAll = () => {
+        this.props.hide_graphs(this.props.graphs.filter(g => g.visible).map(g => g.id));
+    };
 
     clearAll = () =>
         this.props.graphs.length > 0 && DialogService.open(
@@ -70,7 +73,13 @@ class HeaderComponent
 
                 <nav className="navbar navbar-static-top navbar-expand-md" role="navigation">
                     <div className="collapse navbar-collapse show">
-                        <Nav navbar className='ml-auto'>
+                        <Nav navbar className='w-100 mw-100 align-items-center'>
+                            <NavItem>
+                                <HiddenGraphs />
+                            </NavItem>
+
+                            <div className="flex-grow-1" />
+
                             {this.props.children}
                             <NavItem>
                                 <NavLink title={t('header.addGraph')} onClick={this.addGraph}>
@@ -78,7 +87,7 @@ class HeaderComponent
                                 </NavLink>
                             </NavItem>
                             <NavItem>
-                                <NavLink title={t('header.minimizeGraphs')} onClick={this.minimizeAll} disabled={graphs.length <= 0}>
+                                <NavLink title={t('header.hideGraphs')} onClick={this.hideAll} disabled={graphs.length <= 0}>
                                     <FontAwesomeIcon color='white' icon={faMinusSquare} />
                                 </NavLink>
                             </NavItem>
@@ -116,6 +125,7 @@ const dispatchProps = {
     set_stacking,
     add_graphs,
     remove_graphs,
+    hide_graphs,
     invoke_job,
 };
 
