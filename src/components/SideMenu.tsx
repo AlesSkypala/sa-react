@@ -25,26 +25,11 @@ class SideMenuComponent
             <aside className='main-sidebar'>
                 <section className='sidebar'>
                     {selectedGraph ? (
-                        <>
-                            <ul className="sidebar-menu">
-                                <li className="header d-flex align-items-center pr-1 py-0">
-                                    {t('sidemenu.traces').toUpperCase()}
-                                    <Button
-                                        variant='link'
-                                        className='btn-menu active text-secondary'
-                                        style={{ marginLeft: 'auto'}}
-                                        onClick={this.props.onTraceAddClick}
-                                    >
-                                        <FontAwesomeIcon icon={faPlusCircle} />
-                                    </Button>
-                                </li>
-                            </ul>
-                            <TraceList
-                                traces={selectedGraph.traces}
-                                onSelect={this.onTraceSelect}
-                                onAction={this.onAction}
-                            />
-                        </>
+                        <TraceList
+                            traces={selectedGraph.traces}
+                            onSelect={this.onTraceSelect}
+                            onAction={this.onAction}
+                        />
                     ) : (
                         <ul className='sidebar-menu'>
                             <li className='header'>{t('sidemenu.choose').toUpperCase()}</li>
