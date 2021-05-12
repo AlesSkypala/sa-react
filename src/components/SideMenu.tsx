@@ -1,7 +1,4 @@
 import * as React from 'react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlusCircle } from '@fortawesome/free-solid-svg-icons';
-import { Button } from 'react-bootstrap';
 import TraceList from './TraceList';
 import { connect } from 'react-redux';
 import { ReduxProps, graph_action, edit_graph, toggle_traces } from '../redux';

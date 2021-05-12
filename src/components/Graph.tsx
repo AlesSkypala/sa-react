@@ -129,8 +129,15 @@ class GraphComponent
             const offscreen = canvas.transferControlToOffscreen();
 
             this.renderer = await RendererHandle.create(transfer(offscreen, [ offscreen ] ));
+            await this.renderer.resize(canvas.clientWidth, canvas.clientHeight);
         } else {
             throw new Error('Underlying canvas element was not initialized for this graph.');
+        }
+
+        if (this.props.traces.length > 0) {
+            const [ from, to ] = this.props.xRange;
+            this.zoomRecommendation = dataWorker.recommend_extents(from, to, this.props.traces.map(t => t.handle));
+            await this.rebundle(this.props.traces, [], []);
         }
     }
 
@@ -143,6 +150,7 @@ class GraphComponent
         window.removeEventListener('resize', this.debounceResize);
         window.removeEventListener('mouseup', this.canvasMouseUp);
         AppEvents.onRelayout.remove(this.onLayoutChange);
+        cancelAnimationFrame(this.drawFrame);
 
         // Dispose off-thread renderer
         this.renderer && await this.renderer.dispose();
@@ -156,62 +164,38 @@ class GraphComponent
             const handles = this.props.traces.filter(t => t.active).map(t => t.handle);
             const [ from, to ] = this.props.xRange;
 
-            if (this.props.traces.length > 0 && this.props.zoom === undefined) {
-                await this.renderer?.createBundle(this.props.xRange, this.props.traces);
+            this.zoomRecommendation = this.props.traces.length > 0 ? dataWorker.recommend_extents(from, to, handles) : undefined;
 
+            if (this.zoomRecommendation !== undefined && this.props.zoom === undefined) {
                 this.props.edit_graph({
                     id: this.props.id,
-                    zoom: await (this.zoomRecommendation = dataWorker.recommend_extents(from, to, handles))
+                    zoom: await this.zoomRecommendation
                 });
-
-                redraw = false;
-            } else {
-                this.zoomRecommendation = dataWorker.recommend_extents(from, to, handles);
-
-                const toAdd: Trace[] = []; // TODO:
-                const toDel: number[] = [];
-                const toMod: Trace[] = []; // TODO:
-
-                const prev = new Set(prevProps.traces.map(t => t.id));
-                const next = new Set(this.props.traces.map(t => t.id));
-
-                for (const trace of prevProps.traces) {
-                    if (!next.has(trace.id)) {
-                        toDel.push(trace.handle);
-                    }
-                }
-
-                for (const trace of this.props.traces) {
-                    if (!prev.has(trace.id)) {
-                        toAdd.push(trace);
-                    }
-                }
-
-                for (const bundle of this.renderer?.bundles ?? []) {
-                    const toAddHere = [] as Trace[]; // TODO: be smart about this and reduce number of traces for a new bundle
-                    const toDelHere = toDel.filter(r => bundle.traces.has(r));
-                    const toModHere = toMod.filter(r => bundle.traces.has(r.handle));
-
-                    if (toDelHere.length > 0) {
-                        console.log(`rebundling ${bundle.handle}`);
-                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                        const rebundle = this.renderer!.rebundle(bundle.handle, toAddHere.length, toDelHere.length, toModHere.length);
-
-                        toAddHere.forEach(t => rebundle.addTrace(t));
-                        toDelHere.forEach(t => rebundle.deleteTrace({ handle: t }));
-                        toModHere.forEach(t => rebundle.modifyTrace(t));
-
-                        await rebundle.invoke();
-                    }
-                }
-
-                if (toAdd.length > 0) {
-                    await this.renderer?.createBundle(this.props.xRange, toAdd);
-                }
-
-                redraw = true;
             }
 
+            const toAdd: Trace[] = []; // TODO:
+            const toDel: number[] = [];
+            const toMod: Trace[] = []; // TODO:
+
+            const prev = new Set(prevProps.traces.map(t => t.id));
+            const next = new Set(this.props.traces.map(t => t.id));
+
+            for (const trace of prevProps.traces) {
+                if (!next.has(trace.id)) {
+                    toDel.push(trace.handle);
+                }
+            }
+
+            for (const trace of this.props.traces) {
+                if (!prev.has(trace.id)) {
+                    toAdd.push(trace);
+                }
+            }
+
+            await this.rebundle(toAdd, toDel, toMod);
+
+            redraw = true;
+            
             this.setState({
                 ldevSelectAvailable: isHomogenous(this.props.traces) && getLdevMode(this.props.traces[0]) === 'ldev'
             });
@@ -228,6 +212,30 @@ class GraphComponent
 
         if (redraw) {
             await this.redrawGraph();
+        }
+    }
+
+    private rebundle = async (toAdd: Trace[], toDel: number[], toMod: Trace[]): Promise<void> => {
+        for (const bundle of this.renderer?.bundles ?? []) {
+            const toAddHere = [] as Trace[]; // TODO: be smart about this and reduce number of traces for a new bundle
+            const toDelHere = toDel.filter(r => bundle.traces.has(r));
+            const toModHere = toMod.filter(r => bundle.traces.has(r.handle));
+
+            if (toDelHere.length > 0) {
+                console.log(`rebundling ${bundle.handle}`);
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                const rebundle = this.renderer!.rebundle(bundle.handle, toAddHere.length, toDelHere.length, toModHere.length);
+
+                toAddHere.forEach(t => rebundle.addTrace(t));
+                toDelHere.forEach(t => rebundle.deleteTrace({ handle: t }));
+                toModHere.forEach(t => rebundle.modifyTrace(t));
+
+                await rebundle.invoke();
+            }
+        }
+
+        if (toAdd.length > 0) {
+            await this.renderer?.createBundle(this.props.xRange, toAdd);
         }
     }
 
@@ -283,8 +291,9 @@ class GraphComponent
         ];
     };
 
+    private drawFrame = 0;
     public drawGui = () => {
-        window.requestAnimationFrame(this.drawGui);
+        this.drawFrame = window.requestAnimationFrame(this.drawGui);
 
         const ruler = GLOBAL_RULER;
         const { zoom } = this.props;

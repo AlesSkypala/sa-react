@@ -167,6 +167,8 @@ export class RebundleJob {
     }
 
     public addTrace(trace: Pick<Trace, 'handle' | 'style'>) {
+        this.renderer.bundles.find(r => r.handle === this.bundle)?.traces.add(trace.handle);
+
         writeTrace(trace, this.additionView!, this.additionCursor);
         this.additionCursor += TRACE_LEN;
         return this;
@@ -179,6 +181,8 @@ export class RebundleJob {
     }
 
     public deleteTrace(trace: Pick<Trace, 'handle'>) {
+        this.renderer.bundles.find(r => r.handle === this.bundle)?.traces.delete(trace.handle);
+
         this.deletionView!.setUint32(this.deletionCursor, trace.handle);
         this.deletionCursor += Uint32Array.BYTES_PER_ELEMENT;
         return this;
