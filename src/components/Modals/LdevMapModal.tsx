@@ -59,7 +59,7 @@ class LdevMapModal extends ModalComponent<void, Args, State> {
                 <TreeItem>{icon(faDatabase)} LDEV: {ldevInfo.id} [{ldevInfo.name}]</TreeItem>
                 <TreeItem>{icon(faArrowsAltH)} SIZE: {ldevInfo.size}</TreeItem>
                 <TreeItem>{icon(faMicrochip)} MPU: {ldevInfo.mpu}</TreeItem>
-                <TreeItem>{icon(faChartPie)} POOL: {ldevInfo.poolName}</TreeItem>
+                <TreeItem>{icon(faChartPie)} POOL: {ldevInfo.pool?.name ?? '-'}</TreeItem>
                 <TreeItem>
                     {icon(faDesktop)}
                     HOST:

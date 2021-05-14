@@ -116,8 +116,8 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
 
             for (const ldev of map) {
                 modemap.ldev.add(ldev.id);
-                modemap.ecc.add(ldev.eccGroup);
                 modemap.mpu .add(ldev.mpu);
+                ldev.pool && ldev.pool.eccGroups.forEach(e => modemap.ecc.add(e));
                 ldev.wwns.forEach(w => {
                     modemap.wwn.add(w.wwn);
                     modemap.port.add(w.port);

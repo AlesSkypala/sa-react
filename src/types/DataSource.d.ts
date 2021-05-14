@@ -24,12 +24,12 @@ extends Identified {
 
 interface LdevInfo
 {
-    eccGroup: string;
+    // eccGroup: string;
     id: string;
     name: string;
     size: number;
     mpu: string;
-    poolName: string;
+    pool: Pool | undefined;
 
     // hostnames: string[];
     // ports: string[];
@@ -38,6 +38,12 @@ interface LdevInfo
 
     hostPorts: HostPort[];
     wwns: WWNInfo[];
+}
+
+interface Pool {
+    id: number,
+    name: string,
+    eccGroups: string[],
 }
 
 interface HostPort

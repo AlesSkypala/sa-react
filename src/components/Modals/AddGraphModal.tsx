@@ -300,7 +300,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
                         <Form.Label>{t('modals.addGraph.source')}</Form.Label>
                         <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100'>
                             {this.state.sources.map(s => (
-                                <option key={s.id} value={s.id} title={this.generateSourceTooltip(s)}>{s.name}</option>
+                                <option disabled={s.datasets.length <= 0} key={s.id} value={s.id} title={this.generateSourceTooltip(s)}>{s.name}</option>
                             ))}
                         </Form.Control>
                         <small className='mt-2'>{t('datasets.path', { path: selectedSource && 'path' in selectedSource.metadata ? selectedSource.metadata['path'].replaceAll('/', '\\') : 'none' })}</small>
