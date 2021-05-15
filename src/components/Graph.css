@@ -28,6 +28,7 @@
     inset: 0;
     width: 100%;
     height: 100%;
+    flex-grow: 1;
 }
 
 .graph-content > .graph-details {
@@ -47,11 +48,7 @@
     text-overflow: ellipsis;
 }
 
-.graph-content > canvas {
-    flex-grow: 1;
-}
-
-.graph-content .xlabel, .graph-content .ylabel {
+.graph-content :is(.xlabel, .ylabel) {
     position: absolute;
     display: flex;
     align-items: center;
@@ -69,7 +66,7 @@
     left: 0;
 }
 
-.graph-content .yticks, .graph-content .xticks {
+.graph-content :is(.xticks, .yticks) {
     position: absolute;
     pointer-events: none;
 }
@@ -116,6 +113,6 @@
     transition: 0.3s;
 }
 
-.buttons > .btn:hover, .buttons > .btn.opaque {
+.buttons > :is(.btn.opaque, .btn:hover) {
     opacity: 0.8;
 }

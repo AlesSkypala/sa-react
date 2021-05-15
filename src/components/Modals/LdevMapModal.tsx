@@ -6,7 +6,7 @@ import { t } from '../../locale';
 import { DataService } from '../../services';
 import { TreeView, TreeItem } from '../TreeView';
 
-import { faEyeDropper, faServer, faDesktop, faMicrochip, faArrowsAltH, faDatabase, faAngleDoubleRight, faChartPie } from '@fortawesome/free-solid-svg-icons';
+import { faEyeDropper, faServer, faDesktop, faMicrochip, faArrowsAltH, faDatabase, faAngleDoubleRight, faChartPie, faMemory } from '@fortawesome/free-solid-svg-icons';
 import { icon } from '../../utils/icon';
 
 interface Args {
@@ -59,7 +59,19 @@ class LdevMapModal extends ModalComponent<void, Args, State> {
                 <TreeItem>{icon(faDatabase)} LDEV: {ldevInfo.id} [{ldevInfo.name}]</TreeItem>
                 <TreeItem>{icon(faArrowsAltH)} SIZE: {ldevInfo.size}</TreeItem>
                 <TreeItem>{icon(faMicrochip)} MPU: {ldevInfo.mpu}</TreeItem>
-                <TreeItem>{icon(faChartPie)} POOL: {ldevInfo.pool?.name ?? '-'}</TreeItem>
+                <TreeItem>
+                    {icon(faChartPie)} POOL: {ldevInfo.pool?.name ?? '-'}
+                    {ldevInfo.pool && (
+                        <TreeView>
+                            {ldevInfo.pool.eccGroups.map(hostgroup => (
+                                <TreeItem key={hostgroup}>
+                                    {icon(faMemory)}
+                                    {hostgroup}
+                                </TreeItem>
+                            ))}
+                        </TreeView>
+                    )}
+                </TreeItem>
                 <TreeItem>
                     {icon(faDesktop)}
                     HOST:
