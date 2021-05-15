@@ -91,7 +91,7 @@ export class DataWorkerProxy {
             if (!trace) break;
 
             if (!bulk.variants) {
-                bulk.variants = await DataService.getTraceVariants({ source: bulk.source, id: bulk.id });
+                bulk.variants = await DataService.getVariantRecommendation(bulk.source, bulk.id, job.range);
             }
             
             const ids = [];
