@@ -4,15 +4,26 @@ import { ModalPortal } from './components/Modals';
 
 import './App.css';
 import { connect } from 'react-redux';
-import { add_graphs, remove_graphs, graph_action, ReduxProps } from './redux';
+import { add_graphs, remove_graphs, graph_action, set_settings, ReduxProps } from './redux';
 import { GlobalHotKeys } from 'react-hotkeys';
 import { t } from './locale';
+import { AppSettings } from './redux/settings';
 
 class App extends React.Component<AppProps, AppState> {
     public state: AppState = {
         locked: true,
         focused: undefined,
     };
+
+    constructor(props: AppProps) {
+        super(props);
+
+        const saved = localStorage.getItem('settings');
+        if (saved) {
+            const settings = JSON.parse(saved) as Partial<AppSettings>;
+            props.set_settings(settings);
+        } 
+    }
 
     public componentDidMount() {
         window.addEventListener('beforeunload', this.handleUnload);
@@ -23,6 +34,8 @@ class App extends React.Component<AppProps, AppState> {
     }
 
     handleUnload = (e: BeforeUnloadEvent) => {
+        localStorage.setItem('settings', JSON.stringify(this.props.settings));
+
         if (this.props.graphs.length > 0) {
             e.preventDefault();
             e.returnValue = t('unsavedWork');
@@ -111,12 +124,14 @@ export interface AppState {
 
 const stateProps = (state: RootStore) => ({
     graphs: state.graphs.items,
+    settings: state.settings,
 });
 
 const dispatchProps = {
     add_graphs,
     remove_graphs,
     graph_action,
+    set_settings,
 };
 
 export type AppProps = ReduxProps<typeof stateProps, typeof dispatchProps>;

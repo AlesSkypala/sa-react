@@ -137,7 +137,7 @@ class TraceList extends React.PureComponent<Props, State> {
     }
 
     rowRenderer = (props: VirtualizedRowProps) => {
-        return <TraceListRow virtualizedRow={props} parentList={this} />;
+        return <TraceListRow key={props.index} virtualizedRow={props} parentList={this} />;
     }
 
     public render() {

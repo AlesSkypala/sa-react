@@ -4,6 +4,16 @@ import { Button, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
 import { t } from '../../locale';
 
+export interface Args {
+    title: string;
+    body: React.ReactNode;
+    
+    okColor?: string;
+    okTitle?: string;
+    cancelColor?: string;
+    cancelTitle?: string;
+}
+
 class ConfirmationModal
     extends ModalComponent<boolean, Args> {
     protected renderHeader(): JSX.Element {
@@ -30,16 +40,6 @@ class ConfirmationModal
             </>
         );
     }
-}
-
-export interface Args {
-    title: string;
-    body: React.ReactNode;
-    
-    okColor?: string;
-    okTitle?: string;
-    cancelColor?: string;
-    cancelTitle?: string;
 }
 
 export default ConfirmationModal;

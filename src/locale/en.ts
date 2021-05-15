@@ -8,6 +8,7 @@ const en_lang = {
         minimizeGraphs: 'Minimize all graphs',
         removeGraphs: 'Remove all graphs',
         toggleLock: 'Lock/unlock the layout',
+        settings: 'Application settings',
     },
 
     sidemenu: {
@@ -86,7 +87,8 @@ const en_lang = {
 
         removeGraph: {
             title: 'Delete the graph {{name}}',
-            body: 'Do you really want to remove this graph?'
+            body: 'Do you really want to remove this graph?',
+            dontAsk: 'Don\'t ask me next time.',
         },
 
         removeGraphs: {
@@ -117,6 +119,11 @@ const en_lang = {
             title: 'Search traces',
             term: 'Search term',
         },
+
+        settings: {
+            title: 'Application settings',
+            askGraphClose: 'Show confirmation dialog when closing individual graphs',
+        }
     },
 
     datasets: {

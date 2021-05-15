@@ -14,4 +14,8 @@ export {
     invoke_job,
 } from './jobs';
 
+export {
+    set_settings
+} from './settings';
+
 export type { SliceStateDraft, SliceStateType, DispatchProps, StateProps, ReduxProps } from './helpers';

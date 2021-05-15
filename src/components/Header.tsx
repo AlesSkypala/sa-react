@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as React from 'react';
-import { faPlus, faUnlock, faLock, faGripVertical, faMinusSquare, faLayerGroup, faThLarge, faClone } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faUnlock, faLock, faGripVertical, faMinusSquare, faLayerGroup, faThLarge, faClone, faCogs } from '@fortawesome/free-solid-svg-icons';
 import { trashAll } from '../assets/icons/trash-all';
 import { Dropdown, Nav, NavItem, NavLink } from 'react-bootstrap';
 import { connect,  set_stacking, add_graphs, hide_graphs, ReduxProps, remove_graphs, invoke_job } from '../redux';
@@ -11,6 +11,7 @@ import { t } from '../locale';
 import './Header.css';
 import { Args } from './Modals/AddGraphModal';
 import HiddenGraphs from './HiddenGraphs';
+import SettingsModal from './Modals/SettingsModal';
 
 const noop = () => undefined;
 
@@ -59,6 +60,14 @@ class HeaderComponent
                 body: t('modals.removeGraphs.body', { count: this.props.graphs.length }),
                 okColor: 'danger',
             },
+        );
+
+    openSettings = () => 
+        DialogService.open(
+            SettingsModal,
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            () => {},
+            {},
         );
 
     public render() {
@@ -112,6 +121,11 @@ class HeaderComponent
                                     <Dropdown.Item active={stacking === 'freeform'}   eventKey='freeform'>  <FontAwesomeIcon color='black' icon={faClone}      className='mr-2' />{t('stacking.freeform')}</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
+                            <NavItem>
+                                <NavLink title={t('header.settings')} onClick={this.openSettings}>
+                                    <FontAwesomeIcon color='white' icon={faCogs} />
+                                </NavLink>
+                            </NavItem>
                         </Nav>
                     </div>
                 </nav>

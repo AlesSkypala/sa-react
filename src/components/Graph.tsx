@@ -18,14 +18,15 @@ import { AppEvents, DialogService } from '../services';
 import './Graph.css';
 import { t } from '../locale';
 import { timestampToLongDate } from '../locale/date';
-import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs } from '../redux';
-import { ConfirmModal, GraphEditModal, LdevSelectModal } from './Modals';
+import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings } from '../redux';
+import { GraphEditModal, LdevSelectModal } from './Modals';
 import RendererHandle from '../services/RendererHandle';
 import { PendingDataJob } from '../redux/jobs';
 import moment from 'moment';
 import { parseTimestamp } from '../utils/datetime';
 import { isHomogenous } from '../utils/trace';
 import { getLdevMode } from '../utils/ldev';
+import GraphDeleteConfirmation from './Modals/GraphDeleteConfirmation';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {
     const elem = document.getElementById('context-menu');
@@ -43,7 +44,8 @@ const dispatchProps = {
     remove_graphs,
     edit_graph,
     toggle_traces,
-    hide_graphs
+    hide_graphs,
+    set_settings
 };
 
 const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
@@ -51,6 +53,7 @@ const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
     ...(state.graphs.items.find(g => g.id === props.id)!),
     threshold: state.graphs.threshold,
     jobs: state.jobs.items,
+    askClose: state.settings.askGraphClose,
 });
 
 type Props = DispatchProps<typeof dispatchProps> & Graph & {
@@ -58,6 +61,7 @@ type Props = DispatchProps<typeof dispatchProps> & Graph & {
     layoutLocked: boolean;
     threshold: boolean;
     jobs: { [handle: number]: PendingDataJob };
+    askClose: boolean;
 }
 
 type State = {
@@ -239,16 +243,27 @@ class GraphComponent
         }
     }
 
-    private onRemove = () =>
-        DialogService.open(
-            ConfirmModal,
-            res => res && this.props.remove_graphs(this.props.id),
-            {
-                title: t('modals.removeGraph.title', { name: this.props.title }),
-                body: t('modals.removeGraph.body'),
-                okColor: 'danger',
-            },
-        );
+    private onRemove = () => {
+        if (this.props.askClose) {
+            DialogService.open(
+                GraphDeleteConfirmation,
+                res => {
+                    if (res?.delete) {
+                        this.props.remove_graphs(this.props.id);
+                        if (res.ignoreNext) {
+                            console.log('ignoring next');
+                            this.props.set_settings({ askGraphClose: false });
+                        }
+                    }
+                },
+                {
+                    graphTitle: this.props.title,
+                },
+            );
+        } else {
+            this.props.remove_graphs(this.props.id);
+        }
+    }
     private onEdit = () =>
         DialogService.open(
             GraphEditModal,
