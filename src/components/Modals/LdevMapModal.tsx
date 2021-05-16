@@ -6,7 +6,7 @@ import { t } from '../../locale';
 import { DataService } from '../../services';
 import { TreeView, TreeItem } from '../TreeView';
 
-import { faEyeDropper, faServer, faDesktop, faMicrochip, faArrowsAltH, faDatabase, faAngleDoubleRight, faChartPie, faMemory } from '@fortawesome/free-solid-svg-icons';
+import { faEyeDropper, faServer, faDesktop, faMicrochip, faArrowsAltH, faDatabase, faAngleDoubleRight, faChartPie, faHdd } from '@fortawesome/free-solid-svg-icons';
 import { icon } from '../../utils/icon';
 
 interface Args {
@@ -65,7 +65,7 @@ class LdevMapModal extends ModalComponent<void, Args, State> {
                         <TreeView>
                             {ldevInfo.pool.eccGroups.map(hostgroup => (
                                 <TreeItem key={hostgroup}>
-                                    {icon(faMemory)}
+                                    {icon(faHdd)}
                                     {hostgroup}
                                 </TreeItem>
                             ))}

@@ -4,8 +4,9 @@ import { Button, Col, Form, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
 import { t } from '../../locale';
 import { DataService } from '../../services';
-import { splitTraceId } from '../../utils/trace';
+import { isHomogenous } from '../../utils/trace';
 import fuse from 'fuse.js';
+import { getLdevMode, getLdevModeFromDataset, relatesTo, toLdevInternal } from '../../utils/ldev';
 
 interface Args {
     traces: Trace[],
@@ -13,7 +14,6 @@ interface Args {
 
 interface State {
     ldevInfo: LdevInfo[] | undefined,
-    map: { [id: string]: LdevInfo },
 
     mode: LdevMapMode,
     selected: string[],
@@ -34,7 +34,6 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
         ldevInfo: undefined,
         mode: 'port',
         selected: [],
-        map: {},
 
         search: '',
         activeOnly: true,
@@ -62,8 +61,15 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
 
         const traces = this.state.activeOnly ? this.props.traces.filter(t => t.active) : this.props.traces;
 
-        DataService.getCompleteLdevMap(traces).then(ldevInfo => {
-            const map: State['map'] = {};
+        const homog = isHomogenous(traces);
+        if (!homog) return;
+
+        const [ _source, dataset ] = homog;
+        
+        const mode = getLdevModeFromDataset(dataset);
+        if (!mode) return;
+
+        DataService.getHomogenousLdevMap(traces, mode).then(ldevInfo => {
             const mpus:  Set<string> = new Set();
             const eccs: Set<string> = new Set();
             const ports: Set<string> = new Set();
@@ -71,30 +77,19 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
             const wwns:  Set<string> = new Set();
             const hostgroups: Set<string> = new Set();
 
-            for (const trace of traces) {
-                const [ source, set ,variant ] = splitTraceId(trace);
+            for (const entry of ldevInfo) {
 
-                if (!set || !variant) continue;
-
-                const entry = ldevInfo[source]?.find(l => variant.toLowerCase().startsWith(l.id.toLowerCase()));
-
-                if (entry) {
-                    map[trace.id] = entry;
-
-                    mpus.add(entry.mpu);
-                    if (entry.pool) {
-                        entry.pool.eccGroups.forEach(e => eccs.add(e));
-                        pools.add(entry.pool.name);
-                    }
-                    entry.hostPorts.forEach(port => { ports.add(port.port); hostgroups.add(port.hostgroup); });
-                    entry.wwns.forEach(wwn => { wwns.add(wwn.wwn); hostgroups.add(wwn.hostgroup); });
+                mpus.add(entry.mpu);
+                if (entry.pool) {
+                    entry.pool.eccGroups.forEach(e => eccs.add(e));
+                    pools.add(entry.pool.name);
                 }
-                
+                entry.hostPorts.forEach(port => { ports.add(port.port); hostgroups.add(port.hostgroup); });
+                entry.wwns.forEach(wwn => { wwns.add(wwn.wwn); hostgroups.add(wwn.hostgroup); });
             }
 
             this.setState({
                 ldevInfo: Object.values(ldevInfo).flatMap(a => a),
-                map,
 
                 mpus,
                 eccs,
@@ -200,32 +195,16 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
     }
 
     private okClicked = () => {
-        const { selected, mode, map } = this.state;
+        const { selected, mode, ldevInfo } = this.state;
         const traces = this.state.activeOnly ? this.props.traces.filter(p => p.active) : this.props.traces;
 
+        if (!ldevInfo || traces.length < 0) { this.resolve(undefined); return; }
+
+        const traceMode = getLdevMode(traces[0]) as LdevMapMode;
+        const ldevs = ldevInfo.filter(l => selected.some(s => relatesTo(l, s, mode)));
+
         this.resolve(
-            traces.filter(t => {
-                const entry = map[t.id];
-
-                if (!entry) return false;
-
-                switch (mode) {
-                    case 'mpu':
-                        return selected.includes(entry.mpu);
-                    case 'ecc':
-                        return entry.pool && entry.pool.eccGroups.some(e => selected.includes(e));
-                    case 'pool':
-                        return entry.pool && selected.includes(entry.pool.name);
-                    case 'hostgroup':
-                        return entry.hostPorts.some(p => selected.includes(p.hostgroup));
-                    case 'wwn':
-                        return entry.wwns.some(p => selected.includes(p.wwn)); 
-                    case 'port':
-                        return entry.hostPorts.some(p => selected.includes(p.port));
-                    default:
-                        return false;
-                }
-            })
+            traces.filter(t => ldevs.some(l => relatesTo(l, toLdevInternal(t, traceMode), traceMode)))
         );
     }
     private backClicked = () => this.resolve(undefined);

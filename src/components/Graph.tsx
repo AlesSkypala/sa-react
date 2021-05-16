@@ -201,7 +201,7 @@ class GraphComponent
             redraw = true;
             
             this.setState({
-                ldevSelectAvailable: isHomogenous(this.props.traces) && getLdevMode(this.props.traces[0]) === 'ldev'
+                ldevSelectAvailable: isHomogenous(this.props.traces) && getLdevMode(this.props.traces[0]) !== undefined
             });
         }
 

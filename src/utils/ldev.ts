@@ -45,3 +45,24 @@ export function toLdevInternalFromVariant(variant: string, mode: LdevMapMode): s
             return variant;
     }
 }
+
+export function relatesTo(info: LdevInfo, val: string, mode: LdevMapMode): boolean {
+    switch (mode) {
+        case 'ldev':
+            return info.id === val;
+        case 'pool':
+            return info.pool?.name === val;
+        case 'ecc':
+            return Boolean(info.pool?.eccGroups.includes(val));
+        case 'hostgroup':
+            return info.hostPorts.some(w => w.hostgroup === val);
+        case 'mpu':
+            return info.mpu === val;
+        case 'port':
+            return info.hostPorts.some(h => h.port === val);
+        case 'wwn':
+            return info.wwns.some(w => w.wwn === val);
+        default:
+            return false;
+    }
+}
