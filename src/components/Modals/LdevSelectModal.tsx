@@ -64,7 +64,7 @@ class LdevSelectModal extends ModalComponent<Trace[], Args, State> {
         const homog = isHomogenous(traces);
         if (!homog) return;
 
-        const [ _source, dataset ] = homog;
+        const [ , dataset ] = homog;
         
         const mode = getLdevModeFromDataset(dataset);
         if (!mode) return;
