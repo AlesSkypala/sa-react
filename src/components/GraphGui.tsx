@@ -25,7 +25,7 @@ const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
 
 export interface Props extends Graph, DispatchProps<typeof dispatchProps> {
     threshold: boolean,
-    
+
     xTicks: { pos: number, val: number }[];
     yTicks: { pos: number, val: number }[];
     zoomRecommendation: Promise<Graph['zoom']> | undefined;
@@ -36,14 +36,25 @@ export interface Props extends Graph, DispatchProps<typeof dispatchProps> {
     onContextMenu(e: React.MouseEvent<HTMLCanvasElement>): void,
 }
 
-export interface State {
+export interface State { }
+
+type InputData = {
+    ctrl: boolean,
+    alt: boolean,
+    shift: boolean,
+
+    downPos: [ number, number ] | undefined,
+    pos: [ number, number ],
 }
 
 class GraphGui extends React.Component<Props, State> {
     private guiCanvasRef= React.createRef<HTMLCanvasElement>();
 
     public componentDidMount() {
+        window.addEventListener('mousemove', this.canvasMouseMove);
         window.addEventListener('mouseup', this.canvasMouseUp);
+        window.addEventListener('keyup', this.canvasKeyChange);
+        window.addEventListener('keydown', this.canvasKeyChange);
         requestAnimationFrame(this.drawGui);
 
         const canvas = this.guiCanvasRef.current;
@@ -54,7 +65,10 @@ class GraphGui extends React.Component<Props, State> {
     }
 
     public componentWillUnmount() {
+        window.removeEventListener('mousemove', this.canvasMouseMove);
         window.removeEventListener('mouseup', this.canvasMouseUp);
+        window.removeEventListener('keyup', this.canvasKeyChange);
+        window.removeEventListener('keydown', this.canvasKeyChange);
         cancelAnimationFrame(this.drawFrame);
     }
 
@@ -79,7 +93,8 @@ class GraphGui extends React.Component<Props, State> {
         const ctxt = this.guiCanvasRef.current?.getContext('2d');
         const area = this.graphArea();
 
-        const pos = this.currentPos ? [ ...this.currentPos ] : undefined;
+        const pos = this.input.pos && this.positionInGraphSpace(this.input.pos, true);
+        const downPos = this.input.downPos && this.positionInGraphSpace(this.input.downPos);
 
         function drawPad(ctxt: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) {
             ctxt.save();
@@ -99,8 +114,8 @@ class GraphGui extends React.Component<Props, State> {
                 ctxt.moveTo(margin + yLabelSpace, pos[1] + margin);
                 ctxt.lineTo(ctxt.canvas.width - margin - 1, pos[1] + margin);
                 ctxt.stroke();
-            } else if (this.downPos && pos) {
-                const start = [ ...this.downPos ];
+            } else if (downPos && pos) {
+                const start = [ ...downPos ];
 
                 const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
                 const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
@@ -123,7 +138,7 @@ class GraphGui extends React.Component<Props, State> {
                 };
 
                 ctxt.save();
-                if (this.shiftDown) { ctxt.strokeStyle = 'orange'; }
+                if (this.input.shift) { ctxt.strokeStyle = 'orange'; }
                 ctxt.beginPath();
                 ctxt.setLineDash([5, 5]);
                 ctxt.strokeRect(rect.x, rect.y, rect.width, rect.height);
@@ -131,11 +146,11 @@ class GraphGui extends React.Component<Props, State> {
                 ctxt.restore();
 
                 if (compactY) {
-                    start[1] = this.downPos[1];
+                    start[1] = downPos[1];
                     drawPad(ctxt, start[0], start[1] - COMPACT_RADIUS, start[0], start[1] + COMPACT_RADIUS);
                     drawPad(ctxt, pos[0],   start[1] - COMPACT_RADIUS, pos[0],   start[1] + COMPACT_RADIUS);
                 } else if (compactX) {
-                    start[0] = this.downPos[0];
+                    start[0] = downPos[0];
                     drawPad(ctxt, start[0] - COMPACT_RADIUS, start[1], start[0] + COMPACT_RADIUS, start[1]);
                     drawPad(ctxt, start[0] - COMPACT_RADIUS, pos[1],   start[0] + COMPACT_RADIUS, pos[1]);
                 }
@@ -154,14 +169,14 @@ class GraphGui extends React.Component<Props, State> {
         }
     }
 
-    private positionInGraphSpace = (e: { clientX: number, clientY: number }, clamp = false): [ number, number ] | undefined => {
+    private positionInGraphSpace = (clientPos: [ number, number ], clamp = false): [ number, number ] | undefined => {
         const rect = this.guiCanvasRef.current?.getBoundingClientRect();
         if (!rect) return undefined;
 
         const { margin, yLabelSpace } = this.props.style;
 
         const [ areaWidth, areaHeight ] = this.graphArea();
-        const pos: [number, number] = [ e.clientX - rect.x - margin - yLabelSpace, e.clientY - rect.y - margin ];
+        const pos: [number, number] = [ clientPos[0] - rect.x - margin - yLabelSpace, clientPos[1] - rect.y - margin ];
 
         function clampf(val: number, from: number, to: number) { return Math.max(Math.min(val, to), from); }
 
@@ -179,15 +194,39 @@ class GraphGui extends React.Component<Props, State> {
         return undefined;
     }
 
-    private downPos?: [number, number] = undefined;
-    private currentPos: [number, number] | undefined = undefined;
-    private shiftDown = false;
+    private input: InputData  = {
+        ctrl: false,
+        alt: false,
+        shift: false,
+
+        downPos: undefined,
+        pos: [ 0, 0 ],
+    }
+
+    private eventToInputData = (prev: InputData, e: Pick<MouseEvent, 'ctrlKey' | 'altKey' | 'shiftKey' | 'clientX' | 'clientY'>, type: 'down' | 'up' | 'move'): InputData => {
+        const pos: [number, number] = [ e.clientX, e.clientY ];
+
+        const ret: InputData = {
+            ...prev,
+
+            ctrl: e.ctrlKey,
+            alt: e.altKey,
+            shift: e.shiftKey,
+
+            downPos: type === 'down' ? [ ...pos ] : (type === 'move' ? prev.downPos : undefined),
+            pos: pos,
+        };
+
+        return ret;
+    }
 
     private canvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        this.input = this.eventToInputData(this.input, e, 'down');
+
         if (this.props.threshold) {
             if (!this.guiCanvasRef.current) return;
 
-            const pos = this.positionInGraphSpace(e);
+            const pos = this.positionInGraphSpace(this.input.pos, true);
             const zoom = this.props.zoom as number[] | undefined;
             const area = this.graphArea();
 
@@ -198,28 +237,31 @@ class GraphGui extends React.Component<Props, State> {
             this.props.graph_threshold_select({ id: this.props.id, threshold: yVal });
         } else {
             e.preventDefault();
-            this.downPos = this.positionInGraphSpace(e);
         }
     };
 
-    private canvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        const pos = this.positionInGraphSpace(e, true);
-        this.shiftDown = e.shiftKey;
+    private canvasMouseMove = (e: MouseEvent) => {
+        this.input = this.eventToInputData(this.input, e, 'move');
+    }
+
+    private canvasRuler = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const pos = this.positionInGraphSpace(this.eventToInputData(this.input, e, 'move').pos, true);
 
         if (pos && this.props.zoom) {
-            this.currentPos = pos;
             const { zoom, xType } = this.props;
             const area = this.graphArea();
 
             GLOBAL_RULER = { xType, value: zoom[0] + (zoom[1] - zoom[0]) * pos[0] / area[0] };
-            console.count('lol');
         }
     }
 
     private canvasMouseUp = (e: MouseEvent) => {
-        if (this.downPos && this.guiCanvasRef.current) {
-            const pos = this.positionInGraphSpace(e, true);
-            const start = [ ...this.downPos ];
+        const downPos = this.input.downPos && this.positionInGraphSpace(this.input.downPos, false);
+        this.input = this.eventToInputData(this.input, e, 'up');
+
+        if (downPos && this.guiCanvasRef.current) {
+            const pos = this.positionInGraphSpace(this.input.pos, true);
+            const start = [ ...downPos ];
 
             if (pos && this.props.zoom) {
                 const zoom = this.props.zoom as number[];
@@ -231,10 +273,10 @@ class GraphGui extends React.Component<Props, State> {
 
                 if (!compactX || !compactY) {
                     const [ relXS, relXE, relYS, relYE ] = [
-                        compactX ? 0 : Math.min(this.downPos[0], pos[0]) / area[0],
-                        compactX ? 1 : Math.max(this.downPos[0], pos[0]) / area[0],
-                        compactY ? 0 : 1.0 - (Math.max(this.downPos[1], pos[1]) / area[1]),
-                        compactY ? 1 : 1.0 - (Math.min(this.downPos[1], pos[1]) / area[1])
+                        compactX ? 0 : Math.min(downPos[0], pos[0]) / area[0],
+                        compactX ? 1 : Math.max(downPos[0], pos[0]) / area[0],
+                        compactY ? 0 : 1.0 - (Math.max(downPos[1], pos[1]) / area[1]),
+                        compactY ? 1 : 1.0 - (Math.min(downPos[1], pos[1]) / area[1])
                     ];
 
                     if (compactY && e.shiftKey) {
@@ -255,10 +297,18 @@ class GraphGui extends React.Component<Props, State> {
                     }
                 }
             }
-
-            this.downPos = undefined;
         }
     };
+
+    private canvasKeyChange = (e: KeyboardEvent) => {
+        this.input = {
+            ...this.input,
+
+            ctrl: e.ctrlKey,
+            alt: e.altKey,
+            shift: e.shiftKey,
+        };
+    }
 
     private canvasMouseLeave = () => {
         GLOBAL_RULER = undefined;
@@ -299,7 +349,7 @@ class GraphGui extends React.Component<Props, State> {
                     ref={this.guiCanvasRef}
                     hidden={this.props.traces.length <= 0}
                     onMouseDown={this.canvasMouseDown}
-                    onMouseMove={this.canvasMouseMove}
+                    onMouseMove={this.canvasRuler}
                     onMouseLeave={this.canvasMouseLeave}
                     onDoubleClick={this.canvasDoubleClick}
                     onContextMenu={onContextMenu}

@@ -230,7 +230,7 @@ class GraphComponent
             const toModHere = toMod.filter(r => bundle.traces.has(r.handle));
 
             if (toDelHere.length > 0) {
-                console.log(`rebundling ${bundle.handle}`);
+                console.trace(`rebundling ${bundle.handle}`);
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 const rebundle = this.renderer!.rebundle(bundle.handle, toAddHere.length, toDelHere.length, toModHere.length);
 
@@ -265,7 +265,6 @@ class GraphComponent
                     if (res?.delete) {
                         this.props.remove_graphs(this.props.id);
                         if (res.ignoreNext) {
-                            console.log('ignoring next');
                             this.props.set_settings({ askGraphClose: false });
                         }
                     }
