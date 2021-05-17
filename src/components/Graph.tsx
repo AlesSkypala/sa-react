@@ -66,6 +66,7 @@ type Props = DispatchProps<typeof dispatchProps> & Graph & {
 
 type State = {
     rendering: boolean;
+    error: unknown | undefined;
     ldevSelectAvailable: boolean;
     xTicks: { pos: number, val: number }[];
     yTicks: { pos: number, val: number }[];
@@ -77,6 +78,7 @@ class GraphComponent
     public state: State = {
         rendering: false,
         ldevSelectAvailable: false,
+        error: undefined,
         xTicks: [],
         yTicks: [],
     }
@@ -113,8 +115,14 @@ class GraphComponent
         this.renderer.bundles.forEach(b => job.addBundle(b.handle));
         enabledOffbundle.forEach(t => job.addTrace(t));
         disabled.forEach(t => job.blacklistTrace(t));
-
-        const result = await job.invoke();
+        
+        let result;
+        try {
+            result = await job.invoke();
+        } catch (error) {
+            this.setState({ error });
+            return;
+        }
 
         this.setState({ rendering: false, xTicks: result.x_ticks, yTicks: result.y_ticks });
     }
@@ -234,12 +242,22 @@ class GraphComponent
                 toDelHere.forEach(t => rebundle.deleteTrace({ handle: t }));
                 toModHere.forEach(t => rebundle.modifyTrace(t));
 
-                await rebundle.invoke();
+                try {
+                    await rebundle.invoke();
+                } catch (error) {
+                    this.setState({ error });
+                    return;
+                }
             }
         }
 
         if (toAdd.length > 0) {
-            await this.renderer?.createBundle(this.props.xRange, toAdd);
+            try {
+                await this.renderer?.createBundle(this.props.xRange, toAdd);
+            } catch (error) {
+                this.setState({ error });
+                return;
+            }
         }
     }
 
@@ -552,6 +570,9 @@ class GraphComponent
     public render() {
         const { title, traces, metadata, xRange, } = this.props;
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
+        const { error } = this.state;
+
+        const guiHidden = traces.length <= 0 || Boolean(error);
 
         const pendingJobs = Object.values(this.props.jobs).filter(j => j.relatedGraphs.includes(this.props.id) && j.state === 'pending');
         const failedJobs  = Object.values(this.props.jobs).filter(j => j.relatedGraphs.includes(this.props.id) && j.state === 'error');
@@ -609,14 +630,15 @@ class GraphComponent
                     </div>
                 </div>
                 <div className='graph-content'>
-                    {traces.length <= 0 && (<div>{t('graph.noTraces')}</div>)}
+                    {error && (<><div className='mt-3 text-danger'>{t('graph.error')}</div><div>{String(error)}</div></>)}
+                    {traces.length <= 0 && (<div className='mt-3'>{t('graph.noTraces')}</div>)}
                     <canvas
                         ref={this.canvasRef}
                         // hidden={traces.length <= 0}
                     />
                     <canvas
                         ref={this.guiCanvasRef}
-                        hidden={traces.length <= 0}
+                        hidden={guiHidden}
                         onMouseDown={this.canvasMouseDown}
                         onMouseMove={this.canvasMouseMove}
                         onMouseLeave={this.canvasMouseLeave}
@@ -642,29 +664,33 @@ class GraphComponent
                     ) : (this.state.rendering && (
                         <div className='graph-resize-overlay'><Spinner animation='border' variant='light' /></div>
                     ))}
-                    <div className='graph-details'>
-                        { icon(faDesktop)   }{ metadata.sourceNames.join('; ') } <br/>
-                        { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) }
-                    </div>
-                    {/* <div style={{ }}>
-                        {this.props.yLabel}
-                    </div> */}
-                    <div className='xlabel' style={{ left: margin + yLabelSpace, right: margin, maxHeight: xLabelSpace }}>
-                        {this.props.xLabel}
-                    </div>
-                    <div className='xticks' style={{ width: `calc(100% - ${2 * margin + yLabelSpace}px)`, top: `calc(100% - ${margin + xLabelSpace + X_TICK_SPACE}px)`, left: margin + yLabelSpace}}>
-                        {this.state.xTicks.map((tick, i) => (
-                            <span className='tick' style={{ left: `${100 * tick.pos}%` }} key={i}>{this.getXTickString(tick.val)}</span>
-                        ))}
-                    </div>
-                    <div className='ylabel' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, maxWidth: '1.8em', top: margin, whiteSpace: 'nowrap' }}>
-                        <span style={{ transform: 'rotate(-90deg)' }} >{this.props.yLabel}</span>
-                    </div>
-                    <div className='yticks' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, top: margin, right: `calc(100% - ${margin + yLabelSpace}px)`}}>
-                        {this.state.yTicks.map((tick, i) => (
-                            <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{this.getYTickString(tick.val)}</span>
-                        ))}
-                    </div>
+                    {!error && (
+                        <>
+                            <div className='graph-details'>
+                                { icon(faDesktop)   }{ metadata.sourceNames.join('; ') } <br/>
+                                { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) }
+                            </div>
+                            {/* <div style={{ }}>
+                                {this.props.yLabel}
+                            </div> */}
+                            <div className='xlabel' style={{ left: margin + yLabelSpace, right: margin, maxHeight: xLabelSpace }}>
+                                {this.props.xLabel}
+                            </div>
+                            <div className='xticks' style={{ width: `calc(100% - ${2 * margin + yLabelSpace}px)`, top: `calc(100% - ${margin + xLabelSpace + X_TICK_SPACE}px)`, left: margin + yLabelSpace}}>
+                                {this.state.xTicks.map((tick, i) => (
+                                    <span className='tick' style={{ left: `${100 * tick.pos}%` }} key={i}>{this.getXTickString(tick.val)}</span>
+                                ))}
+                            </div>
+                            <div className='ylabel' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, maxWidth: '1.8em', top: margin, whiteSpace: 'nowrap' }}>
+                                <span style={{ transform: 'rotate(-90deg)' }} >{this.props.yLabel}</span>
+                            </div>
+                            <div className='yticks' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, top: margin, right: `calc(100% - ${margin + yLabelSpace}px)`}}>
+                                {this.state.yTicks.map((tick, i) => (
+                                    <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{this.getYTickString(tick.val)}</span>
+                                ))}
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
         );

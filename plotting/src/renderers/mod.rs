@@ -29,17 +29,17 @@ pub struct RenderJobResult {
 }
 
 pub trait Renderer {
-    fn render(&mut self, job: RenderJob) -> RenderJobResult;
-    fn size_changed(&mut self, width: u32, height: u32);
-    fn create_bundle(&mut self, from: RangePrec, to: RangePrec, data: &[BundleEntry]) -> usize;
+    fn render(&mut self, job: RenderJob) -> Result<RenderJobResult, JsValue>;
+    fn size_changed(&mut self, width: u32, height: u32) -> Result<(), JsValue>;
+    fn create_bundle(&mut self, from: RangePrec, to: RangePrec, data: &[BundleEntry]) -> Result<usize, JsValue>;
     fn rebundle(
         &mut self,
         bundle: usize,
         to_add: &[BundleEntry],
         to_del: &[crate::data::DataIdx],
         to_mod: &[BundleEntry],
-    );
-    fn dispose_bundle(&mut self, bundle: usize);
+    ) -> Result<(), JsValue>;
+    fn dispose_bundle(&mut self, bundle: usize) -> Result<(), JsValue>;
 }
 
 #[wasm_bindgen]
@@ -49,24 +49,24 @@ pub struct RendererContainer {
 
 #[wasm_bindgen]
 impl RendererContainer {
-    pub fn new_offscreen(elem: OffscreenCanvas) -> Self {
-        Self {
-            renderer: Box::new(OffscreenGraphRenderer::new(elem)),
-        }
+    pub fn new_offscreen(elem: OffscreenCanvas) -> Result<RendererContainer, JsValue> {
+        Ok(Self {
+            renderer: Box::new(OffscreenGraphRenderer::new(elem)?),
+        })
     }
 
-    pub fn new_webgl(elem: OffscreenCanvas) -> Self {
-        Self {
-            renderer: Box::new(WebGlRenderer::new(elem)),
-        }
+    pub fn new_webgl(elem: OffscreenCanvas) -> Result<RendererContainer, JsValue> {
+        Ok(Self {
+            renderer: Box::new(WebGlRenderer::new(elem)?),
+        })
     }
 
-    pub fn render(&mut self, job: RenderJob) -> JsValue {
-        JsValue::from_serde(&RenderJobResult::from(self.renderer.render(job))).unwrap()
+    pub fn render(&mut self, job: RenderJob) -> Result<JsValue, JsValue> {
+        Ok(JsValue::from_serde(&RenderJobResult::from(self.renderer.render(job)?)).unwrap())
     }
 
-    pub fn size_changed(&mut self, width: u32, height: u32) {
-        self.renderer.size_changed(width, height);
+    pub fn size_changed(&mut self, width: u32, height: u32) -> Result<(), JsValue> {
+        self.renderer.size_changed(width, height)
     }
 
     pub fn create_bundle_from_stream(
@@ -74,7 +74,7 @@ impl RendererContainer {
         from: RangePrec,
         to: RangePrec,
         stream: &[u8],
-    ) -> usize {
+    ) -> Result<usize, JsValue> {
         let mut vec = Vec::with_capacity(stream.len() / 11);
 
         for row in stream.chunks_exact(11) {
@@ -88,7 +88,7 @@ impl RendererContainer {
         self.renderer.create_bundle(from, to, &vec)
     }
 
-    pub fn rebundle(&mut self, bundle: usize, del: &[u8], add: &[u8], modif: &[u8]) {
+    pub fn rebundle(&mut self, bundle: usize, del: &[u8], add: &[u8], modif: &[u8]) -> Result<(), JsValue> {
         let mut to_add = Vec::with_capacity(add.len() / 11);
         let mut to_mod = Vec::with_capacity(modif.len() / 11);
         let mut to_del = Vec::with_capacity(del.len() / size_of::<usize>());
@@ -113,10 +113,10 @@ impl RendererContainer {
             });
         }
 
-        self.renderer.rebundle(bundle, &to_add, &to_del, &to_mod);
+        self.renderer.rebundle(bundle, &to_add, &to_del, &to_mod)
     }
 
-    pub fn dispose_bundle(&mut self, bundle: usize) {
-        self.renderer.dispose_bundle(bundle);
+    pub fn dispose_bundle(&mut self, bundle: usize) -> Result<(), JsValue> {
+        self.renderer.dispose_bundle(bundle)
     }
 }

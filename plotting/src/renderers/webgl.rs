@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
     OffscreenCanvas, WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlUniformLocation,
 };
@@ -49,13 +49,14 @@ pub struct WebGlRenderer {
 }
 
 impl WebGlRenderer {
-    pub fn new(elem: OffscreenCanvas) -> Self {
+    pub fn new(elem: OffscreenCanvas) -> Result<Self, JsValue> {
+        crate::utils::set_panic_hook();
+
         let context = elem
             .get_context("webgl")
             .unwrap()
             .unwrap()
-            .dyn_into::<WebGlRenderingContext>()
-            .unwrap();
+            .dyn_into::<WebGlRenderingContext>()?;
 
         let vert_shader = webgl_utils::compile_shader(
             &context,
@@ -71,7 +72,7 @@ impl WebGlRenderer {
                 gl_Position = vec4(vec2(-1,-1) + vec2(2,2) * (aVertexPosition * vec2(1,transform.x) + vec2(0, transform.y) - origin) / size, 0, 1);
             }
             "#
-        ).unwrap();
+        )?;
 
         let frag_shader = webgl_utils::compile_shader(
             &context,
@@ -84,10 +85,9 @@ impl WebGlRenderer {
                 gl_FragColor = vec4(color, 1);
             }
             "#,
-        )
-        .unwrap();
+        )?;
 
-        let program = webgl_utils::link_program(&context, &vert_shader, &frag_shader).unwrap();
+        let program = webgl_utils::link_program(&context, &vert_shader, &frag_shader)?;
 
         let axes_program = {
             let vert_shader = webgl_utils::compile_shader(
@@ -102,7 +102,7 @@ impl WebGlRenderer {
                     gl_Position = vec4(vec2(-1, -1) + vec2(2, 2) * aVertexPosition / resolution, 0, 1);
                 }
                 "#
-            ).unwrap();
+            )?;
 
             let frag_shader = webgl_utils::compile_shader(
                 &context,
@@ -115,13 +115,12 @@ impl WebGlRenderer {
                     gl_FragColor = color;
                 }
                 "#,
-            )
-            .unwrap();
+            )?;
 
-            webgl_utils::link_program(&context, &vert_shader, &frag_shader).unwrap()
+            webgl_utils::link_program(&context, &vert_shader, &frag_shader)?
         };
 
-        WebGlRenderer {
+        Ok(WebGlRenderer {
             width: elem.width(),
             height: elem.height(),
             _canvas: elem,
@@ -145,7 +144,7 @@ impl WebGlRenderer {
 
             bundles_counter: 0,
             bundles: HashMap::new(),
-        }
+        })
     }
 
     pub fn clear(&self) {
@@ -299,8 +298,12 @@ impl WebGlRenderer {
         from: RangePrec,
         to: RangePrec,
         entry: &super::BundleEntry,
-    ) -> BufferEntry {
-        let buffer = context.create_buffer().unwrap();
+    ) -> Result<BufferEntry, JsValue> {
+        let buffer = match context.create_buffer() {
+            Some(b) => b,
+            _ => return Result::Err(JsValue::from_str("Failed to allocate a buffer, perhaps the WebGL context has been destroyed."))
+        };
+
         context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
         let points;
 
@@ -324,7 +327,7 @@ impl WebGlRenderer {
             );
         }
 
-        BufferEntry {
+        Ok(BufferEntry {
             points,
             handle: entry.handle,
             buffer,
@@ -334,12 +337,12 @@ impl WebGlRenderer {
                 entry.color[1] as f32 / 255.0,
                 entry.color[2] as f32 / 255.0,
             ],
-        }
+        })
     }
 }
 
 impl Renderer for WebGlRenderer {
-    fn render(&mut self, job: RenderJob) -> RenderJobResult {
+    fn render(&mut self, job: RenderJob) -> Result<RenderJobResult, JsValue> {
         let gl = &self.context;
 
         let x_from = job.x_from as f32;
@@ -362,10 +365,6 @@ impl Renderer for WebGlRenderer {
 
         if job.render_grid {
             self.render_grid(&job, &x_ticks[..], &y_ticks[..]);
-        }
-
-        if job.render_labels {
-            // todo!()
         }
 
         gl.viewport(
@@ -459,14 +458,16 @@ impl Renderer for WebGlRenderer {
             }
         }
 
-        RenderJobResult { x_ticks, y_ticks }
+        Ok(RenderJobResult { x_ticks, y_ticks })
     }
 
-    fn size_changed(&mut self, width: u32, height: u32) {
+    fn size_changed(&mut self, width: u32, height: u32) -> Result<(), JsValue> {
         self.width = width;
         self.height = height;
         self._canvas.set_width(width);
         self._canvas.set_height(height);
+
+        Ok(())
     }
 
     fn create_bundle(
@@ -474,7 +475,7 @@ impl Renderer for WebGlRenderer {
         from: RangePrec,
         to: RangePrec,
         data: &[super::BundleEntry],
-    ) -> usize {
+    ) -> Result<usize, JsValue> {
         let mut vec = Vec::with_capacity(data.len());
 
         for row in data {
@@ -483,7 +484,7 @@ impl Renderer for WebGlRenderer {
                 from,
                 to,
                 row,
-            ));
+            )?);
         }
 
         let handle = self.bundles_counter;
@@ -497,15 +498,17 @@ impl Renderer for WebGlRenderer {
             },
         );
 
-        handle
+        Ok(handle)
     }
 
-    fn dispose_bundle(&mut self, bundle: usize) {
+    fn dispose_bundle(&mut self, bundle: usize) -> Result<(), JsValue>{
         let bundle = self.bundles.remove(&bundle).unwrap();
 
         for row in bundle.buffers {
             self.context.delete_buffer(Some(&row.buffer));
         }
+
+        Ok(())
     }
 
     fn rebundle(
@@ -514,7 +517,7 @@ impl Renderer for WebGlRenderer {
         to_add: &[super::BundleEntry],
         to_del: &[DataIdx],
         to_mod: &[super::BundleEntry],
-    ) {
+    ) -> Result<(), JsValue> {
         let b = self.bundles.get_mut(&bundle).unwrap();
 
         for row in to_add {
@@ -523,7 +526,7 @@ impl Renderer for WebGlRenderer {
                 b.from,
                 b.to,
                 row,
-            ));
+            )?);
         }
 
         b.buffers.retain(|e| !to_del.iter().any(|t| *t == e.handle));
@@ -538,6 +541,8 @@ impl Renderer for WebGlRenderer {
                 ];
             }
         }
+
+        Result::Ok(())
     }
 }
 
@@ -546,7 +551,7 @@ impl Drop for WebGlRenderer {
         let bundles: Vec<usize> = self.bundles.keys().cloned().collect();
 
         for handle in bundles {
-            self.dispose_bundle(handle);
+            self.dispose_bundle(handle).expect("Failed to dispose a bundle");
         }
     }
 }

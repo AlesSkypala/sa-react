@@ -19,7 +19,6 @@ pub struct RenderJob {
 
     pub render_grid: bool,
     pub render_axes: bool,
-    pub render_labels: bool,
 
     pub margin: u32,
     pub x_label_space: u32,
@@ -46,7 +45,6 @@ impl RenderJob {
 
             render_axes: true,
             render_grid: true,
-            render_labels: true,
 
             margin: 0,
             x_label_space: 0,

@@ -42,6 +42,8 @@ const en_lang = {
         cloneAll: 'Clone All Series',
         cloneActive: 'Clone Active Series',
         ldevSelect: 'LDEV Select',
+
+        error: 'A critical error has occurred while rendering the graph:',
     },
 
     modals: {

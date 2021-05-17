@@ -1,6 +1,7 @@
 use plotters::coord::{types::RangedCoordf32, Shift};
 use plotters::prelude::*;
 use plotters_canvas::OffscreenCanvasBackend;
+use wasm_bindgen::JsValue;
 use std::cell::RefCell;
 use std::ops::Range;
 use std::rc::Rc;
@@ -16,16 +17,16 @@ pub struct OffscreenGraphRenderer {
 }
 
 impl OffscreenGraphRenderer {
-    pub fn new(elem: OffscreenCanvas) -> Self {
+    pub fn new(elem: OffscreenCanvas) -> Result<Self, JsValue> {
         let canvas = Rc::new(RefCell::new(
             OffscreenCanvasBackend::new(elem.clone())
                 .expect("Couldn't create a backend from canvas."),
         ));
 
-        Self {
+        Ok(Self {
             root: Option::Some((&canvas).into()),
             backend: canvas,
-        }
+        })
     }
 
     pub fn clear(&self) {
@@ -67,7 +68,7 @@ impl OffscreenGraphRenderer {
 }
 
 impl Renderer for OffscreenGraphRenderer {
-    fn render(&mut self, job: RenderJob) -> RenderJobResult {
+    fn render(&mut self, job: RenderJob) -> Result<RenderJobResult, JsValue> {
         if job.clear {
             self.clear();
         }
@@ -106,13 +107,13 @@ impl Renderer for OffscreenGraphRenderer {
             });
         }
 
-        RenderJobResult {
+        Ok(RenderJobResult {
             x_ticks: Box::new([]),
             y_ticks: Box::new([]),
-        }
+        })
     }
 
-    fn size_changed(&mut self, width: u32, height: u32) {
+    fn size_changed(&mut self, width: u32, height: u32) -> Result<(), JsValue> {
         (*self.backend).borrow_mut().set_size(width, height);
 
         if let Option::Some(_) = &self.root {
@@ -123,6 +124,8 @@ impl Renderer for OffscreenGraphRenderer {
                     .shrink((0, 0), (width + 1, height + 1)),
             );
         }
+
+        Result::Ok(())
     }
 
     fn create_bundle(
@@ -130,11 +133,11 @@ impl Renderer for OffscreenGraphRenderer {
         _from: RangePrec,
         _to: RangePrec,
         _data: &[super::BundleEntry],
-    ) -> usize {
+    ) -> Result<usize, JsValue> {
         todo!()
     }
 
-    fn dispose_bundle(&mut self, _bundle: usize) {
+    fn dispose_bundle(&mut self, _bundle: usize) -> Result<(), JsValue> {
         todo!()
     }
 
@@ -144,7 +147,7 @@ impl Renderer for OffscreenGraphRenderer {
         _to_add: &[super::BundleEntry],
         _to_del: &[crate::data::DataIdx],
         _to_mod: &[super::BundleEntry],
-    ) {
+    ) -> Result<(), JsValue> {
         todo!()
     }
 }
