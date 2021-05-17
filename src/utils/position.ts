@@ -1,13 +1,13 @@
 
-type Rect2Like = {
+export type Rect2Like = {
     x: number,
     y: number,
     width: number,
     height: number,
 }
 
-type Vec2 = [ number, number ];
-type Vec2Like = [ number, number ] | number[];
+export type Vec2 = [ number, number ];
+export type Vec2Like = [ number, number ] | number[];
 
 export function contains(area: Rect2Like, point: Vec2Like) {
     return point[0] >= area.x && point[0] < area.x + area.width &&

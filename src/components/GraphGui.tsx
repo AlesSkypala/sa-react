@@ -9,6 +9,7 @@ import { dataWorker } from '..';
 import { DispatchProps, edit_graph, graph_threshold_select } from '../redux';
 import { connect } from 'react-redux';
 import * as position from '../utils/position';
+import * as canvas from '../utils/canvas';
 
 const COMPACT_RADIUS = 16;
 let GLOBAL_RULER: RulerData | undefined = undefined;
@@ -45,7 +46,7 @@ type InputData = {
     shift: boolean,
 
     down: {
-        action: 'zoom' | 'shiftX',
+        action: 'zoom' | 'shiftX' | 'shiftY',
         pos: [ number, number ],
     } | undefined,
     pos: [ number, number ],
@@ -76,14 +77,13 @@ class GraphGui extends React.Component<Props, State> {
     public drawGui = () => {
         this.drawFrame = window.requestAnimationFrame(this.drawGui);
 
+        const ctxt = this.canvasRef.current?.getContext('2d');
+        if (!ctxt) return;
+
         const ruler = GLOBAL_RULER;
         const { zoom } = this.props;
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
-        const ctxt = this.canvasRef.current?.getContext('2d');
         const innerBox = this.innerGraphBox();
-
-        const pos     = position.getPosIn(this.innerGraphBox(), this.input.pos, true);
-        const downPos = this.input.down && position.getPosIn(this.innerGraphBox(), this.input.down.pos);
 
         function drawPad(ctxt: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) {
             ctxt.save();
@@ -95,22 +95,34 @@ class GraphGui extends React.Component<Props, State> {
             ctxt.restore();
         }
 
-        if (ctxt) {
-            ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height);
+        ctxt.clearRect(0, 0, ctxt.canvas.width, ctxt.canvas.height);
 
-            if (this.props.threshold && pos) {
-                ctxt.beginPath();
-                ctxt.moveTo(margin + yLabelSpace, pos[1] + margin);
-                ctxt.lineTo(ctxt.canvas.width - margin - 1, pos[1] + margin);
-                ctxt.stroke();
-            } else if (downPos && pos) {
+        if (this.props.threshold) {
+            const pos = position.getPosIn(innerBox, this.input.pos, true);
+
+            pos && canvas.drawSegment(ctxt,
+                [ margin + yLabelSpace, pos[1] + margin ],
+                [ ctxt.canvas.width - margin - 1, pos[1] + margin ]
+            );
+            return;
+        }
+
+        if (this.input.down)
+        {
+            const { action } = this.input.down;
+
+            if (action === 'zoom') {
+                const pos = position.getPosIn(innerBox, this.input.pos, true);
+                const downPos = position.getPosIn(innerBox, this.input.down.pos);
+                if (!pos || !downPos) return;
+                
                 const start = [ ...downPos ];
 
                 const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
                 const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
-
+    
                 if (compactX && compactY) return;
-
+    
                 if (compactY) {
                     start[1] = 0;
                     pos[1] = ctxt.canvas.clientHeight - 2 * margin - xLabelSpace - X_TICK_SPACE;
@@ -118,14 +130,14 @@ class GraphGui extends React.Component<Props, State> {
                     start[0] = 0;
                     pos[0] = ctxt.canvas.clientWidth - 2 * margin - yLabelSpace;
                 }
-
+    
                 const rect = {
                     x: Math.min(pos[0], start[0]) + margin + yLabelSpace,
                     y: Math.min(pos[1], start[1]) + margin,
                     width:  Math.abs(pos[0] - start[0]),
                     height: Math.abs(pos[1] - start[1])
                 };
-
+    
                 ctxt.save();
                 if (this.input.shift) { ctxt.strokeStyle = 'orange'; }
                 ctxt.beginPath();
@@ -133,7 +145,7 @@ class GraphGui extends React.Component<Props, State> {
                 ctxt.strokeRect(rect.x, rect.y, rect.width, rect.height);
                 ctxt.stroke();
                 ctxt.restore();
-
+    
                 if (compactY) {
                     start[1] = downPos[1];
                     drawPad(ctxt, start[0], start[1] - COMPACT_RADIUS, start[0], start[1] + COMPACT_RADIUS);
@@ -143,18 +155,71 @@ class GraphGui extends React.Component<Props, State> {
                     drawPad(ctxt, start[0] - COMPACT_RADIUS, start[1], start[0] + COMPACT_RADIUS, start[1]);
                     drawPad(ctxt, start[0] - COMPACT_RADIUS, pos[1],   start[0] + COMPACT_RADIUS, pos[1]);
                 }
-            } else if (ruler && zoom && ruler.xType === this.props.xType && ruler.value >= zoom[0] && ruler.value <= zoom[1]) {
-                const relRulerPos = (ruler.value - zoom[0]) / (zoom[1] - zoom[0]);
-                const absRulerPos = margin + yLabelSpace + relRulerPos * innerBox.width;
 
-                ctxt.save();
-                ctxt.setLineDash([ 4, 12 ]);
-                ctxt.beginPath();
-                ctxt.moveTo(absRulerPos, margin);
-                ctxt.lineTo(absRulerPos, margin + innerBox.height);
-                ctxt.stroke();
-                ctxt.restore();
+                return;
+            } else if (action === 'shiftX') {
+                const outerBox = this.outerGraphBox();
+                const xTicksBox = this.xTicksBox();
+
+                const pos = position.getPosIn(xTicksBox, this.input.pos);
+                const downPos = position.getPosIn(xTicksBox, this.input.down.pos);
+
+                downPos && canvas.drawSegment(ctxt,
+                    [ downPos[0] + xTicksBox.x - outerBox.x, xTicksBox.y - outerBox.y ],
+                    [ downPos[0] + xTicksBox.x - outerBox.x, xTicksBox.y - outerBox.y + xTicksBox.height ],
+                    {
+                        strokeStyle: 'green',
+                    }
+                );
+
+                pos && canvas.drawSegment(ctxt,
+                    [ pos[0] + xTicksBox.x - outerBox.x, xTicksBox.y - outerBox.y ],
+                    [ pos[0] + xTicksBox.x - outerBox.x, xTicksBox.y - outerBox.y + xTicksBox.height ],
+                    {
+                        strokeStyle: 'green',
+                    }
+                );
+
+                return;
+            } else if (action === 'shiftY') {
+                const outerBox = this.outerGraphBox();
+                const yTicksBox = this.yTicksBox();
+
+                const pos = position.getPosIn(yTicksBox, this.input.pos);
+                const downPos = position.getPosIn(yTicksBox, this.input.down.pos);
+
+                downPos && canvas.drawSegment(ctxt,
+                    [ yTicksBox.x - outerBox.x, downPos[1] + yTicksBox.y - outerBox.y ],
+                    [ yTicksBox.x - outerBox.x + yTicksBox.width, downPos[1] + yTicksBox.y - outerBox.y ],
+                    {
+                        strokeStyle: 'green',
+                    }
+                );
+
+                pos && canvas.drawSegment(ctxt,
+                    [ yTicksBox.x - outerBox.x, pos[1] + yTicksBox.y - outerBox.y ],
+                    [ yTicksBox.x - outerBox.x + yTicksBox.width, pos[1] + yTicksBox.y - outerBox.y ],
+                    {
+                        strokeStyle: 'green',
+                    }
+                );
+
+                return;
             }
+        }
+        
+
+        if (ruler && zoom && ruler.xType === this.props.xType && ruler.value >= zoom[0] && ruler.value <= zoom[1]) {
+            const relRulerPos = (ruler.value - zoom[0]) / (zoom[1] - zoom[0]);
+            const absRulerPos = margin + yLabelSpace + relRulerPos * innerBox.width;
+
+            ctxt.save();
+            ctxt.setLineDash([ 4, 12 ]);
+            ctxt.beginPath();
+            ctxt.moveTo(absRulerPos, margin);
+            ctxt.lineTo(absRulerPos, margin + innerBox.height);
+            ctxt.stroke();
+            ctxt.restore();
         }
     }
 
@@ -184,6 +249,11 @@ class GraphGui extends React.Component<Props, State> {
         return rect ?? { x: 0, y: 0, width: 0, height: 0 };
     }
 
+    private yTicksBox = () => {
+        const rect = this.yTicksRef.current?.getBoundingClientRect();
+        return rect ?? { x: 0, y: 0, width: 0, height: 0 };
+    }
+
     private input: InputData  = {
         ctrl: false,
         alt: false,
@@ -193,7 +263,7 @@ class GraphGui extends React.Component<Props, State> {
         pos: [ 0, 0 ],
     }
 
-    private eventToInputData = (prev: InputData, e: Pick<MouseEvent, 'ctrlKey' | 'altKey' | 'shiftKey' | 'clientX' | 'clientY'>, type: 'down-shiftX' | 'down-zoom' | 'up' | 'move'): InputData => {
+    private eventToInputData = (prev: InputData, e: Pick<MouseEvent, 'ctrlKey' | 'altKey' | 'shiftKey' | 'clientX' | 'clientY'>, type: 'down-shiftX' | 'down-shiftY' | 'down-zoom' | 'up' | 'move'): InputData => {
         const pos: [number, number] = [ e.clientX, e.clientY ];
         let down: InputData['down'] = undefined;
 
@@ -201,6 +271,12 @@ class GraphGui extends React.Component<Props, State> {
             case 'down-shiftX':
                 down = {
                     action: 'shiftX',
+                    pos: [ ...pos ],  
+                };
+                break;
+            case 'down-shiftY':
+                down = {
+                    action: 'shiftY',
                     pos: [ ...pos ],  
                 };
                 break;
@@ -233,6 +309,8 @@ class GraphGui extends React.Component<Props, State> {
         const pos = [ e.clientX, e.clientY ];
         if (position.contains(this.xTicksBox(), pos)) {
             this.input = this.eventToInputData(this.input, e, 'down-shiftX');
+        } else if (position.contains(this.yTicksBox(), pos)) {
+            this.input = this.eventToInputData(this.input, e, 'down-shiftY');
         } else if (position.contains(this.innerGraphBox(), pos)) {
             this.input = this.eventToInputData(this.input, e, 'down-zoom');
 
@@ -269,45 +347,70 @@ class GraphGui extends React.Component<Props, State> {
 
     private canvasMouseUp = (e: MouseEvent) => {
         const innerBox = this.innerGraphBox();
-        const downPos = this.input.down && position.getPosIn(innerBox, this.input.down.pos);
+        const down = this.input.down;
+
         this.input = this.eventToInputData(this.input, e, 'up');
 
-        if (downPos && this.canvasRef.current) {
+        const { zoom } = this.props;
+        if (!zoom || !down) { return; }
+
+        if (down.action === 'zoom') {
+            const downPos = position.getPosIn(innerBox, down.pos);
             const pos = position.getPosIn(innerBox, this.input.pos, true);
+
+            if (!downPos || !pos) return;
+
             const start = [ ...downPos ];
+            const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
+            const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
 
-            if (pos && this.props.zoom) {
-                const zoom = this.props.zoom as number[];
+            if (!compactX || !compactY) {
+                const zoomRect = position.createRect(downPos, pos);
+                const [ relXS, relXE, relYS, relYE ] = [
+                    compactX ? 0 : zoomRect.x / innerBox.width,
+                    compactX ? 1 : (zoomRect.x + zoomRect.width) / innerBox.width,
+                    compactY ? 0 : 1.0 - (zoomRect.y + zoomRect.height) / innerBox.height,
+                    compactY ? 1 : 1.0 - zoomRect.y / innerBox.height
+                ];
 
-                const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
-                const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
-
-                if (!compactX || !compactY) {
-                    const zoomRect = position.createRect(downPos, pos);
-                    const [ relXS, relXE, relYS, relYE ] = [
-                        compactX ? 0 : zoomRect.x / innerBox.width,
-                        compactX ? 1 : (zoomRect.x + zoomRect.width) / innerBox.width,
-                        compactY ? 0 : 1.0 - (zoomRect.y + zoomRect.height) / innerBox.height,
-                        compactY ? 1 : 1.0 - zoomRect.y / innerBox.height
-                    ];
-
-                    if (compactY && e.shiftKey) {
-                        dataWorker.recommend_extents(
-                            zoom[0] + relXS * (zoom[1] - zoom[0]),
-                            zoom[0] + relXE * (zoom[1] - zoom[0]),
-                            this.props.traces.filter(t => t.active).map(t => t.handle)
-                        ).then(zoom => {
-                            this.props.edit_graph({ id: this.props.id, zoom });
-                        });
-                    } else {
-                        this.props.edit_graph({ id: this.props.id, zoom: [
-                            zoom[0] + relXS * (zoom[1] - zoom[0]),
-                            zoom[0] + relXE * (zoom[1] - zoom[0]),
-                            zoom[2] + relYS * (zoom[3] - zoom[2]),
-                            zoom[2] + relYE * (zoom[3] - zoom[2])
-                        ] });
-                    }
+                if (compactY && e.shiftKey) {
+                    dataWorker.recommend_extents(
+                        zoom[0] + relXS * (zoom[1] - zoom[0]),
+                        zoom[0] + relXE * (zoom[1] - zoom[0]),
+                        this.props.traces.filter(t => t.active).map(t => t.handle)
+                    ).then(zoom => {
+                        this.props.edit_graph({ id: this.props.id, zoom });
+                    });
+                } else {
+                    this.props.edit_graph({ id: this.props.id, zoom: [
+                        zoom[0] + relXS * (zoom[1] - zoom[0]),
+                        zoom[0] + relXE * (zoom[1] - zoom[0]),
+                        zoom[2] + relYS * (zoom[3] - zoom[2]),
+                        zoom[2] + relYE * (zoom[3] - zoom[2])
+                    ] });
                 }
+            } 
+        } else if (down.action === 'shiftX') {
+            const xTicksRect = this.xTicksBox();
+
+            if (position.contains(xTicksRect, this.input.pos)) {
+                const xShift = (zoom[1] - zoom[0]) * (this.input.pos[0] - down.pos[0]) / xTicksRect.width;
+
+                this.props.edit_graph({ id: this.props.id, zoom: [
+                    zoom[0] - xShift, zoom[1] - xShift,
+                    zoom[2], zoom[3]
+                ] });
+            }
+        } else if (down.action === 'shiftY') {
+            const yTicksRect = this.yTicksBox();
+
+            if (position.contains(yTicksRect, this.input.pos)) {
+                const yShift = (zoom[3] - zoom[2]) * (down.pos[1] - this.input.pos[1]) / yTicksRect.height;
+
+                this.props.edit_graph({ id: this.props.id, zoom: [
+                    zoom[0], zoom[1],
+                    zoom[2] - yShift, zoom[3] - yShift
+                ] });
             }
         }
     };
@@ -382,7 +485,7 @@ class GraphGui extends React.Component<Props, State> {
                 <div className='ylabel' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, maxWidth: '1.8em', top: margin, whiteSpace: 'nowrap' }}>
                     <span style={{ transform: 'rotate(-90deg)' }} >{yLabel}</span>
                 </div>
-                <div className='yticks' ref={this.yTicksRef} style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, top: margin, right: `calc(100% - ${margin + yLabelSpace}px)`}}>
+                <div className='yticks' ref={this.yTicksRef} style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, top: margin, right: `calc(100% - ${margin + yLabelSpace}px)`, width: X_TICK_SPACE}}>
                     {yTicks.map((tick, i) => (
                         <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{this.getYTickString(tick.val)}</span>
                     ))}
