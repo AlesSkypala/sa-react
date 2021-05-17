@@ -395,6 +395,8 @@ class GraphComponent
                     {traces.length <= 0 && (<div className='mt-3'>{t('graph.noTraces')}</div>)}
                     <canvas
                         ref={this.canvasRef}
+                        width={this.state.clientWidth}
+                        height={this.state.clientHeight}
                         // hidden={traces.length <= 0}
                     />
                     <MenuPortal>

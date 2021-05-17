@@ -8,6 +8,7 @@ import { X_TICK_SPACE } from './Graph';
 import { dataWorker } from '..';
 import { DispatchProps, edit_graph, graph_threshold_select } from '../redux';
 import { connect } from 'react-redux';
+import * as position from '../utils/position';
 
 const COMPACT_RADIUS = 16;
 let GLOBAL_RULER: RulerData | undefined = undefined;
@@ -43,12 +44,17 @@ type InputData = {
     alt: boolean,
     shift: boolean,
 
-    downPos: [ number, number ] | undefined,
+    down: {
+        action: 'zoom' | 'shiftX',
+        pos: [ number, number ],
+    } | undefined,
     pos: [ number, number ],
 }
 
 class GraphGui extends React.Component<Props, State> {
-    private guiCanvasRef= React.createRef<HTMLCanvasElement>();
+    private canvasRef = React.createRef<HTMLCanvasElement>();
+    private xTicksRef = React.createRef<HTMLDivElement>();
+    private yTicksRef = React.createRef<HTMLDivElement>();
 
     public componentDidMount() {
         window.addEventListener('mousemove', this.canvasMouseMove);
@@ -56,12 +62,6 @@ class GraphGui extends React.Component<Props, State> {
         window.addEventListener('keyup', this.canvasKeyChange);
         window.addEventListener('keydown', this.canvasKeyChange);
         requestAnimationFrame(this.drawGui);
-
-        const canvas = this.guiCanvasRef.current;
-        if (canvas) {
-            canvas.width = canvas.clientWidth;
-            canvas.height = canvas.clientHeight;
-        }
     }
 
     public componentWillUnmount() {
@@ -72,17 +72,6 @@ class GraphGui extends React.Component<Props, State> {
         cancelAnimationFrame(this.drawFrame);
     }
 
-    private graphArea = () => {
-        if (!this.guiCanvasRef.current) return [0, 0];
-
-        const { margin, xLabelSpace, yLabelSpace } = this.props.style;
-
-        return [
-            this.guiCanvasRef.current.width  - 2 * margin  - yLabelSpace,
-            this.guiCanvasRef.current.height - 2 * margin - xLabelSpace - X_TICK_SPACE
-        ];
-    };
-
     private drawFrame = 0;
     public drawGui = () => {
         this.drawFrame = window.requestAnimationFrame(this.drawGui);
@@ -90,11 +79,11 @@ class GraphGui extends React.Component<Props, State> {
         const ruler = GLOBAL_RULER;
         const { zoom } = this.props;
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
-        const ctxt = this.guiCanvasRef.current?.getContext('2d');
-        const area = this.graphArea();
+        const ctxt = this.canvasRef.current?.getContext('2d');
+        const innerBox = this.innerGraphBox();
 
-        const pos = this.input.pos && this.positionInGraphSpace(this.input.pos, true);
-        const downPos = this.input.downPos && this.positionInGraphSpace(this.input.downPos);
+        const pos     = position.getPosIn(this.innerGraphBox(), this.input.pos, true);
+        const downPos = this.input.down && position.getPosIn(this.innerGraphBox(), this.input.down.pos);
 
         function drawPad(ctxt: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) {
             ctxt.save();
@@ -156,42 +145,43 @@ class GraphGui extends React.Component<Props, State> {
                 }
             } else if (ruler && zoom && ruler.xType === this.props.xType && ruler.value >= zoom[0] && ruler.value <= zoom[1]) {
                 const relRulerPos = (ruler.value - zoom[0]) / (zoom[1] - zoom[0]);
-                const absRulerPos = margin + yLabelSpace + relRulerPos * area[0];
+                const absRulerPos = margin + yLabelSpace + relRulerPos * innerBox.width;
 
                 ctxt.save();
                 ctxt.setLineDash([ 4, 12 ]);
                 ctxt.beginPath();
                 ctxt.moveTo(absRulerPos, margin);
-                ctxt.lineTo(absRulerPos, margin + area[1]);
+                ctxt.lineTo(absRulerPos, margin + innerBox.height);
                 ctxt.stroke();
                 ctxt.restore();
             }
         }
     }
 
-    private positionInGraphSpace = (clientPos: [ number, number ], clamp = false): [ number, number ] | undefined => {
-        const rect = this.guiCanvasRef.current?.getBoundingClientRect();
-        if (!rect) return undefined;
+    private outerGraphBox = () => {
+        const rect = this.canvasRef.current?.getBoundingClientRect();
+        return rect ?? { x: 0, y: 0, width: 0, height: 0 };
+    }
 
-        const { margin, yLabelSpace } = this.props.style;
+    private innerGraphBox = () => {
+        const rect = this.canvasRef.current?.getBoundingClientRect();
+        const { xLabelSpace, yLabelSpace, margin } = this.props.style;
 
-        const [ areaWidth, areaHeight ] = this.graphArea();
-        const pos: [number, number] = [ clientPos[0] - rect.x - margin - yLabelSpace, clientPos[1] - rect.y - margin ];
-
-        function clampf(val: number, from: number, to: number) { return Math.max(Math.min(val, to), from); }
-
-        if (clamp) {
-            return [ clampf(pos[0], 0, areaWidth), clampf(pos[1], 0, areaHeight) ];
+        if (rect) {
+            return {
+                x: rect.x + yLabelSpace + margin,
+                y: rect.y + margin,
+                width:  rect.width  - 2 * margin - yLabelSpace,
+                height: rect.height - 2 * margin - xLabelSpace - X_TICK_SPACE
+            };
         }
 
-        if (pos[0] >= 0 && pos[1] >= 0 &&
-            pos[0] < areaWidth &&
-            pos[1] < areaHeight) {
+        return { x: 0, y: 0, width: 0, height: 0 };
+    }
 
-            return pos;
-        }
-
-        return undefined;
+    private xTicksBox = () => {
+        const rect = this.xTicksRef.current?.getBoundingClientRect();
+        return rect ?? { x: 0, y: 0, width: 0, height: 0 };
     }
 
     private input: InputData  = {
@@ -199,12 +189,31 @@ class GraphGui extends React.Component<Props, State> {
         alt: false,
         shift: false,
 
-        downPos: undefined,
+        down: undefined,
         pos: [ 0, 0 ],
     }
 
-    private eventToInputData = (prev: InputData, e: Pick<MouseEvent, 'ctrlKey' | 'altKey' | 'shiftKey' | 'clientX' | 'clientY'>, type: 'down' | 'up' | 'move'): InputData => {
+    private eventToInputData = (prev: InputData, e: Pick<MouseEvent, 'ctrlKey' | 'altKey' | 'shiftKey' | 'clientX' | 'clientY'>, type: 'down-shiftX' | 'down-zoom' | 'up' | 'move'): InputData => {
         const pos: [number, number] = [ e.clientX, e.clientY ];
+        let down: InputData['down'] = undefined;
+
+        switch (type) {
+            case 'down-shiftX':
+                down = {
+                    action: 'shiftX',
+                    pos: [ ...pos ],  
+                };
+                break;
+            case 'down-zoom':
+                down = {
+                    action: 'zoom',
+                    pos: [ ...pos ],  
+                };
+                break;
+            case 'move':
+                down = prev.down;
+                break;
+        }
 
         const ret: InputData = {
             ...prev,
@@ -213,70 +222,73 @@ class GraphGui extends React.Component<Props, State> {
             alt: e.altKey,
             shift: e.shiftKey,
 
-            downPos: type === 'down' ? [ ...pos ] : (type === 'move' ? prev.downPos : undefined),
-            pos: pos,
+            down,
+            pos,
         };
 
         return ret;
     }
 
     private canvasMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        this.input = this.eventToInputData(this.input, e, 'down');
+        const pos = [ e.clientX, e.clientY ];
+        if (position.contains(this.xTicksBox(), pos)) {
+            this.input = this.eventToInputData(this.input, e, 'down-shiftX');
+        } else if (position.contains(this.innerGraphBox(), pos)) {
+            this.input = this.eventToInputData(this.input, e, 'down-zoom');
 
-        if (this.props.threshold) {
-            if (!this.guiCanvasRef.current) return;
-
-            const pos = this.positionInGraphSpace(this.input.pos, true);
-            const zoom = this.props.zoom as number[] | undefined;
-            const area = this.graphArea();
-
-            if (!pos || !zoom) return;
-
-            const yVal = zoom[3] - (pos[1] / area[1]) * (zoom[3] - zoom[2]);
-
-            this.props.graph_threshold_select({ id: this.props.id, threshold: yVal });
-        } else {
-            e.preventDefault();
+            if (this.props.threshold) {
+                if (!this.canvasRef.current) return;
+    
+                const pos = position.getPosIn(this.innerGraphBox(), this.input.pos, false, true);
+                const zoom = this.props.zoom as number[] | undefined;
+    
+                if (!pos || !zoom) return;
+    
+                const yVal = zoom[3] - (pos[1]) * (zoom[3] - zoom[2]);
+    
+                this.props.graph_threshold_select({ id: this.props.id, threshold: yVal });
+            } else {
+                e.preventDefault();
+            }
         }
-    };
+    }
 
     private canvasMouseMove = (e: MouseEvent) => {
         this.input = this.eventToInputData(this.input, e, 'move');
     }
 
     private canvasRuler = (e: React.MouseEvent<HTMLCanvasElement>) => {
-        const pos = this.positionInGraphSpace(this.eventToInputData(this.input, e, 'move').pos, true);
+        const pos = position.getPosIn(this.innerGraphBox(), this.eventToInputData(this.input, e, 'move').pos, true, true);
 
         if (pos && this.props.zoom) {
             const { zoom, xType } = this.props;
-            const area = this.graphArea();
 
-            GLOBAL_RULER = { xType, value: zoom[0] + (zoom[1] - zoom[0]) * pos[0] / area[0] };
+            GLOBAL_RULER = { xType, value: zoom[0] + (zoom[1] - zoom[0]) * pos[0] };
         }
     }
 
     private canvasMouseUp = (e: MouseEvent) => {
-        const downPos = this.input.downPos && this.positionInGraphSpace(this.input.downPos, false);
+        const innerBox = this.innerGraphBox();
+        const downPos = this.input.down && position.getPosIn(innerBox, this.input.down.pos);
         this.input = this.eventToInputData(this.input, e, 'up');
 
-        if (downPos && this.guiCanvasRef.current) {
-            const pos = this.positionInGraphSpace(this.input.pos, true);
+        if (downPos && this.canvasRef.current) {
+            const pos = position.getPosIn(innerBox, this.input.pos, true);
             const start = [ ...downPos ];
 
             if (pos && this.props.zoom) {
                 const zoom = this.props.zoom as number[];
 
-                const area = this.graphArea();
-
                 const compactX = Math.abs(pos[0] - start[0]) < COMPACT_RADIUS;
                 const compactY = Math.abs(pos[1] - start[1]) < COMPACT_RADIUS;
 
                 if (!compactX || !compactY) {
+                    const zoomRect = position.createRect(downPos, pos);
                     const [ relXS, relXE, relYS, relYE ] = [
-                        compactX ? 0 : Math.min(downPos[0], pos[0]) / area[0],
-                        compactX ? 1 : Math.max(downPos[0], pos[0]) / area[0],
-                        compactY ? 0 : 1.0 - (Math.max(downPos[1], pos[1]) / area[1]),
-                        compactY ? 1 : 1.0 - (Math.min(downPos[1], pos[1]) / area[1])
+                        compactX ? 0 : zoomRect.x / innerBox.width,
+                        compactX ? 1 : (zoomRect.x + zoomRect.width) / innerBox.width,
+                        compactY ? 0 : 1.0 - (zoomRect.y + zoomRect.height) / innerBox.height,
+                        compactY ? 1 : 1.0 - zoomRect.y / innerBox.height
                     ];
 
                     if (compactY && e.shiftKey) {
@@ -346,7 +358,7 @@ class GraphGui extends React.Component<Props, State> {
         return (
             <>
                 <canvas
-                    ref={this.guiCanvasRef}
+                    ref={this.canvasRef}
                     hidden={this.props.traces.length <= 0}
                     onMouseDown={this.canvasMouseDown}
                     onMouseMove={this.canvasRuler}
@@ -362,7 +374,7 @@ class GraphGui extends React.Component<Props, State> {
                     { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) }
                 </div>
                 <div className='xlabel' style={{ left: margin + yLabelSpace, right: margin, maxHeight: xLabelSpace }}>{xLabel}</div>
-                <div className='xticks' style={{ width: `calc(100% - ${2 * margin + yLabelSpace}px)`, top: `calc(100% - ${margin + xLabelSpace + X_TICK_SPACE}px)`, left: margin + yLabelSpace}}>
+                <div className='xticks' ref={this.xTicksRef} style={{ width: `calc(100% - ${2 * margin + yLabelSpace}px)`, top: `calc(100% - ${margin + xLabelSpace + X_TICK_SPACE}px)`, left: margin + yLabelSpace, height: X_TICK_SPACE }}>
                     {xTicks.map((tick, i) => (
                         <span className='tick' style={{ left: `${100 * tick.pos}%` }} key={i}>{this.getXTickString(tick.val)}</span>
                     ))}
@@ -370,7 +382,7 @@ class GraphGui extends React.Component<Props, State> {
                 <div className='ylabel' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, maxWidth: '1.8em', top: margin, whiteSpace: 'nowrap' }}>
                     <span style={{ transform: 'rotate(-90deg)' }} >{yLabel}</span>
                 </div>
-                <div className='yticks' style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, top: margin, right: `calc(100% - ${margin + yLabelSpace}px)`}}>
+                <div className='yticks' ref={this.yTicksRef} style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, top: margin, right: `calc(100% - ${margin + yLabelSpace}px)`}}>
                     {yTicks.map((tick, i) => (
                         <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{this.getYTickString(tick.val)}</span>
                     ))}
