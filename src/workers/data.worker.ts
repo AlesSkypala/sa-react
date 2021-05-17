@@ -100,7 +100,9 @@ export class DataWorkerProxy {
 
                 ids.push(trid);
 
-                if (!(trid in this.traces)) {
+                if (trid in this.traces) {
+                    result[trid] = this.traces[trid];
+                } else {
                     result[trid] = this.traces[trid] = plotting.create_trace(trid, trace?.xType, trace?.yType);
                 }
             }

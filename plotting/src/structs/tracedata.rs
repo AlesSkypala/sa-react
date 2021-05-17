@@ -53,7 +53,35 @@ impl TraceData {
     }
 
     pub fn push_segment(&mut self, seg: Box<dyn Segment>) {
-        // TODO: merge if overlap
+        // If this interval is already loaded, cancel the push
+        if self
+            .segments
+            .iter()
+            .any(|d| seg.from() >= d.from() && seg.to() <= d.to())
+        {
+            return;
+        }
+
+        // Remove contained segments
+        self.segments
+            .retain(|d| d.from() < seg.from() || d.to() > seg.to());
+
+        // Shrink overlaping border segments
+        if let Some(lead) = self
+            .segments
+            .iter_mut()
+            .find(|d| d.from() < seg.from() && d.to() > seg.from())
+        {
+            lead.shrink(lead.from(), seg.from());
+        }
+
+        if let Some(trail) = self
+            .segments
+            .iter_mut()
+            .find(|d| d.from() < seg.to() && d.to() > seg.to())
+        {
+            trail.shrink(seg.to(), trail.to());
+        }
 
         self.segments.push(seg);
         self.segments
@@ -65,7 +93,7 @@ pub struct DataSegment<X, Y> {
     pub from: RangePrec,
     pub to: RangePrec,
 
-    pub data: Box<[(X, Y)]>,
+    pub data: Vec<(X, Y)>,
 }
 
 pub trait SegmentNumeric {
@@ -116,6 +144,8 @@ pub trait Segment {
         x_orig: RangePrec,
         y_orig: RangePrec,
     ) -> Box<dyn Iterator<Item = (DataPrec, DataPrec)> + 'a>;
+
+    fn shrink(&mut self, from: RangePrec, to: RangePrec);
 }
 
 impl<X: SegmentNumeric + Copy, Y: SegmentNumeric + Copy> Segment for DataSegment<X, Y> {
@@ -168,5 +198,13 @@ impl<X: SegmentNumeric + Copy, Y: SegmentNumeric + Copy> Segment for DataSegment
 
     fn to(&self) -> RangePrec {
         self.to
+    }
+
+    fn shrink(&mut self, from: RangePrec, to: RangePrec) {
+        self.from = from;
+        self.to = to;
+
+        self.data
+            .retain(|(x, _)| x.to_rangeprec() >= from && x.to_rangeprec() <= to);
     }
 }

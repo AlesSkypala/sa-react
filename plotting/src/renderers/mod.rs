@@ -31,7 +31,12 @@ pub struct RenderJobResult {
 pub trait Renderer {
     fn render(&mut self, job: RenderJob) -> Result<RenderJobResult, JsValue>;
     fn size_changed(&mut self, width: u32, height: u32) -> Result<(), JsValue>;
-    fn create_bundle(&mut self, from: RangePrec, to: RangePrec, data: &[BundleEntry]) -> Result<usize, JsValue>;
+    fn create_bundle(
+        &mut self,
+        from: RangePrec,
+        to: RangePrec,
+        data: &[BundleEntry],
+    ) -> Result<usize, JsValue>;
     fn rebundle(
         &mut self,
         bundle: usize,
@@ -88,7 +93,13 @@ impl RendererContainer {
         self.renderer.create_bundle(from, to, &vec)
     }
 
-    pub fn rebundle(&mut self, bundle: usize, del: &[u8], add: &[u8], modif: &[u8]) -> Result<(), JsValue> {
+    pub fn rebundle(
+        &mut self,
+        bundle: usize,
+        del: &[u8],
+        add: &[u8],
+        modif: &[u8],
+    ) -> Result<(), JsValue> {
         let mut to_add = Vec::with_capacity(add.len() / 11);
         let mut to_mod = Vec::with_capacity(modif.len() / 11);
         let mut to_del = Vec::with_capacity(del.len() / size_of::<usize>());

@@ -71,7 +71,7 @@ impl WebGlRenderer {
             void main() {
                 gl_Position = vec4(vec2(-1,-1) + vec2(2,2) * (aVertexPosition * vec2(1,transform.x) + vec2(0, transform.y) - origin) / size, 0, 1);
             }
-            "#
+            "#,
         )?;
 
         let frag_shader = webgl_utils::compile_shader(
@@ -101,7 +101,7 @@ impl WebGlRenderer {
                 void main() {
                     gl_Position = vec4(vec2(-1, -1) + vec2(2, 2) * aVertexPosition / resolution, 0, 1);
                 }
-                "#
+                "#,
             )?;
 
             let frag_shader = webgl_utils::compile_shader(
@@ -299,10 +299,13 @@ impl WebGlRenderer {
         to: RangePrec,
         entry: &super::BundleEntry,
     ) -> Result<BufferEntry, JsValue> {
-        let buffer = match context.create_buffer() {
-            Some(b) => b,
-            _ => return Result::Err(JsValue::from_str("Failed to allocate a buffer, perhaps the WebGL context has been destroyed."))
-        };
+        let buffer =
+            match context.create_buffer() {
+                Some(b) => b,
+                _ => return Result::Err(JsValue::from_str(
+                    "Failed to allocate a buffer, perhaps the WebGL context has been destroyed.",
+                )),
+            };
 
         context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
         let points;
@@ -501,7 +504,7 @@ impl Renderer for WebGlRenderer {
         Ok(handle)
     }
 
-    fn dispose_bundle(&mut self, bundle: usize) -> Result<(), JsValue>{
+    fn dispose_bundle(&mut self, bundle: usize) -> Result<(), JsValue> {
         let bundle = self.bundles.remove(&bundle).unwrap();
 
         for row in bundle.buffers {
@@ -551,7 +554,8 @@ impl Drop for WebGlRenderer {
         let bundles: Vec<usize> = self.bundles.keys().cloned().collect();
 
         for handle in bundles {
-            self.dispose_bundle(handle).expect("Failed to dispose a bundle");
+            self.dispose_bundle(handle)
+                .expect("Failed to dispose a bundle");
         }
     }
 }

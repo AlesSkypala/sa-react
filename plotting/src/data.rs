@@ -173,16 +173,10 @@ pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box
     macro_rules! create_segment {
         ( $xt:ty, $yt:ty, $d:expr ) => {
             unsafe {
-                let data = Vec::<($xt, $yt)>::from_raw_parts(
-                    std::mem::transmute($d.leak().as_mut_ptr()),
-                    points,
-                    points,
-                )
-                .into_boxed_slice();
                 Box::new(crate::structs::DataSegment::<$xt, $yt> {
                     from: start,
                     to: cur,
-                    data,
+                    data: std::mem::transmute($d),
                 })
             }
         };
@@ -216,7 +210,6 @@ pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box
                 ("datetime", "double") => {
                     create_segment!(type_map!("datetime"), type_map!("double"), d)
                 }
-
                 _ => panic!("Unknown XY pair"),
             })
         });

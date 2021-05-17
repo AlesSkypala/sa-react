@@ -1,10 +1,10 @@
 use plotters::coord::{types::RangedCoordf32, Shift};
 use plotters::prelude::*;
 use plotters_canvas::OffscreenCanvasBackend;
-use wasm_bindgen::JsValue;
 use std::cell::RefCell;
 use std::ops::Range;
 use std::rc::Rc;
+use wasm_bindgen::JsValue;
 use web_sys::OffscreenCanvas;
 
 use crate::structs::{RangePrec, RenderJob};
