@@ -4,10 +4,32 @@ import { ModalPortal } from './components/Modals';
 
 import './App.css';
 import { connect } from 'react-redux';
-import { add_graphs, remove_graphs, graph_action, set_settings, ReduxProps } from './redux';
+import { add_graphs, remove_graphs, graph_action, set_settings, hide_graphs, ReduxProps } from './redux';
 import { GlobalHotKeys } from 'react-hotkeys';
 import { t } from './locale';
 import { AppSettings } from './redux/settings';
+
+
+export interface AppState {
+    locked: boolean;
+    focused: Graph['id'] | undefined;
+}
+
+const stateProps = (state: RootStore) => ({
+    graphs: state.graphs.items,
+    maxActive: state.settings.activeContexts,
+    settings: state.settings,
+});
+
+const dispatchProps = {
+    add_graphs,
+    remove_graphs,
+    graph_action,
+    set_settings,
+    hide_graphs,
+};
+
+export type AppProps = ReduxProps<typeof stateProps, typeof dispatchProps>;
 
 class App extends React.Component<AppProps, AppState> {
     public state: AppState = {
@@ -31,6 +53,14 @@ class App extends React.Component<AppProps, AppState> {
 
     public componentWillUnmount() {
         window.removeEventListener('beforeunload', this.handleUnload);
+    }
+
+    public componentDidUpdate() {
+        const visible = this.props.graphs.filter(g => g.visible);
+
+        if (visible.length > this.props.maxActive) {
+            this.props.hide_graphs(visible.slice(0, visible.length - this.props.maxActive).map(v => v.id));
+        }
     }
 
     handleUnload = (e: BeforeUnloadEvent) => {
@@ -72,7 +102,7 @@ class App extends React.Component<AppProps, AppState> {
         // const graph = this.props.graphs.find(g => g.id === this.state.focused);
         const makeAction = (action: TraceAction) => () => this.state.focused && this.props.graph_action({ id: this.state.focused, action });
 
-        const visibleGraphs = this.props.graphs.filter(g => g.visible);
+        const visibleGraphs = this.props.graphs.filter(g => g.visible).slice(0, this.props.maxActive);
 
         return (
             <>
@@ -113,24 +143,5 @@ class App extends React.Component<AppProps, AppState> {
         );
     }
 }
-
-export interface AppState {
-    locked: boolean;
-    focused: Graph['id'] | undefined;
-}
-
-const stateProps = (state: RootStore) => ({
-    graphs: state.graphs.items,
-    settings: state.settings,
-});
-
-const dispatchProps = {
-    add_graphs,
-    remove_graphs,
-    graph_action,
-    set_settings,
-};
-
-export type AppProps = ReduxProps<typeof stateProps, typeof dispatchProps>;
 
 export default connect(stateProps, dispatchProps)(App);

@@ -125,6 +125,7 @@ const en_lang = {
         settings: {
             title: 'Application settings',
             askGraphClose: 'Show confirmation dialog when closing individual graphs',
+            activeContexts: 'Max active contexts',
         }
     },
 

@@ -13,6 +13,8 @@ const dispatchProps = {
 
 const storeProps = (store: RootStore) => ({
     graphs: store.graphs.items,
+    activeCount: store.graphs.items.filter(g => g.visible).length,
+    activeMax: store.settings.activeContexts,
 });
 
 type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {
@@ -25,6 +27,9 @@ interface State { }
 class HiddenGraphs extends React.Component<Props, State> {
     render () {
         const hiddenGraphs = this.props.graphs.filter(g => !g.visible);
+        const { activeCount, activeMax } = this.props;
+
+        console.log(`${activeCount} / ${activeMax}`);
 
         if (this.props.collapsed) {
             return <Dropdown>
@@ -33,7 +38,7 @@ class HiddenGraphs extends React.Component<Props, State> {
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                     {hiddenGraphs.map(g =>
-                        <Dropdown.Item key={g.id} onClick={this.unhideGraphCallback(g.id)}>
+                        <Dropdown.Item key={g.id} onClick={this.unhideGraphCallback(g.id)} disabled={activeCount >= activeMax}>
                             <span className="hidden-graph-title">{g.title}</span>
                             <FontAwesomeIcon icon={faPlusSquare} className="hidden-graph-icon" />
                         </Dropdown.Item>
@@ -43,7 +48,7 @@ class HiddenGraphs extends React.Component<Props, State> {
         } else {
             return <>
                 {hiddenGraphs.map(g =>
-                    <div className="hidden-graph" key={g.id} onClick={this.unhideGraphCallback(g.id)}>
+                    <div className="hidden-graph" key={g.id} onClick={activeCount < activeMax ? this.unhideGraphCallback(g.id) : undefined}>
                         <span className="hidden-graph-title">{g.title}</span>
                         <FontAwesomeIcon icon={faPlusSquare} className="hidden-graph-icon" />
                     </div>

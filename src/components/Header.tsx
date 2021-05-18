@@ -26,6 +26,7 @@ const dispatchProps = {
 
 const storeProps = (store: RootStore) => ({
     graphs: store.graphs.items,
+    maxActive: store.settings.activeContexts,
     stacking: store.graphs.stacking,
 });
 
@@ -61,9 +62,14 @@ class HeaderComponent
                     return v;
                 }, [] as Graph['xRange'][]),
 
-
                 onAddGraphs: res => {
                     if (res) {
+                        let visibleSlots = this.props.maxActive - this.props.graphs.filter(g => g.visible).length;
+
+                        res[0].forEach(g => {
+                            g.visible = visibleSlots-- > 0;
+                        });
+
                         this.props.add_graphs(res[0]);
                         res[1].forEach(j => this.props.invoke_job(j));
                     }

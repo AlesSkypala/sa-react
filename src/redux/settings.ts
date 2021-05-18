@@ -3,12 +3,14 @@ import { SliceStateDraft } from './helpers';
 
 export type AppSettings = {
     askGraphClose: boolean,
+    activeContexts: number,
 }
 
 export const settingsSlice = createSlice({
     name: 'settings',
     initialState: {
         askGraphClose: true,
+        activeContexts: 4,
     } as AppSettings,
     reducers: {
         set_settings: (_state, action: PayloadAction<Partial<AppSettings>>) => {
