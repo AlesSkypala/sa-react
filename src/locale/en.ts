@@ -73,9 +73,9 @@ const en_lang = {
             prevPrevDay: '-2d',
             customDate: 'Custom',
 
-            day: 'Day',
-            week: 'Week',
-            month: 'Month',
+            day: '24h',
+            week: '7d',
+            month: '28d',
             customRange: 'Custom',
             quarter: 'Quarter',
             halfYear: 'Half year',
@@ -154,6 +154,7 @@ const en_lang = {
         items: 'Items: {{count}}',
         id: 'ID: {{id}}',
         path: 'Path: {{path}}',
+        favorites: 'Favorites',
     }
 };
 

@@ -5,13 +5,14 @@ import { trashAll } from '../assets/icons/trash-all';
 import { Dropdown, Nav, NavItem, NavLink } from 'react-bootstrap';
 import { connect,  set_stacking, add_graphs, hide_graphs, ReduxProps, remove_graphs, invoke_job } from '../redux';
 import { DialogService } from '../services';
-import { AddGraphModal, ConfirmModal } from './Modals';
+import { ConfirmModal } from './Modals';
 import { t } from '../locale';
 
 import './Header.css';
 import { Args } from './Modals/AddGraphModal';
 import HiddenGraphs from './HiddenGraphs';
 import SettingsModal from './Modals/SettingsModal';
+import AddGraphModal from './Modals/AddGraphModal';
 
 const noop = () => undefined;
 

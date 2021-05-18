@@ -15,7 +15,9 @@ export {
 } from './jobs';
 
 export {
-    set_settings
+    set_settings,
+    favorite_dataset,
+    unfavorite_dataset,
 } from './settings';
 
 export type { SliceStateDraft, SliceStateType, DispatchProps, StateProps, ReduxProps } from './helpers';

@@ -2,7 +2,6 @@ export { default as ModalPortal } from './ModalPortal';
 export { default as ModalComponent } from './ModalComponent';
 export type { Props as ModalProps } from './ModalComponent';
 
-export { default as AddGraphModal } from './AddGraphModal';
 export type { ImportResult } from './AddGraphModal';
 export { default as InfoModal } from './InfoModal';
 export { default as ConfirmModal } from './ConfirmationModal';

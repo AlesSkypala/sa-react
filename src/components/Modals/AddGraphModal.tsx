@@ -61,15 +61,6 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         return t(`datasets.titles.${sourceType}.${id}`, id);
     }
 
-    getDescription = (sourceType: DataSource['type'], id: Trace['id']) => {
-        const result = t(`datasets.descriptions.${sourceType}.${id}`, '');
-
-        if (result !== '')
-            return result;
-        else
-            return undefined;
-    }
-
     onRangeChange = (range: Graph['xRange']) => {
         PREV_TIMERANGE = range;
         this.setState({ selectedRange: range });
@@ -294,49 +285,39 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         const availableRange = selectedSource?.datasets[0].dataRange;
 
         return (
-            <Form>
-                <Row className='separated'>
-                    <Form.Group as={Col} className='d-flex flex-column'>
-                        <Form.Label>{t('modals.addGraph.source')}</Form.Label>
-                        <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100'>
-                            {this.state.sources.map(s => (
-                                <option disabled={s.datasets.length <= 0} key={s.id} value={s.id} title={this.generateSourceTooltip(s)}>{s.name}</option>
-                            ))}
-                        </Form.Control>
-                        <small className='mt-2'>{t('datasets.path', { path: selectedSource && 'path' in selectedSource.metadata ? selectedSource.metadata['path'].replaceAll('/', '\\') : 'none' })}</small>
-                    </Form.Group>
-                    <Form.Group as={Col} className='d-flex flex-column'>
-                        <Form.Label>{t('modals.addGraph.range')}</Form.Label>
-                        <DateTimeRange
-                            bounds={availableRange ?? defaultRange}
-                            value={selectedRange}
+            <Row className='separated'>
+                <Form.Group as={Col} md={3} className='d-flex flex-column'>
+                    <Form.Label>{t('modals.addGraph.source')}</Form.Label>
+                    <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100'>
+                        {this.state.sources.map(s => (
+                            <option disabled={s.datasets.length <= 0} key={s.id} value={s.id} title={this.generateSourceTooltip(s)}>{s.name}</option>
+                        ))}
+                    </Form.Control>
+                    <small className='mt-2'>{t('datasets.path', { path: selectedSource && 'path' in selectedSource.metadata ? selectedSource.metadata['path'].replaceAll('/', '\\') : 'none' })}</small>
+                </Form.Group>
+                <Form.Group as={Col} md={4} className='d-flex flex-column'>
+                    <Form.Label>{t('modals.addGraph.range')}</Form.Label>
+                    <DateTimeRange
+                        bounds={availableRange ?? defaultRange}
+                        value={selectedRange}
 
-                            disabled={timeDisabled}
-                            onChange={this.onRangeChange}
-                        />
-                    </Form.Group>
-                    <Form.Group as={Col} className='d-flex flex-column' style={{ overflowX: 'hidden', flexBasis: 0 }}>
-                        <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
-                        {selectedSource &&
-                            <DatasetTree
-                                disabled={setsDisabled}
-                                source={selectedSource}
-                                selected={(selectedDatasets ?? []).map(ds => ds.id)}
+                        disabled={timeDisabled}
+                        onChange={this.onRangeChange}
+                    />
+                </Form.Group>
+                <Form.Group as={Col} md={5} className='d-flex flex-column'>
+                    <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
+                    {selectedSource &&
+                        <DatasetTree
+                            disabled={setsDisabled}
+                            source={selectedSource}
+                            selected={(selectedDatasets ?? []).map(ds => ds.id)}
 
-                                onChange={this.onSetSelected}
-                                onDoubleClick={this.onSetQuick}
-                            />}
-                    </Form.Group>
-                    <Form.Group as={Col} className='d-flex flex-column'>
-                        <Form.Label className='mt-3'>{t('modals.addGraph.description')}</Form.Label>
-                        <div style={{ flexBasis: 0, flexGrow: 1, overflowY: 'scroll' }}>
-                            {selectedSource && selectedDatasets?.map(t => [ t.id, this.getDescription(selectedSource.type, t.id) ]).filter(t => t[1]).map(t => (
-                                <Form.Text key={t[0]}>{t[1]}</Form.Text>
-                            ))}
-                        </div>
-                    </Form.Group>
-                </Row>
-            </Form>
+                            onChange={this.onSetSelected}
+                            onDoubleClick={this.onSetQuick}
+                        />}
+                </Form.Group>
+            </Row>
         );
     }
 

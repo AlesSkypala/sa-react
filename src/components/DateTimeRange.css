@@ -4,10 +4,6 @@
     align-items: stretch;
 }
 
-.react-calendar {
-    width: 320px;
-}
-
 .react-calendar.disabled {
     opacity: 0.4;
 }

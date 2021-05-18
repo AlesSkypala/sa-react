@@ -12,49 +12,30 @@ import './DateTimeRange.css';
 
 // TODO: Time select
 // const toTimeString = (date: Date) => `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-const clamp = (date: Date, min: Date, max: Date) => {
-    if (min > date) return min;
-    if (max < date) return max;
-    return date;
-};
+// const clamp = (date: Date, min: Date, max: Date) => {
+//     if (min > date) return min;
+//     if (max < date) return max;
+//     return date;
+// };
+
+const numclamp = (val: number, min: number, max: number) => Math.max(Math.min(val, max), min);
 
 const dateFormat = 'HH:mm DD.MM.YYYY';
 
 class DateTimeRange
     extends React.PureComponent<Props, State> {
     public state: State = { 
-        calendarMode: 'disabled',
         activeStartDate: undefined,
         view: 'month',
     };
 
     onChange = (value: Date | Date[]) => {
-        this.props.onChange && Array.isArray(value) && this.props.onChange(value.map(dateToTimestamp) as Graph['xRange']);
+        const { bounds } = this.props;
+        const minValue = bounds[0][0] as number;
+        const maxValue = bounds[bounds.length - 1][1] as number;
+
+        this.props.onChange && Array.isArray(value) && this.props.onChange(value.map(v => numclamp(dateToTimestamp(v), minValue, maxValue)) as Graph['xRange']);
     }
-    onTimeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const date = event.currentTarget.valueAsDate;
-    
-        if (!date || !this.props.onChange || !this.props.value) {
-            return;
-        }
-
-        const minDate = parseTimestamp(this.props.bounds.map(b => b[0]).reduce((acc: number, v) => Math.min(acc, v as number), Number.MAX_SAFE_INTEGER));
-        const maxDate = parseTimestamp(this.props.bounds.map(b => b[1]).reduce((acc: number, v) => Math.max(acc, v as number), Number.MIN_SAFE_INTEGER));
-
-        const [ from, to ] = this.props.value.map(parseTimestamp);
-
-        if (event.currentTarget.dataset.part === 'from') {
-            date.setFullYear(from.getFullYear());
-            date.setMonth(from.getMonth());
-            date.setDate(from.getDate());
-            this.props.onChange([ minDate && maxDate ? clamp(date, minDate, maxDate) : date, to ].map(dateToTimestamp) as Graph['xRange']);
-        } else {
-            date.setFullYear(to.getFullYear());
-            date.setMonth(to.getMonth());
-            date.setDate(to.getDate());
-            this.props.onChange([ from, minDate && maxDate ? clamp(date, minDate, maxDate) : date ].map(dateToTimestamp) as Graph['xRange']);
-        }
-    };
 
     getRangeString = () => {
         if (!this.props.value) return t('modals.addGraph.noRange');
@@ -91,17 +72,17 @@ class DateTimeRange
             ]);
         }
 
-        this.setState({ calendarMode: 'disabled', view: 'month', activeStartDate: skipTo ?? this.state.activeStartDate });
+        this.setState({ view: 'month', activeStartDate: skipTo ?? this.state.activeStartDate });
     };
 
     isTileDisabled = (props: CalendarTileProperties & { activeStartDate: Date; }) => {
+        if (props.view !== 'month') return false;
+
         const startStamp = dateToTimestamp(props.date);
-        const endStamp   = startStamp + 24 * 60; // TODO: !
+        const endStamp   = startStamp + 24 * 60 - 1; // TODO: !
         return !rangeIntersectsBounds([ startStamp, endStamp ], this.props.bounds as [number, number][]);
     };
 
-    customRange = () => this.setState({ calendarMode: 'range' });
-    customDate = () => this.setState({ calendarMode: 'day' });
     getDays = (days: number) => days * 24 * 60;
     getRelDate = (days: number) => {
         const { bounds } = this.props;
@@ -118,8 +99,8 @@ class DateTimeRange
     onActiveStartDateChange = (props: ViewCallbackProperties) => this.setState({ activeStartDate: props.activeStartDate });
 
     public render() {
-        const { value, disabled, graphs } = this.props;
-        const { calendarMode } = this.state;
+        const { value, disabled, graphs, bounds } = this.props;
+        const maxDate = parseTimestamp(bounds[bounds.length - 1][1] as number);
 
         return (
             <div className='range-picker'>
@@ -128,14 +109,15 @@ class DateTimeRange
                     <Button onClick={this.onRangeButton} {...this.getRelDate(0)}>{t('modals.addGraph.lastDay')}</Button>
                     <Button onClick={this.onRangeButton} {...this.getRelDate(1)}>{t('modals.addGraph.prevDay')}</Button>
                     <Button onClick={this.onRangeButton} {...this.getRelDate(2)}>{t('modals.addGraph.prevPrevDay')}</Button>
-                    <Button disabled={disabled} onClick={this.customDate}>{t('modals.addGraph.customDate')}</Button>
+                    <Button onClick={this.onRangeButton} {...this.getRelDate(3)}>{t('modals.addGraph.prevPrevDay')}</Button>
+                    {/* <Button disabled={disabled} onClick={this.customDate}>{t('modals.addGraph.customDate')}</Button> */}
                 </Dropdown>
 
                 <Dropdown as={ButtonGroup} className='mb-2'>
                     <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(1)}>{t('modals.addGraph.day')}</Button>
                     <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(7)}>{t('modals.addGraph.week')}</Button>
                     <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(28)}>{t('modals.addGraph.month')}</Button>
-                    <Button disabled={disabled} variant='warning' onClick={this.customRange}>{t('modals.addGraph.customRange')}</Button>
+                    {/* <Button disabled={disabled} variant='warning' onClick={this.customRange}>{t('modals.addGraph.customRange')}</Button> */}
 
                     <Dropdown.Toggle disabled={disabled} variant='warning' />
                     <Dropdown.Menu>
@@ -155,16 +137,16 @@ class DateTimeRange
                 </Dropdown>
 
                 <Calendar
-                    className={calendarMode === 'disabled' ? 'disabled' : undefined}
                     value={value?.map(v => parseTimestamp(v))}
                     returnValue="range"
-                    selectRange={calendarMode === 'range'}
+                    selectRange
                     tileDisabled={this.isTileDisabled}
+                    maxDate={maxDate}
                     
                     activeStartDate={this.state.activeStartDate ?? (value ? parseTimestamp(value[1]) : undefined)}
                     view={this.state.view}
 
-                    onChange={calendarMode !== 'disabled' ? this.onChange : undefined}
+                    onChange={this.onChange}
                     onActiveStartDateChange={this.onActiveStartDateChange}
                     onViewChange={this.onViewChange}
                 />
@@ -189,7 +171,6 @@ export type Props = StateProps<typeof stateProps> & {
 }
 
 export interface State {
-    calendarMode: 'day' | 'range' | 'disabled',
     activeStartDate: Date | undefined,
     view: Detail,
 }
