@@ -34,6 +34,7 @@ const storeProps = (store: RootStore) => ({
 type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {
     layoutUnlocked?: boolean;
     onToggleLock?(): void;
+    onChangeFocus?(id: Graph['id']): void;
 }
 
 interface State {
@@ -67,12 +68,17 @@ class HeaderComponent
                     if (res) {
                         let visibleSlots = this.props.maxActive - this.props.graphs.filter(g => g.visible).length;
 
+                        let lastVisible: Graph['id'] | undefined = undefined;
+
                         res[0].forEach(g => {
                             g.visible = visibleSlots-- > 0;
+                            if (g.visible) lastVisible = g.id;
                         });
 
                         this.props.add_graphs(res[0]);
                         res[1].forEach(j => this.props.invoke_job(j));
+
+                        lastVisible && this.props.onChangeFocus && this.props.onChangeFocus(lastVisible);
                     }
                 }
             } as Args

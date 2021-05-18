@@ -29,8 +29,6 @@ class HiddenGraphs extends React.Component<Props, State> {
         const hiddenGraphs = this.props.graphs.filter(g => !g.visible);
         const { activeCount, activeMax } = this.props;
 
-        console.log(`${activeCount} / ${activeMax}`);
-
         if (this.props.collapsed) {
             return <Dropdown>
                 <Dropdown.Toggle className='text-white'>

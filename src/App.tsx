@@ -98,6 +98,8 @@ class App extends React.Component<AppProps, AppState> {
         this.setState({ focused: graphId });
     }
 
+    changeFocus = (id: Graph['id']) => this.setState({ focused: id });
+
     public render(): React.ReactNode {
         // const graph = this.props.graphs.find(g => g.id === this.state.focused);
         const makeAction = (action: TraceAction) => () => this.state.focused && this.props.graph_action({ id: this.state.focused, action });
@@ -109,6 +111,7 @@ class App extends React.Component<AppProps, AppState> {
                 <Header
                     layoutUnlocked={!this.state.locked}
                     onToggleLock={this.toggleLock}
+                    onChangeFocus={this.changeFocus}
                 />
                 <SideMenu
                     selectedGraph={this.props.graphs.find(g => g.id === this.state.focused)}
