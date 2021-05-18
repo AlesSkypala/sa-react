@@ -220,6 +220,24 @@ class GraphGui extends React.Component<Props, State> {
             ctxt.lineTo(absRulerPos, margin + innerBox.height);
             ctxt.stroke();
             ctxt.restore();
+
+
+            if (position.contains(innerBox, this.input.pos)) {
+                const outerBox = this.outerGraphBox();
+                const outerPos = position.getPosIn(outerBox, this.input.pos, true, false);
+                if (!outerPos) return;
+
+                const text = `x = ${this.getXTickString(ruler.value)}`;
+                const measure = ctxt.measureText(text);
+
+                ctxt.save();
+                if (measure.width + absRulerPos + 8 >= outerBox.width) {
+                    ctxt.strokeText(text, absRulerPos - 8 - measure.width, outerPos[1]);
+                } else {
+                    ctxt.strokeText(text, 8 + absRulerPos, innerBox.y - outerBox.y + 12);
+                }
+                ctxt.restore();
+            }
         }
     }
 
