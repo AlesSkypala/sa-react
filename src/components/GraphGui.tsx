@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { icon } from '../utils/icon';
-import { faDesktop, faArrowsAltH } from '@fortawesome/free-solid-svg-icons';
+import { faDesktop, faArrowsAltH, faChartLine } from '@fortawesome/free-solid-svg-icons';
 import moment from 'moment';
 import { parseTimestamp } from '../utils/datetime';
 import { timestampToLongDate } from '../locale/date';
@@ -516,7 +516,8 @@ class GraphGui extends React.Component<Props, State> {
                 />
                 <div className='graph-details'>
                     { icon(faDesktop)   }{ metadata.sourceNames.join('; ') } <br/>
-                    { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) }
+                    { icon(faArrowsAltH) }{ timestampToLongDate(xRange[0]) } – { timestampToLongDate(xRange[1]) } <br/>
+                    { icon(faChartLine) }{ this.props.traces.filter(t => t.active).length }/{ this.props.traces.length }
                 </div>
                 <div className='xlabel' style={{ left: margin + yLabelSpace, right: margin, maxHeight: xLabelSpace }}>{xLabel}</div>
                 <div className='xticks' ref={this.xTicksRef} style={{ width: `calc(100% - ${2 * margin + yLabelSpace}px)`, top: `calc(100% - ${margin + xLabelSpace + X_TICK_SPACE}px)`, left: margin + yLabelSpace, height: X_TICK_SPACE }} onMouseDown={this.canvasMouseDown}>
