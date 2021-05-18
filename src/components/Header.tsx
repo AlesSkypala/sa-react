@@ -15,8 +15,36 @@ import SettingsModal from './Modals/SettingsModal';
 
 const noop = () => undefined;
 
+
+const dispatchProps = {
+    set_stacking,
+    add_graphs,
+    remove_graphs,
+    hide_graphs,
+    invoke_job,
+};
+
+const storeProps = (store: RootStore) => ({
+    graphs: store.graphs.items,
+    stacking: store.graphs.stacking,
+});
+
+type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {
+    layoutUnlocked?: boolean;
+    onToggleLock?(): void;
+}
+
+interface State {
+    hiddenGraphsCollapsed: boolean
+}
+
+
 class HeaderComponent
     extends React.Component<Props, State> {
+
+    state = { hiddenGraphsCollapsed: false };
+    spacingRef = React.createRef<HTMLDivElement>();
+    numberOfHiddenGraphs = 0;
 
     addGraph = () =>
         DialogService.open(
@@ -62,7 +90,7 @@ class HeaderComponent
             },
         );
 
-    openSettings = () => 
+    openSettings = () =>
         DialogService.open(
             SettingsModal,
             // eslint-disable-next-line @typescript-eslint/no-empty-function
@@ -70,8 +98,30 @@ class HeaderComponent
             {},
         );
 
+    manageCollapsing = () => {
+        // if number of hidden graphs decreased, try unhiding
+        const numberOfHiddenGraphs = this.props.graphs.filter(g => !g.visible).length;
+        if (numberOfHiddenGraphs < this.numberOfHiddenGraphs) this.setState({ hiddenGraphsCollapsed: false });
+        this.numberOfHiddenGraphs = numberOfHiddenGraphs;
+
+        // hide if overflowing
+        requestAnimationFrame(() => {
+            if (!this.state.hiddenGraphsCollapsed) {
+                const width = this.spacingRef.current?.getBoundingClientRect()?.width;
+
+                if (width !== undefined && width < 5) {
+                    this.setState({
+                        hiddenGraphsCollapsed: true
+                    });
+                }
+            }
+        });
+    }
+
     public render() {
         const {graphs, stacking, layoutUnlocked} = this.props;
+        this.manageCollapsing();
+
         return (
             <header className="main-header">
 
@@ -82,12 +132,12 @@ class HeaderComponent
 
                 <nav className="navbar navbar-static-top navbar-expand-md" role="navigation">
                     <div className="collapse navbar-collapse show">
-                        <Nav navbar className='w-100 mw-100 align-items-center'>
+                        <Nav navbar className='w-100 mw-100 align-items-center flex-nowrap'>
                             <NavItem>
-                                <HiddenGraphs />
+                                <HiddenGraphs collapsed={this.state.hiddenGraphsCollapsed} />
                             </NavItem>
 
-                            <div className="flex-grow-1" />
+                            <div className="flex-grow-1" ref={this.spacingRef} />
 
                             {this.props.children}
                             <NavItem>
@@ -134,25 +184,5 @@ class HeaderComponent
         );
     }
 }
-
-const dispatchProps = {
-    set_stacking,
-    add_graphs,
-    remove_graphs,
-    hide_graphs,
-    invoke_job,
-};
-
-const storeProps = (store: RootStore) => ({
-    graphs: store.graphs.items,
-    stacking: store.graphs.stacking,
-});
-
-type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {
-    layoutUnlocked?: boolean;
-    onToggleLock?(): void;
-}
-
-interface State { }
 
 export default connect(storeProps, dispatchProps)(HeaderComponent);

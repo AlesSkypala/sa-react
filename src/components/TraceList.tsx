@@ -78,7 +78,6 @@ class TraceList extends React.PureComponent<Props, State> {
                 }
             }
 
-            console.log('Aight imma download them ldev names');
             const sources = this.props.traces.map(t => t.id.split('::')[0])
                 .filter((v, i, a) => a.indexOf(v) === i); // Select distinct sources
 
@@ -97,8 +96,6 @@ class TraceList extends React.PureComponent<Props, State> {
             }
 
             this.setState({ ldevMap });
-        } else {
-            console.log('Nah bro, I don\'t feel like downloading ldev names');
         }
     }
 

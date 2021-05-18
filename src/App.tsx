@@ -22,7 +22,7 @@ class App extends React.Component<AppProps, AppState> {
         if (saved) {
             const settings = JSON.parse(saved) as Partial<AppSettings>;
             props.set_settings(settings);
-        } 
+        }
     }
 
     public componentDidMount() {
@@ -73,9 +73,6 @@ class App extends React.Component<AppProps, AppState> {
         const makeAction = (action: TraceAction) => () => this.state.focused && this.props.graph_action({ id: this.state.focused, action });
 
         const visibleGraphs = this.props.graphs.filter(g => g.visible);
-
-        console.log('Hewwo dear sir, uwu, your visible graphs are:');
-        visibleGraphs.forEach(g => console.log(g.title));
 
         return (
             <>
