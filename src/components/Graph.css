@@ -68,7 +68,15 @@
 
 .graph-content :is(.xticks, .yticks) {
     position: absolute;
-    pointer-events: none;
+    user-select: none;
+}
+
+.graph-content .xticks {
+    cursor: col-resize;
+}
+
+.graph-content .yticks {
+    cursor: row-resize;
 }
 
 .graph-content .tick {

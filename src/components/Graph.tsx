@@ -340,7 +340,7 @@ class GraphComponent
 
         const menuShow = useContextMenu({ id: `graph-${this.props.id}-menu` }).show;
 
-        const onContextMenu = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        const onContextMenu = (e: MouseEvent) => {
             e.preventDefault();
             menuShow(e);
         };

@@ -45,3 +45,49 @@ export function createRect(a: Vec2Like, b: Vec2Like): Rect2Like {
         height: botRight[1] - topLeft[1],
     };
 }
+
+export function add(a: Vec2Like, b: Vec2Like): Vec2 {
+    return [ a[0] + b[0], a[1] + b[1] ];
+}
+
+export function sub(a: Vec2Like, b: Vec2Like): Vec2 {
+    return [ a[0] - b[0], a[1] - b[1] ];
+}
+
+export function dot(a: Vec2Like, b: Vec2Like): number {
+    return a[0] * b[0] + a[1] * b[1];
+}
+
+export function mul(a: Vec2Like, b: Vec2Like): Vec2 {
+    return [ a[0] * b[0], a[1] * b[1] ];
+}
+
+export function div(a: Vec2Like, b: Vec2Like): Vec2 {
+    return [ a[0] / b[0], a[1] / b[1] ];
+}
+
+export function scale(a: Vec2Like, scalar: number): Vec2 {
+    return [ a[0] * scalar, a[1] * scalar ];
+}
+
+export function normsq(a: Vec2Like): number {
+    return dot(a, a);
+}
+
+export function norm(a: Vec2Like): number {
+    return Math.sqrt(dot(a, a));
+}
+
+export function normalise(a: Vec2Like): Vec2 {
+    return scale(a, 1 / norm(a));
+}
+
+export function rotate(a: Vec2Like, angleRad: number): Vec2 {
+    const c = Math.cos(angleRad);
+    const s = Math.sin(angleRad);
+
+    return [
+        a[0] * c - a[1] * s,
+        a[0] * s + a[1] * c
+    ];
+}
