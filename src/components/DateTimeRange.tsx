@@ -252,7 +252,7 @@ type DayPopoverProps = {
 };
 
 type DayPopoverState = {
-    hover: boolean;
+    open: boolean;
 
     fromVal: number,
     toVal: number,
@@ -260,7 +260,8 @@ type DayPopoverState = {
 
 class DayPopover extends React.Component<DayPopoverProps, DayPopoverState> {
     public state: DayPopoverState = {
-        hover: false,
+        open: false,
+
         fromVal: 0,
         toVal: 24 * 60 - 1,
     }
@@ -283,8 +284,8 @@ class DayPopover extends React.Component<DayPopoverProps, DayPopoverState> {
         }
     }
 
-    onHover = () => this.setState({ hover: true });
-    onUnhover = () => this.setState({ hover: false });
+    onHover =   () => this.setState({ open: true });
+    onUnhover = () => this.setState({ open: false });
 
     onFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         this.setState({ fromVal: Math.min(e.currentTarget.valueAsNumber, this.state.toVal) });
@@ -313,11 +314,11 @@ class DayPopover extends React.Component<DayPopoverProps, DayPopoverState> {
         const { fromVal, toVal } = this.state;
 
         return (
-            <div onPointerMove={this.onHover} ref={this.ref} onMouseUp={this.blockEvent} onClick={this.blockEvent}>
+            <div onPointerEnter={this.onHover} onPointerLeave={this.onUnhover} ref={this.ref}>
                 {date.getDate()}
-                <Overlay target={this.ref.current} show={this.state.hover} placement='top' rootClose rootCloseEvent='click' onHide={this.onUnhover}>
+                <Overlay target={this.ref.current} show={this.state.open} placement='top'>
                     {props => (
-                        <Popover {...props} id={id}>
+                        <Popover {...props} id={id} onClick={this.blockEvent}>
                             <Popover.Content>
                                 {from && (<Form.Control
                                     type='range'
