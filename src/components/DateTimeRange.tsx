@@ -1,8 +1,8 @@
 import * as React from 'react';
-import { Button, ButtonGroup, Dropdown, Form } from 'react-bootstrap';
+import { Button, ButtonGroup, Dropdown, Form, Overlay, Popover } from 'react-bootstrap';
 import { parseTimestamp, dateToTimestamp } from '../utils/datetime';
 import * as DateTime from '../utils/datetime';
-import DayPicker from 'react-day-picker';
+import DayPicker, { DayModifiers } from 'react-day-picker';
 import { t } from '../locale';
 import moment from 'moment';
 import { connect, StateProps } from '../redux';
@@ -11,8 +11,26 @@ import 'react-day-picker/lib/style.css';
 import './DateTimeRange.css';
 
 const numclamp = (val: number, min: number, max: number) => Math.max(Math.min(val, max), min);
-
 const dateFormat = 'HH:mm DD.MM.YYYY';
+
+const stateProps = (state: RootStore) => ({
+    graphs: state.graphs.items,
+});
+
+const dispatchProps = { };
+
+export type Props = StateProps<typeof stateProps> & {
+    value?: Graph['xRange'];
+    bounds: Dataset['dataRange'];
+
+    disabled?: boolean;
+
+    onChange?(value: Graph['xRange']): void;
+}
+
+export interface State {
+    month: Date,
+}
 
 class DateTimeRange
     extends React.PureComponent<Props, State> {
@@ -106,6 +124,16 @@ class DateTimeRange
     }
 
     onMonthChange = (month: Date) => this.setState({ month });
+    onTimeChange = (type: 'from' | 'to', minute: number) => {
+        const value = this.props.value as [ number, number ];
+
+        if (value && this.props.onChange) {
+            const date = parseTimestamp(value[type === 'from' ? 0 : 1]);
+            date.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
+
+            this.props.onChange(type === 'from' ? [ dateToTimestamp(date), value[1] ] : [ value[0], dateToTimestamp(date) ]);
+        }
+    }
 
     public* generateDisabled() {
         const bounds = this.props.bounds as [number, number][];
@@ -135,6 +163,23 @@ class DateTimeRange
         date.setMonth(date.getMonth());
 
         return date;
+    }
+
+    renderDay = (date: Date, modifiers: DayModifiers) => {
+        if (modifiers.from || modifiers.to && !modifiers.outside) {
+            return (
+                <DayPopover
+                    date={date}
+                    from={Boolean(modifiers.from)}
+                    to={Boolean(modifiers.to)}
+                    bounds={this.props.bounds}
+                    value={this.props.value}
+                    onChange={this.onTimeChange}
+                />
+            );
+        }
+
+        return date.getDate();
     }
 
     public render() {
@@ -184,6 +229,7 @@ class DateTimeRange
 
                     todayButton='today'
                     firstDayOfWeek={1}
+                    renderDay={this.renderDay}
 
                     month={DateTime.clampDate(this.state.month, this.fromMonth(), this.toMonth())}
                     onMonthChange={this.onMonthChange}
@@ -194,23 +240,110 @@ class DateTimeRange
     }
 }
 
-const stateProps = (state: RootStore) => ({
-    graphs: state.graphs.items,
-});
+type DayPopoverProps = {
+    date: Date,
+    bounds: Props['bounds'],
 
-const dispatchProps = { };
+    from: boolean,
+    to: boolean,
 
-export type Props = StateProps<typeof stateProps> & {
-    value?: Graph['xRange'];
-    bounds: Dataset['dataRange'];
+    value: Props['value']
+    onChange?(type: 'from' | 'to', value: number): void;
+};
 
-    disabled?: boolean;
+type DayPopoverState = {
+    hover: boolean;
 
-    onChange?(value: Graph['xRange']): void;
+    fromVal: number,
+    toVal: number,
 }
 
-export interface State {
-    month: Date,
+class DayPopover extends React.Component<DayPopoverProps, DayPopoverState> {
+    public state: DayPopoverState = {
+        hover: false,
+        fromVal: 0,
+        toVal: 24 * 60 - 1,
+    }
+
+    private ref = React.createRef<HTMLDivElement>();
+
+    componentDidMount() {
+        this.componentDidUpdate({ ...this.props, value: [0,0] });
+    }
+
+    componentDidUpdate(prevProps: DayPopoverProps) {
+        if (prevProps.value !== this.props.value) {
+            let [ fromVal, toVal ] = this.props.value ? 
+                this.props.value.map((v: number) => parseTimestamp(v)).map(d => d.getHours() * 60 + d.getMinutes()) : [0, 24 * 60 - 1];
+
+            if (!this.props.from) { fromVal = 0; }
+            if (!this.props.to) { toVal = 24 * 60 - 1; }
+            
+            this.setState({ fromVal, toVal });
+        }
+    }
+
+    onHover = () => this.setState({ hover: true });
+    onUnhover = () => this.setState({ hover: false });
+
+    onFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        this.setState({ fromVal: Math.min(e.currentTarget.valueAsNumber, this.state.toVal) });
+    }
+
+    onToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        this.setState({ toVal: Math.max(e.currentTarget.valueAsNumber, this.state.fromVal) });
+    }
+
+    onDropFrom = () => {
+        const { onChange, from } = this.props;
+
+        from && onChange && onChange('from', this.state.fromVal);
+    }
+    onDropTo = () => {
+        const { onChange, to } = this.props;
+
+        to && onChange && onChange('to', this.state.toVal);
+    }
+
+    blockEvent = (e: React.MouseEvent) => { e.stopPropagation(); }
+
+    public render() {
+        const { from, to, date } = this.props;
+        const id = `time-sel${from ? '-from' : ''}${to ? '-to' : ''}`;
+        const { fromVal, toVal } = this.state;
+
+        return (
+            <div onPointerMove={this.onHover} ref={this.ref} onMouseUp={this.blockEvent} onClick={this.blockEvent}>
+                {date.getDate()}
+                <Overlay target={this.ref.current} show={this.state.hover} placement='top' rootClose rootCloseEvent='click' onHide={this.onUnhover}>
+                    {props => (
+                        <Popover {...props} id={id}>
+                            <Popover.Content>
+                                {from && (<Form.Control
+                                    type='range'
+                                    min={0}
+                                    max={24 * 60 - 1}
+
+                                    value={fromVal}
+                                    onChange={this.onFromChange}
+                                    onPointerUp={this.onDropFrom}
+                                />)}
+                                {to && (<Form.Control
+                                    type='range'
+                                    min={0}
+                                    max={24 * 60 - 1}
+
+                                    value={toVal}
+                                    onChange={this.onToChange}
+                                    onPointerUp={this.onDropTo}
+                                />)}
+                            </Popover.Content>
+                        </Popover>
+                    )}
+                </Overlay>
+            </div>
+        );
+    }
 }
 
 export default connect(stateProps, dispatchProps)(DateTimeRange);
