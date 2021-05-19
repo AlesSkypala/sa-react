@@ -15,6 +15,7 @@ import './AddGraphModal.css';
 
 let PREV_SOURCE: DataSource['id'] | undefined = undefined;
 let PREV_TIMERANGE: Graph['xRange'] | undefined = undefined;
+let PREV_DATASETS: Dataset['id'][] | undefined = undefined;
 
 export interface Args {
     ranges: Graph['xRange'][];
@@ -41,10 +42,12 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
 
     public componentDidMount(): void {
         DataService.getSources().then((sources: DataSource[]) => {
+            const prevSource = sources.find(s => s.id === PREV_SOURCE);
             this.setState({
                 sources,
-                selectedSource: sources.find(s => s.id === PREV_SOURCE),
-                selectedRange: PREV_TIMERANGE
+                selectedSource: prevSource,
+                selectedRange: PREV_TIMERANGE,
+                selectedDatasets: prevSource && PREV_DATASETS ? prevSource.datasets.filter(d => PREV_DATASETS?.includes(d.id)) : undefined,
             });
         });
     }
@@ -91,7 +94,9 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
 
     onSetSelected = (val: Dataset['id'][]) => {
         if (this.state.selectedSource) {
-            this.setState({ selectedDatasets: this.state.selectedSource.datasets.filter(ds => val.includes(ds.id)) });
+            const selected = this.state.selectedSource.datasets.filter(ds => val.includes(ds.id));
+            PREV_DATASETS = selected.map(d => d.id);
+            this.setState({ selectedDatasets: selected });
         }
     }
 
@@ -295,7 +300,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
                     </Form.Control>
                     <small className='mt-2'>{t('datasets.path', { path: selectedSource && 'path' in selectedSource.metadata ? selectedSource.metadata['path'].replaceAll('/', '\\') : 'none' })}</small>
                 </Form.Group>
-                <Form.Group as={Col} md={4} className='d-flex flex-column'>
+                <Form.Group as={Col} md={5} className='d-flex flex-column'>
                     <Form.Label>{t('modals.addGraph.range')}</Form.Label>
                     <DateTimeRange
                         bounds={availableRange ?? defaultRange}
@@ -305,7 +310,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
                         onChange={this.onRangeChange}
                     />
                 </Form.Group>
-                <Form.Group as={Col} md={5} className='d-flex flex-column'>
+                <Form.Group as={Col} md={4} className='d-flex flex-column'>
                     <Form.Label>{t('modals.addGraph.datasets')}</Form.Label>
                     {selectedSource &&
                         <DatasetTree

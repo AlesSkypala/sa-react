@@ -4,14 +4,22 @@
     align-items: stretch;
 }
 
-.react-calendar.disabled {
-    opacity: 0.4;
+.range-picker .DayPicker {
+    font-size: 0.8rem;
 }
 
-.react-calendar.disabled .react-calendar__tile {
-    pointer-events: none;
+.range-picker .DayPicker-Day--selected:not(.DayPicker-Day--from):not(.DayPicker-Day--to):not(.DayPicker-Day--outside) {
+    background-color: #f0f8ff !important;
+    color: #4a90e2;
 }
-
-.react-calendar .react-calendar__tile {
-    padding: 0.5em 0.5em;
+.range-picker .DayPicker-Day {
+    border-radius: 0 !important;
+}
+.range-picker .DayPicker-Day--from {
+    border-top-left-radius: 50% !important;
+    border-bottom-left-radius: 50% !important;
+}
+.range-picker .DayPicker-Day--to {
+    border-top-right-radius: 50% !important;
+    border-bottom-right-radius: 50% !important;
 }

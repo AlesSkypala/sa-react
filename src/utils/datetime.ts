@@ -9,6 +9,12 @@ export function rangeIntersectsBounds(range: [number, number], bounds: [number, 
 
 const clamp = (val: number, from: number, to: number) => Math.max(Math.min(val, to), from);
 
+export function clampDate(date: Date, min: Date, max: Date) {
+    if (min > date) return min;
+    if (max < date) return max;
+    return date;
+}
+
 export function getDayFromEnd(range: Graph['xRange'], dayIdx: number): Graph['xRange'] {
     const lastDay = parseTimestamp(range[1] as number);
     lastDay.setHours(0, 0, 0, 0);
@@ -21,4 +27,11 @@ export function getDayFromEnd(range: Graph['xRange'], dayIdx: number): Graph['xR
         clamp(dateToTimestamp(dayStart), range[0], range[1]),
         clamp(dateToTimestamp(dayEnd), range[0], range[1])
     ];
+}
+
+export function getDay(date: Date, dayOffset = 0): Date {
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + dayOffset);
+
+    return date;
 }

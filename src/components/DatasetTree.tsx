@@ -142,8 +142,6 @@ class DatasetTree extends React.Component<Props, State> {
             level = createLevel(level);
         }
 
-        console.log(categories);
-
         this.setState({ tree: { nodes, levels } });
     }
 
