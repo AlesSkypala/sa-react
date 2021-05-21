@@ -45,6 +45,7 @@ const settingsDispatch = {
 };
 
 const settingsTree: { key: keyof RootStore['settings'], type: 'check' | 'number', max?: number, min?: number }[] = [
+    { key: 'darkMode', type: 'check' },
     { key: 'askGraphClose', type: 'check' },
     { key: 'activeContexts', type: 'number', max: 32, min: 1 },
 ];
@@ -71,13 +72,13 @@ class SettingsBody extends React.Component<ReduxProps<typeof settingsProps, type
         switch (row.type) {
             case 'check':
                 return (
-                    <Form.Group>
+                    <Form.Group key={row.key}>
                         <Form.Check checked={settings[row.key] as boolean} onChange={this.checkChange} label={t(`modals.settings.${row.key}`)} data-setting={row.key} />
                     </Form.Group>
                 );
             case 'number':
                 return (
-                    <Form.Group as={Row}>
+                    <Form.Group as={Row} key={row.key}>
                         <Form.Label column sm={4}>{t(`modals.settings.${row.key}`)}</Form.Label>
                         <Col sm={8}>
                             <Form.Control

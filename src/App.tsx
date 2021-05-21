@@ -18,6 +18,7 @@ export interface AppState {
 const stateProps = (state: RootStore) => ({
     graphs: state.graphs.items,
     maxActive: state.settings.activeContexts,
+    darkMode: state.settings.darkMode,
     settings: state.settings,
 });
 
@@ -49,17 +50,30 @@ class App extends React.Component<AppProps, AppState> {
 
     public componentDidMount() {
         window.addEventListener('beforeunload', this.handleUnload);
+        this.applyDarkMode();
     }
 
     public componentWillUnmount() {
         window.removeEventListener('beforeunload', this.handleUnload);
     }
 
-    public componentDidUpdate() {
+    public componentDidUpdate(prevProps: AppProps) {
         const visible = this.props.graphs.filter(g => g.visible);
 
         if (visible.length > this.props.maxActive) {
             this.props.hide_graphs(visible.slice(0, visible.length - this.props.maxActive).map(v => v.id));
+        }
+
+        if (prevProps.darkMode !== this.props.darkMode) {
+            this.applyDarkMode();
+        }
+    }
+
+    applyDarkMode = () => {
+        if (this.props.darkMode) {
+            document.body.classList.add('dark-mode');
+        } else {
+            document.body.classList.remove('dark-mode');
         }
     }
 

@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { SliceStateDraft } from './helpers';
 
 export type AppSettings = {
+    darkMode: boolean,
     askGraphClose: boolean,
     activeContexts: number,
     favoriteDatasets: { source: string, id: string }[],
@@ -10,6 +11,7 @@ export type AppSettings = {
 export const settingsSlice = createSlice({
     name: 'settings',
     initialState: {
+        darkMode: false,
         askGraphClose: true,
         activeContexts: 4,
         favoriteDatasets: [],

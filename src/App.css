@@ -12,3 +12,7 @@
 body { 
     background-color: #ecf0f5 !important;
 }
+
+body.dark-mode {
+    filter: invert(1);
+}
