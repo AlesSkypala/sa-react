@@ -6,6 +6,7 @@ import DayPicker, { DayModifiers } from 'react-day-picker';
 import { t } from '../locale';
 import moment from 'moment';
 import { connect, StateProps } from '../redux';
+import { Range } from 'react-range';
 
 import 'react-day-picker/lib/style.css';
 import './DateTimeRange.scss';
@@ -126,14 +127,20 @@ class DateTimeRange
     }
 
     onMonthChange = (month: Date) => this.setState({ month });
-    onTimeChange = (type: 'from' | 'to', minute: number) => {
+    onTimeChange = (from?: number, to?: number) => {
+        function parseStamp(val: number, baseTimestamp: number) {
+            const date = parseTimestamp(baseTimestamp);
+            date.setHours(Math.floor(val / 60), val % 60, 0, 0);
+            return dateToTimestamp(date);
+        }
+
         const value = this.props.value as [ number, number ];
 
         if (value && this.props.onChange) {
-            const date = parseTimestamp(value[type === 'from' ? 0 : 1]);
-            date.setHours(Math.floor(minute / 60), minute % 60, 0, 0);
-
-            this.props.onChange(type === 'from' ? [ dateToTimestamp(date), value[1] ] : [ value[0], dateToTimestamp(date) ]);
+            this.props.onChange([
+                from !== undefined ? parseStamp(from, value[0]) : value[0],
+                to   !== undefined ? parseStamp(to  , value[1]) : value[1],
+            ]);
         }
     }
 
@@ -250,7 +257,7 @@ type DayPopoverProps = {
     to: boolean,
 
     value: Props['value']
-    onChange?(type: 'from' | 'to', value: number): void;
+    onChange?(from?: number, to?: number): void;
 };
 
 type DayPopoverState = {
@@ -289,31 +296,53 @@ class DayPopover extends React.Component<DayPopoverProps, DayPopoverState> {
     onHover =   () => this.setState({ open: true });
     onUnhover = () => this.setState({ open: false });
 
-    onFromChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        this.setState({ fromVal: Math.min(e.currentTarget.valueAsNumber, this.state.toVal) });
+    onRangeChange = (vals: number[]) => {
+        const { from, to } = this.props;
+        this.setState({
+            fromVal: from ? Math.min(vals[0], this.state.toVal) : this.state.fromVal,
+            toVal:   to ? Math.max(from ? vals[1] : vals[0], this.state.fromVal) : this.state.toVal,
+        });
+    }
+    onRangeDrop = () => {
+        const { onChange, from, to } = this.props;
+        onChange && onChange(from ? this.state.fromVal : undefined, to ? this.state.toVal : undefined);
     }
 
-    onToChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        this.setState({ toVal: Math.max(e.currentTarget.valueAsNumber, this.state.fromVal) });
+    onFromChangeTime = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { onChange } = this.props;
+        onChange && onChange( Math.min(Math.floor(e.currentTarget.valueAsNumber / 60_000), this.state.toVal), undefined);
     }
-
-    onDropFrom = () => {
-        const { onChange, from } = this.props;
-
-        from && onChange && onChange('from', this.state.fromVal);
-    }
-    onDropTo = () => {
-        const { onChange, to } = this.props;
-
-        to && onChange && onChange('to', this.state.toVal);
+    onToChangeTime = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { onChange } = this.props;
+        onChange && onChange(undefined, Math.max(Math.floor(e.currentTarget.valueAsNumber / 60_000), this.state.fromVal));
     }
 
     blockEvent = (e: React.MouseEvent) => { e.stopPropagation(); }
+    numToTimeStamp = (num: number) => `${String(Math.floor(num / 60)).padStart(2, '0')}:${String(num % 60).padStart(2, '0')}`;
 
     public render() {
         const { from, to, date } = this.props;
         const id = `time-sel${from ? '-from' : ''}${to ? '-to' : ''}`;
         const { fromVal, toVal } = this.state;
+
+        const rangeVal: number[] = [];
+
+        from && rangeVal.push(fromVal);
+        to   && rangeVal.push(toVal);
+
+        let trackGradient = '';
+
+        if (rangeVal.length == 2) {
+            const start = `${100 * fromVal / (24 * 60 - 1)}%`;
+            const end   = `${100 * toVal / (24 * 60 - 1)}%`;
+            trackGradient = `linear-gradient(to right, var(--gray) 0%, var(--gray) ${start}, var(--blue) ${start}, var(--blue) ${end}, var(--gray) ${end}, var(--gray) 100%)`;
+        } else if (from) {
+            const start = `${100 * fromVal / (24 * 60 - 1)}%`;
+            trackGradient = `linear-gradient(to right, var(--gray) 0%, var(--gray) ${start}, var(--blue) ${start}, var(--blue) 100%)`;
+        } else if (to) {
+            const end   = `${100 * toVal / (24 * 60 - 1)}%`;
+            trackGradient = `linear-gradient(to right, var(--blue) 0%, var(--blue) ${end}, var(--gray) ${end}, var(--gray) 100%)`;
+        }
 
         return (
             <div onPointerEnter={this.onHover} onPointerLeave={this.onUnhover} ref={this.ref}>
@@ -322,24 +351,54 @@ class DayPopover extends React.Component<DayPopoverProps, DayPopoverState> {
                     {props => (
                         <Popover {...props} id={id} onClick={this.blockEvent}>
                             <Popover.Content>
-                                {from && (<Form.Control
-                                    type='range'
+                                <div style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', marginBottom: '0.5rem' }}>
+                                    {from && (<Form.Control
+                                        type='time'
+                                        className='mx-1'
+                                        value={this.numToTimeStamp(fromVal)}
+                                        onChange={this.onFromChangeTime}
+                                    />)}
+                                    {to && (<Form.Control
+                                        type='time'
+                                        className='mx-1'
+                                        value={this.numToTimeStamp(toVal)}
+                                        onChange={this.onToChangeTime}
+                                    />)}
+                                </div>
+                                <Range
                                     min={0}
                                     max={24 * 60 - 1}
+                                    step={1}
+                                    values={rangeVal}
+                                    onChange={this.onRangeChange}
+                                    onFinalChange={this.onRangeDrop}
 
-                                    value={fromVal}
-                                    onChange={this.onFromChange}
-                                    onPointerUp={this.onDropFrom}
-                                />)}
-                                {to && (<Form.Control
-                                    type='range'
-                                    min={0}
-                                    max={24 * 60 - 1}
-
-                                    value={toVal}
-                                    onChange={this.onToChange}
-                                    onPointerUp={this.onDropTo}
-                                />)}
+                                    renderTrack={({ props, children }) => (
+                                        <div
+                                            {...props}
+                                            style={{
+                                                ...props.style,
+                                                height: '6px',
+                                                width: '100%',
+                                                background: trackGradient
+                                            }}
+                                        >
+                                            {children}
+                                        </div>
+                                    )}
+                                    renderThumb={({ props }) => (
+                                        <div
+                                            {...props}
+                                            style={{
+                                                ...props.style,
+                                                height: '1rem',
+                                                width: '1rem',
+                                                borderRadius: '0.5rem',
+                                                backgroundColor: 'var(--blue)'
+                                            }}
+                                        />
+                                    )}
+                                />
                             </Popover.Content>
                         </Popover>
                     )}
