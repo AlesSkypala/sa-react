@@ -206,11 +206,13 @@ class DateTimeRange
 
                 <Dropdown as={ButtonGroup} className='mb-2'>
                     <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(1)}>{t('modals.addGraph.day')}</Button>
-                    <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(7)}>{t('modals.addGraph.week')}</Button>
-                    <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(28)}>{t('modals.addGraph.month')}</Button>
+                    <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(2)}>{t('modals.addGraph.twodays')}</Button>
+                    <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(4)}>{t('modals.addGraph.fourdays')}</Button>
 
                     <Dropdown.Toggle disabled={disabled} variant='warning' />
                     <Dropdown.Menu>
+                        <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(7)}  >{t('modals.addGraph.week')}</Dropdown.Item>
+                        <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(28)} >{t('modals.addGraph.month')}</Dropdown.Item>
                         <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(91)} >{t('modals.addGraph.quarter')}</Dropdown.Item>
                         <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(183)}>{t('modals.addGraph.halfYear')}</Dropdown.Item>
                         <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(365)}>{t('modals.addGraph.year')}</Dropdown.Item>

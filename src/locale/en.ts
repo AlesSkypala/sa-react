@@ -74,6 +74,8 @@ const en_lang = {
             customDate: 'Custom',
 
             day: '24h',
+            twodays: '48h',
+            fourdays: '96h',
             week: '7d',
             month: '28d',
             customRange: 'Custom',
