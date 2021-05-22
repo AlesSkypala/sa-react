@@ -2,12 +2,12 @@ import React from 'react';
 import { GraphContainer, Header, SideMenu, GraphComponent } from './components';
 import { ModalPortal } from './components/Modals';
 
-import './App.css';
 import { connect } from 'react-redux';
 import { add_graphs, remove_graphs, graph_action, set_settings, hide_graphs, ReduxProps } from './redux';
 import { GlobalHotKeys } from 'react-hotkeys';
 import { t } from './locale';
 import { AppSettings } from './redux/settings';
+import Helmet from 'react-helmet';
 
 
 export interface AppState {
@@ -71,9 +71,9 @@ class App extends React.Component<AppProps, AppState> {
 
     applyDarkMode = () => {
         if (this.props.darkMode) {
-            document.body.classList.add('dark-mode');
+            document.documentElement.classList.add('dark-mode');
         } else {
-            document.body.classList.remove('dark-mode');
+            document.documentElement.classList.remove('dark-mode');
         }
     }
 
@@ -122,6 +122,9 @@ class App extends React.Component<AppProps, AppState> {
 
         return (
             <>
+                <Helmet>
+                    <link rel='stylesheet' href={`${process.env.PUBLIC_URL}/${this.props.darkMode ? 'bootstrap-dark.min.css' : 'bootstrap-light.min.css'}`} />    
+                </Helmet>
                 <Header
                     layoutUnlocked={!this.state.locked}
                     onToggleLock={this.toggleLock}

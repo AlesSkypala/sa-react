@@ -148,7 +148,7 @@ impl WebGlRenderer {
     }
 
     pub fn clear(&self) {
-        self.context.clear_color(1.0, 1.0, 1.0, 1.0);
+        self.context.clear_color(0.0, 0.0, 0.0, 0.0);
         self.context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
     }
 

@@ -23,10 +23,12 @@ const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     ...(state.graphs.items.find(g => g.id === props.id)!),
     threshold: state.graphs.threshold,
+    darkMode: state.settings.darkMode,
 });
 
 export interface Props extends Graph, DispatchProps<typeof dispatchProps> {
     threshold: boolean,
+    darkMode: boolean,
 
     xTicks: { pos: number, val: number }[];
     yTicks: { pos: number, val: number }[];
@@ -82,9 +84,17 @@ class GraphGui extends React.Component<Props, State> {
         if (!ctxt) return;
 
         const ruler = GLOBAL_RULER;
-        const { zoom } = this.props;
+        const { zoom, darkMode } = this.props;
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
         const innerBox = this.innerGraphBox();
+
+        if (darkMode) {
+            ctxt.fillStyle = '#00bc8c';
+            ctxt.strokeStyle = '#00bc8c';
+        } else {
+            ctxt.fillStyle = 'black';
+            ctxt.strokeStyle = 'black';
+        }
 
         function drawPad(ctxt: CanvasRenderingContext2D, fromX: number, fromY: number, toX: number, toY: number) {
             ctxt.save();

@@ -14,7 +14,6 @@ import { dataWorker } from '..';
 import { transfer } from 'comlink';
 import { AppEvents, DialogService } from '../services';
 
-import './Graph.css';
 import { t } from '../locale';
 import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings } from '../redux';
 import { GraphEditModal, LdevSelectModal } from './Modals';
@@ -24,6 +23,8 @@ import { isHomogenous } from '../utils/trace';
 import { getLdevMode } from '../utils/ldev';
 import GraphDeleteConfirmation from './Modals/GraphDeleteConfirmation';
 import GraphGui from './GraphGui';
+
+import './Graph.scss';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {
     const elem = document.getElementById('context-menu');
@@ -48,6 +49,7 @@ const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
     threshold: state.graphs.threshold,
     jobs: state.jobs.items,
     askClose: state.settings.askGraphClose,
+    darkMode: state.settings.darkMode,
 });
 
 export type Props = DispatchProps<typeof dispatchProps> & Graph & {

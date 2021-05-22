@@ -1,0 +1,45 @@
+.range-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+
+    .DayPicker {
+        font-size: 0.8rem;
+    }
+
+    .DayPicker-Day {
+        border-radius: 0 !important;
+        background-color: transparent;
+
+        // &--selected:not(.DayPicker-Day--from):not(.DayPicker-Day--to):not(.DayPicker-Day--outside) {
+        //     color: #4a90e2;
+        // }
+
+        .dark-mode &:not(.DayPicker-Day--disabled):not(.DayPicker-Day--selected):not(.DayPicker-Day--outside):hover {
+            background-color: rgba(70, 70, 70, 40);
+        }
+
+        &--selected {
+            &.DayPicker-Day--from, &.DayPicker-Day--to, &:not(.DayPicker-Day--disabled):not(.DayPicker-Day--outside) {
+                background-color: var(--blue);
+            }
+        }
+    
+        &--from {
+            border-top-left-radius: 50% !important;
+            border-bottom-left-radius: 50% !important;
+        }
+    
+        &--to {
+            border-top-right-radius: 50% !important;
+            border-bottom-right-radius: 50% !important;
+        }
+    
+        &--disabled {
+    
+            .dark-mode & {
+                color: #4e4e4e;
+            }
+        }
+    }
+}

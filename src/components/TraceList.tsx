@@ -7,7 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCheckSquare, faSitemap, faSquare } from '@fortawesome/free-solid-svg-icons';
 import { colorToHex } from '../utils/color';
 
-import './TraceList.css';
+import './TraceList.scss';
 import { getLdevMode, toLdevInternal, toLdevInternalFromVariant } from '../utils/ldev';
 import { splitTraceId } from '../utils/trace';
 // import { withHotKeys } from 'react-hotkeys';
@@ -154,7 +154,6 @@ class TraceList extends React.PureComponent<Props, State> {
                         {({height, width}) => (
                             <VirtualizedList
                                 containerProps={{ className: 'list-group' }}
-                                style={{ background: 'white' }}
                                 height={height}
                                 width={width}
                                 rowHeight={25}

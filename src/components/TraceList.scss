@@ -1,0 +1,69 @@
+.btn-group.btn-group-stretch {
+    display: flex;
+    overflow: hidden;
+    
+    .btn {
+        flex: 1
+    }
+}
+
+.trace-row-outer {
+    background-color: white;
+    display: flex;
+    height: 35px;
+    user-select: none;
+
+    .dark-mode & {
+        background-color: var(--gray-dark);
+    }
+}
+
+.trace-row-inner {
+    flex-grow: 1;
+    height: 100%;
+    padding: 0.3rem;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+
+    > .trace-row-title {
+        font-size: 0.85em;
+        flex-shrink: 1;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+    }
+
+    > .btn {
+        flex-grow: 0;
+        flex-shrink: 1;
+    }
+
+    > .ldev {
+        font-size: 0.9em;
+    }
+
+    &:not(:last-child) {
+        border-bottom: 1px black solid;
+    }
+
+    &.active {
+        background-color: rgb(67, 149, 255);
+    }
+
+    &:hover:not(.active) {
+        background-color: rgb(199, 223, 255);
+    }
+
+    .dark-mode &.active {
+        background-color: var(--blue)
+    }
+
+    .dark-mode &:hover:not(.active) {
+        background-color: var(--gray)
+    }
+}
+
+.ReactVirtualized__Grid {
+    outline: none;
+}

@@ -8,7 +8,7 @@ import moment from 'moment';
 import { connect, StateProps } from '../redux';
 
 import 'react-day-picker/lib/style.css';
-import './DateTimeRange.css';
+import './DateTimeRange.scss';
 
 const numclamp = (val: number, min: number, max: number) => Math.max(Math.min(val, max), min);
 const dateFormat = 'HH:mm DD.MM.YYYY';
@@ -38,7 +38,9 @@ class DateTimeRange
         month: new Date(),
     };
 
-    onChange = (date: Date) => {
+    onChange = (date: Date, modifs: DayModifiers) => {
+        if (modifs.disabled) return;
+
         const { bounds, value } = this.props;
         const minValue = bounds[0][0] as number;
         const maxValue = bounds[bounds.length - 1][1] as number;

@@ -9,10 +9,7 @@ import { Provider } from 'react-redux';
 import store from './redux/store';
 
 // CSS styles
-// import './assets/AdminLTE.min.css';
-import './assets/fonts.css';
-import './assets/theme.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import './index.scss';
 import 'react-virtualized/styles.css';
 import 'react-contexify/dist/ReactContexify.css';
 import { loadTranslations } from './locale';

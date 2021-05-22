@@ -11,7 +11,7 @@ export type AppSettings = {
 export const settingsSlice = createSlice({
     name: 'settings',
     initialState: {
-        darkMode: false,
+        darkMode: true,
         askGraphClose: true,
         activeContexts: 4,
         favoriteDatasets: [],

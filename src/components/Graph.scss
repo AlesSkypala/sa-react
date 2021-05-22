@@ -1,0 +1,139 @@
+.graph {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    border: 2px solid lightgray;
+    background-color: white;
+
+    &.active {
+        border: 2px solid #3c8dbc;
+    }
+
+    .dark-mode & {
+        border-color: var(--gray);
+        background-color: var(--gray-dark);
+
+        &.active {
+            border-color: var(--teal);
+        }
+    }
+}
+
+.graph-content {
+    position: relative;
+    display: flex;
+    overflow: hidden;
+    align-items: center;
+    justify-content: stretch;
+    flex-direction: column;
+
+    height: 100%;
+
+    > canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        flex-grow: 1;
+    }
+
+    > .graph-details {
+        pointer-events: none;
+        position: absolute;
+        right: 0;
+        top: 0;
+    
+        margin: .5em;
+        padding: .5em;
+        background: rgba(255, 255, 255, 0.6);
+    
+        font-size: .8em;
+        max-width: 300px;
+        overflow-x: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+
+        .dark-mode & {
+            background: rgba(70, 70, 70, 0.6);
+        }
+    }
+
+    :is(.xlabel, .ylabel) {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+    }
+
+    .xlabel {
+        flex-direction: row;
+        bottom: 0;
+    }
+    
+    .ylabel {
+        flex-direction: column;
+        left: 0;
+    }
+
+    :is(.xticks, .yticks) {
+        position: absolute;
+        user-select: none;
+    }
+
+    .xticks {
+        cursor: col-resize;
+    }
+    
+    .yticks {
+        cursor: row-resize;
+    }
+
+    .tick {
+        position: absolute;
+        white-space: nowrap;
+        font-size: small;
+    }
+
+    .xticks > .tick {
+        top: 0.4rem;
+        transform: translate(-50%, 0);
+    }
+    
+    .yticks > .tick {
+        right: 0.4rem;
+        transform: translate(0, 50%);
+    }
+
+    .ruler {
+        pointer-events: none;
+        position:absolute;
+        border-left: dashed 1px black;
+    }
+
+    .buttons > .btn {
+        opacity: 0.3;
+        transition: 0.3s;
+    }
+    
+    .buttons > :is(.btn.opaque, .btn:hover) {
+        opacity: 0.8;
+    }
+
+    .graph-resize-overlay {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        right: 0;
+    
+        background-color: #00000090;
+        color: white;
+        display: flex;
+        text-align: center;
+        justify-content: center;
+        align-items: center;
+    }
+}
