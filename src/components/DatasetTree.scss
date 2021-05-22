@@ -1,0 +1,66 @@
+
+.dstree {
+    display: flex;
+    flex-direction: column;
+    flex-basis: 0;
+    flex-grow: 1;
+
+    overflow-y: scroll;
+    overflow-x: hidden;
+
+    font-size: small;
+    white-space: nowrap;
+    user-select: none;
+    
+    @media (max-width: 767px) {
+        flex-basis: 16rem;
+    }
+
+    &.disabled {
+        pointer-events: none;
+        background-color: lightgray;
+    }
+
+    .item {
+        .item-row {
+            display: flex;
+            align-items: center;
+            flex-direction: row;
+        }
+
+        .expander, .icon, .fav {
+            flex-shrink: 0;
+            width: 1rem;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .icon {
+            margin-right: .5rem;
+            margin-left: .25rem;
+        }
+
+        .label {
+            white-space: nowrap;
+            display: inline-block;
+            overflow: hidden;
+            cursor: pointer;
+            flex-grow: 2;
+            margin: 1px 0 1px
+        }
+
+        .fav {
+            margin-left: 0.5rem;
+            margin-right: 0.3rem;
+        }
+
+        .children {
+            margin-left: 0.5rem;
+        }
+
+        &.active .label {
+            background-color: #3692f5;
+            color: white;
+        }
+    }
+}

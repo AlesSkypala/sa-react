@@ -56,6 +56,7 @@ export type Props = DispatchProps<typeof dispatchProps> & Graph & {
     focused?: boolean;
     layoutLocked: boolean;
     threshold: boolean;
+    darkMode: boolean;
     jobs: { [handle: number]: PendingDataJob };
     askClose: boolean;
 }
@@ -402,8 +403,8 @@ class GraphComponent
                         // hidden={traces.length <= 0}
                     />
                     <MenuPortal>
-                        <Menu id={`graph-${this.props.id}-menu`}>
-                            <Submenu label="Clone Chart">
+                        <Menu id={`graph-${this.props.id}-menu`} theme={this.props.darkMode ? 'dark' : 'light'} animation={false}>
+                            <Submenu label="Clone Chart" arrow='>'>
                                 <Item onClick={this.onClone} data='all' data-clone="all">{t('graph.cloneAll')}</Item>
                                 <Item onClick={this.onClone} data='active' data-clone="active" disabled={!this.props.traces.find(t => t.active)}>{t('graph.cloneActive')}</Item>
                             </Submenu>

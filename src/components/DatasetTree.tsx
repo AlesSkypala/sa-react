@@ -5,7 +5,7 @@ import { connect } from 'react-redux';
 import { t } from '../locale';
 import { favorite_dataset, ReduxProps, unfavorite_dataset } from '../redux';
 
-import './DatasetTree.css';
+import './DatasetTree.scss';
 
 const knownIcons: { [key: string]: { [key: string]: IconDefinition } } = {
     'hp': {
@@ -351,14 +351,14 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
 
         return (
             <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={leaf.text} title={tooltip}>
-                <span className='expander' onClick={this.toggleExpand}>{hasChildren && (<FontAwesomeIcon icon={expanded ? faAngleDown : faAngleRight} />)}</span>
-                <FontAwesomeIcon className='icon ml-1 mr-2' icon={this.getIcon(source.type, leaf)} />
-                <span className='label' onDoubleClick={this.onDoubleClick}>
-                    {title}
+                <div className='item-row'>
+                    <span className='expander' onClick={this.toggleExpand}>{hasChildren && (<FontAwesomeIcon icon={expanded ? faAngleDown : faAngleRight} />)}</span>
+                    <FontAwesomeIcon className='icon' icon={this.getIcon(source.type, leaf)} />
+                    <span className='label' onDoubleClick={this.onDoubleClick}>{title}</span>
                     {!hasChildren && (
-                        <FontAwesomeIcon icon={faStar} style={{ color: isFavorite ? 'orange' : 'lightgray', marginLeft: '0.3rem' }}  onClick={this.onFavorite}/>
+                        <FontAwesomeIcon className='fav' icon={faStar} style={{ color: isFavorite ? 'orange' : 'lightgray' }}  onClick={this.onFavorite}/>
                     )}
-                </span>
+                </div>
                 {hasChildren && expanded && (
                     <div className='children'>{(leaf.value as Leaf[]).map((l, i) => (
                         <LeafComponent
