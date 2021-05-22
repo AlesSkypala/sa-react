@@ -44,7 +44,7 @@ export interface Props extends ReduxProps<typeof stateProps, typeof dispatchProp
 
 type Leaf = {
     icon?: string;
-    text: string;
+    text: string[] | string;
     level: number;
     value: Dataset | Leaf[];
 }
@@ -79,7 +79,7 @@ class DatasetTree extends React.Component<Props, State> {
 
         return source.datasets.filter(d => favorites.some(f => f.id === d.id && f.source === d.source)).map(d => ({
             value: d,
-            text: d.id,
+            text: [ ...d.category, d.id ],
             level: 1,
         }));
     }
@@ -150,7 +150,7 @@ class DatasetTree extends React.Component<Props, State> {
     private leafClicked = (leaf: Leaf, e: React.MouseEvent<HTMLElement>) => {
         if (!this.props.onChange) return;
 
-        const collectValues = (leaf: Leaf): string[] => Array.isArray(leaf.value) ? leaf.value.flatMap(v => collectValues(v)) : [ leaf.text ];
+        const collectValues = (leaf: Leaf): string[] => Array.isArray(leaf.value) ? leaf.value.flatMap(v => collectValues(v)) : (leaf.value ? [ leaf.value.id ] : []);
         let vals: Dataset['id'][];
 
         if (e.shiftKey) {
@@ -281,8 +281,10 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
             return faChartLine;
         }
 
-        if (sourceType in knownIcons && leaf.text in knownIcons[sourceType]) {
-            return knownIcons[sourceType][leaf.text];
+        const text = Array.isArray(leaf.text) ? leaf.text[leaf.text.length - 1] : leaf.text;
+
+        if (sourceType in knownIcons && text in knownIcons[sourceType]) {
+            return knownIcons[sourceType][text];
         }
 
         if (leaf.text === 'favorites') return faStar;
@@ -310,7 +312,8 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
 
     getTooltip = () => {
         const { source, leaf } = this.props;
-        let tooltip = this.getTitle(source.type, leaf.text) + '\n\n';
+        const text = Array.isArray(leaf.text) ? leaf.text[leaf.text.length - 1] : leaf.text;
+        let tooltip = this.getTitle(source.type, text) + '\n\n';
 
         if (Array.isArray(leaf.value)) {
             tooltip += `${t('datasets.items', { count: leaf.value.length })}\n`;
@@ -344,13 +347,13 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
         const { leaf, source, selected, onToggle, onDoubleClick, favorites } = this.props;
         const { expanded } = this.state;
         const active = this.isActive(leaf, selected);
-        const title = this.getTitle(source.type, leaf.text);
+        const title =  Array.isArray(leaf.text) ? leaf.text.map(t => this.getTitle(source.type, t)).join(' > ') : this.getTitle(source.type, leaf.text);
         const tooltip = this.getTooltip();
         const hasChildren = Array.isArray(leaf.value);
         const isFavorite = !Array.isArray(leaf.value) && favorites.some(f => f.id === (leaf.value as Dataset).id && f.source === (leaf.value as Dataset).source);
 
         return (
-            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={leaf.text} title={tooltip}>
+            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={Array.isArray(leaf.text) ? leaf.text.join('::') : leaf.text} title={tooltip}>
                 <div className='item-row'>
                     <span className='expander' onClick={this.toggleExpand}>{hasChildren && (<FontAwesomeIcon icon={expanded ? faAngleDown : faAngleRight} />)}</span>
                     <FontAwesomeIcon className='icon' icon={this.getIcon(source.type, leaf)} />
