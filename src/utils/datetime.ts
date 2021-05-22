@@ -35,3 +35,7 @@ export function getDay(date: Date, dayOffset = 0): Date {
 
     return date;
 }
+
+export function isSameDay(a: Date, b: Date): boolean {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}

@@ -54,7 +54,7 @@ class DateTimeRange
                 next = [ date, parseTimestamp(value[1]) ];
             } else {
                 date.setHours(23, 59, 0, 0);
-                if (date.getTime() === parseTimestamp(value[1]).getTime()) {
+                if (DateTime.isSameDay(date, parseTimestamp(value[1]))) {
                     const start = new Date(date);
                     start.setHours(0, 0, 0, 0);
                     next = [ start, date ];
