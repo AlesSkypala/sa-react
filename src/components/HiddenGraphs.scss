@@ -8,6 +8,11 @@
     padding: .1rem .3rem;
 
     cursor: pointer;
+
+    .dark-mode & {
+        color: white;
+        background-color: var(--gray-dark);
+    }
 }
 
 .hidden-graph-title {

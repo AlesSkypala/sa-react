@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Dropdown } from 'react-bootstrap';
 import * as React from 'react';
 import { connect, unhide_graphs, ReduxProps, remove_graphs } from '../redux';
-import './HiddenGraphs.css';
+import './HiddenGraphs.scss';
 
 
 const dispatchProps = {
