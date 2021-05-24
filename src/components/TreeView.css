@@ -3,6 +3,11 @@
     --icon-color: #444;
 }
 
+.dark-mode .tree-view {
+    --connection-color: #aaa;
+    --icon-color: white;
+}
+
 ul.tree-view > li {
     list-style-type: none;
 }

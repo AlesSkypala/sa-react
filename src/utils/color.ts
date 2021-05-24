@@ -14,7 +14,7 @@ export function randomColorDark(): Color {
 
     const h = Math.random();
     const s = Math.sqrt(0.2 + Math.random() * 0.8);
-    const l = Math.random() * 0.7;
+    const l = 0.2 + Math.random() * 0.6;
 
     return hslToColor(h, s, l);
 }

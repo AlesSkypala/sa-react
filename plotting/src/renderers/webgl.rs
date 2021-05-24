@@ -417,7 +417,7 @@ impl Renderer for WebGlRenderer {
             }
         }
 
-        gl.uniform2f(Some(&self.tp_origin_pos), x_from, y_from);
+        gl.uniform2f(Some(&self.tp_origin_pos), 0.0, y_from);
 
         if job.get_traces().len() > 0 {
             gl.bind_buffer(
@@ -440,7 +440,7 @@ impl Renderer for WebGlRenderer {
                     use std::iter::once;
 
                     let data: Vec<f32> = crate::data::get_trace_ret(trace.idx, |t| {
-                        t.get_data_in(job.x_from, job.x_to)
+                        t.get_data_with_origin(job.x_from, job.x_to, job.x_from, 0.0)
                             .flat_map(|p| once(p.0).chain(once(p.1)))
                             .collect()
                     });
