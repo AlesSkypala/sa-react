@@ -12,15 +12,16 @@ import { Menu, useContextMenu, Submenu, Item, ItemParams, Separator } from 'reac
 
 import { dataWorker } from '..';
 import { transfer } from 'comlink';
-import { AppEvents, DialogService } from '../services';
+import { AppEvents, DataService, DialogService } from '../services';
+import DataJob from '../services/DataJob';
 
 import { t } from '../locale';
-import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings } from '../redux';
+import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings, invoke_job, add_graphs, generate_graph_id } from '../redux';
 import { GraphEditModal, LdevSelectModal } from './Modals';
 import RendererHandle from '../services/RendererHandle';
 import { PendingDataJob } from '../redux/jobs';
-import { isHomogenous } from '../utils/trace';
-import { getLdevMode } from '../utils/ldev';
+import { isHomogenous, splitTraceId } from '../utils/trace';
+import { getLdevMode, relatesTo, toLdevInternal } from '../utils/ldev';
 import GraphDeleteConfirmation from './Modals/GraphDeleteConfirmation';
 import GraphGui from './GraphGui';
 
@@ -35,12 +36,14 @@ export const X_TICK_SPACE = 24;
 
 const dispatchProps = {
     graph_threshold_select,
+    add_graphs,
     clone_graph,
     remove_graphs,
     edit_graph,
     toggle_traces,
     hide_graphs,
-    set_settings
+    set_settings,
+    invoke_job,
 };
 
 const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
@@ -64,10 +67,12 @@ export type Props = DispatchProps<typeof dispatchProps> & Graph & {
 export type State = {
     rendering: boolean;
     error: unknown | undefined;
-    ldevSelectAvailable: boolean;
     xTicks: { pos: number, val: number }[];
     yTicks: { pos: number, val: number }[];
     zoomRecommendation: Promise<Graph['zoom']> | undefined;
+
+    ldevSelectAvailable: boolean;
+    ldevToHostGroupAvailable: boolean;
 
     clientWidth: number,
     clientHeight: number,
@@ -79,6 +84,7 @@ class GraphComponent
     public state: State = {
         rendering: false,
         ldevSelectAvailable: false,
+        ldevToHostGroupAvailable: false,
         error: undefined,
         xTicks: [],
         yTicks: [],
@@ -207,8 +213,10 @@ class GraphComponent
 
             redraw = true;
             
+            const homog = isHomogenous(this.props.traces);
             this.setState({
-                ldevSelectAvailable: isHomogenous(this.props.traces) && getLdevMode(this.props.traces[0]) !== undefined
+                ldevSelectAvailable: homog && getLdevMode(this.props.traces[0]) !== undefined,
+                ldevToHostGroupAvailable: homog && getLdevMode(this.props.traces[0]) === 'ldev',
             });
         }
 
@@ -323,6 +331,73 @@ class GraphComponent
         );
     }
 
+    private onLdevJoin = async () => {
+        const avail = this.props.traces.filter(t => t.active);
+        const availMap = avail.reduce<{ [key: string]: string}>((prev, next) => {
+            prev[next.id] = toLdevInternal(next, 'ldev');
+            return prev;
+        }, {});
+        if (avail.length <= 0) return;
+
+        const [ source, dataset ] = splitTraceId(avail[0]);
+        const map = await DataService.getHomogenousLdevMap(avail, 'ldev');
+        const newMap = map.reduce<{ [key: string]: Trace[] }>((prev, next) => {
+            const trace = avail.find(a => relatesTo(next, availMap[a.id], 'ldev'));
+
+            if (!trace) { return prev; }
+
+            for (const port of next.hostPorts) {
+                if (!prev[port.hostgroup]) { prev[port.hostgroup] = []; }
+
+                prev[port.hostgroup].push(trace);
+            }
+            
+            return prev;
+        }, {});
+
+        const id = generate_graph_id();
+        const graph: Graph = {
+            id,
+            title: `Hostgroups ${this.props.title}`,
+            visible: true,
+
+            xLabel: this.props.xLabel,
+            yLabel: this.props.yLabel,
+
+            xType: 'datetime',
+
+            metadata: {
+                ...this.props.metadata
+            },
+
+            style: {
+                margin: 5,
+                xLabelSpace: 24,
+                yLabelSpace: 60,
+            },
+
+            xRange: this.props.xRange,
+            traces: [],
+        };
+
+        this.props.add_graphs(graph);
+
+        const job = new DataJob(this.props.xRange);
+        job.relate(id);
+        
+        for (const hg in newMap) {
+            job.createOperation({
+                id: `${source}::HG_${dataset}::${hg}`,
+                handles: newMap[hg].map(t => t.handle),
+                operation: 'sum',
+                title: hg,
+                xType: this.props.xType,
+            });
+        }
+
+        this.props.invoke_job(job);
+    }
+
     private takeScreenshot = () => {
         if (this.graphRef.current) {
             domtoimage.toPng(this.graphRef.current).then(url => {
@@ -412,6 +487,9 @@ class GraphComponent
                                 <>
                                     <Separator />
                                     <Item onClick={this.onLdevFilter}>{t('graph.ldevSelect')}</Item>
+                                    {this.state.ldevToHostGroupAvailable && (
+                                        <Item onClick={this.onLdevJoin}>{t('graph.ldevJoin')}</Item>
+                                    )}
                                 </>
                             )}
                         </Menu>
