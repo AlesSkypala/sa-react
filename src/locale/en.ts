@@ -42,6 +42,7 @@ const en_lang = {
         cloneAll: 'Clone All Series',
         cloneActive: 'Clone Active Series',
         ldevSelect: 'LDEV Select',
+        ldevJoin: 'Join LDEV to HG',
 
         error: 'A critical error has occurred while rendering the graph:',
     },
