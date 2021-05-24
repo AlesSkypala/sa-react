@@ -88,6 +88,8 @@ class TraceList extends React.PureComponent<Props, State> {
                     .filter(t => getLdevMode(t) === 'ldev')
                     .map(t => toLdevInternal(t, 'ldev'));
 
+                if (ldevs.length <= 0) continue;
+
                 const map = await DataService.getLdevMap(source, ldevs, 'ldev');
 
                 for (const ldev of map) {

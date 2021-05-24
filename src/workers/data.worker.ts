@@ -3,6 +3,7 @@ import DataService from '../services/DataApi';
 
 import type { RendererContainer } from '../plotting';
 import type { RenderJob, DataJob } from '../services';
+import Logger from '../Logger';
 
 type RenderJobResult = {
     x_ticks: { val: number, pos: number }[],
@@ -108,7 +109,11 @@ export class DataWorkerProxy {
             }
 
             const data = await DataService.getBulkData(bulk, job.range);
-            plotting.bulkload_segments(new Uint32Array(ids.map(i => this.traces[i])), trace.xType, trace.yType, new Uint8Array(data[1]));
+            if (data[1].byteLength > 0) {
+                plotting.bulkload_segments(new Uint32Array(ids.map(i => this.traces[i])), trace.xType, trace.yType, new Uint8Array(data[1]));
+            } else {
+                Logger.warn(`No data received via bulkload for job ${job.handle}!`);
+            }
         }
 
         return {
@@ -133,7 +138,11 @@ export class DataWorkerProxy {
     }
 
     public recommend_extents(from: number, to: number, handles: number[]): [ number, number, number, number ] {
-        return handles.map(t => plotting.get_extents(t, from, to))
+        if (handles.length <= 0) {
+            return [ from, to, 0, 1 ];
+        }
+
+        const zoom = handles.map(t => plotting.get_extents(t, from, to))
             .reduce(
                 (prev, cur) => [
                     cur[0],
@@ -142,7 +151,14 @@ export class DataWorkerProxy {
                     Math.max(cur[3], prev[3])
                 ],
                 [0,0, Number.MAX_VALUE, Number.MIN_VALUE]
-            );
+            ) as [number,number,number,number];
+
+        if (Math.abs(zoom[3] - zoom[2]) < 1e-3) {
+            zoom[3] = zoom[2] + 0.9;
+            zoom[2] -= 0.1;
+        }
+
+        return zoom;
     }
 }
 

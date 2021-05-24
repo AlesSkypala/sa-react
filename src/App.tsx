@@ -127,8 +127,8 @@ class App extends React.Component<AppProps, AppState> {
                     <Helmet>
                         <link rel='stylesheet' href={`${process.env.PUBLIC_URL}/${this.props.darkMode ? 'bootstrap-dark.min.css' : 'bootstrap-light.min.css'}`} />    
                     </Helmet>
-                    <h1 className='text-danger text-center my-5'>{t('error.title')}</h1>
-                    <p className='text-center'>
+                    <h1 className='text-danger text-center mt-3'>{t('error.title')}</h1>
+                    <p className='text-center my-3'>
                         <img src={`${process.env.PUBLIC_URL}/save_log.gif`} />
                     </p>
                     <p className='text-center'>{t('error.directions')}</p>

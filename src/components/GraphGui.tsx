@@ -502,13 +502,15 @@ class GraphGui extends React.Component<Props, State> {
         }
     }
 
-    private getYTickString = (val: number) => {
-        return val.toString();
+    private getYTickString = (val: number, order: number) => {
+        return val.toFixed(Math.max(0, -order)).toString();
     }
 
     public render() {
-        const { xLabel, yLabel, xTicks, yTicks, xRange, metadata } = this.props;
+        const { xLabel, yLabel, xTicks, yTicks, xRange, metadata, zoom } = this.props;
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
+
+        const order = zoom ? Math.floor(Math.log10(Math.abs(zoom[3] - zoom[2]))) - 1 : -1;
 
         return (
             <>
@@ -540,7 +542,7 @@ class GraphGui extends React.Component<Props, State> {
                 </div>
                 <div className='yticks' ref={this.yTicksRef} style={{ height: `calc(100% - ${2 * margin + xLabelSpace + X_TICK_SPACE}px)`, top: margin, right: `calc(100% - ${margin + yLabelSpace}px)`, width: X_TICK_SPACE}}  onMouseDown={this.canvasMouseDown}>
                     {yTicks.map((tick, i) => (
-                        <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{this.getYTickString(tick.val)}</span>
+                        <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{this.getYTickString(tick.val, order)}</span>
                     ))}
                 </div>
             </>

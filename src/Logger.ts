@@ -14,7 +14,7 @@ class Logger {
     }
 
     public warn(obj: unknown) {
-        console.log(obj);
+        console.warn(obj);
     }
 
     public error(obj: unknown) {
