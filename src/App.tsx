@@ -13,6 +13,7 @@ import Helmet from 'react-helmet';
 export interface AppState {
     locked: boolean;
     focused: Graph['id'] | undefined;
+    hasError: boolean,
 }
 
 const stateProps = (state: RootStore) => ({
@@ -34,6 +35,7 @@ export type AppProps = ReduxProps<typeof stateProps, typeof dispatchProps>;
 
 class App extends React.Component<AppProps, AppState> {
     public state: AppState = {
+        hasError: false,
         locked: true,
         focused: undefined,
     };
@@ -55,6 +57,10 @@ class App extends React.Component<AppProps, AppState> {
 
     public componentWillUnmount() {
         window.removeEventListener('beforeunload', this.handleUnload);
+    }
+
+    static getDerivedStateFromError() {
+        return { hasError: true };
     }
 
     public componentDidUpdate(prevProps: AppProps) {
@@ -115,6 +121,21 @@ class App extends React.Component<AppProps, AppState> {
     changeFocus = (id: Graph['id']) => this.setState({ focused: id });
 
     public render(): React.ReactNode {
+        if (this.state.hasError) {
+            return (
+                <>
+                    <Helmet>
+                        <link rel='stylesheet' href={`${process.env.PUBLIC_URL}/${this.props.darkMode ? 'bootstrap-dark.min.css' : 'bootstrap-light.min.css'}`} />    
+                    </Helmet>
+                    <h1 className='text-danger text-center my-5'>{t('error.title')}</h1>
+                    <p className='text-center'>
+                        <img src={`${process.env.PUBLIC_URL}/save_log.gif`} />
+                    </p>
+                    <p className='text-center'>{t('error.directions')}</p>
+                </>
+            );
+        }
+
         // const graph = this.props.graphs.find(g => g.id === this.state.focused);
         const makeAction = (action: TraceAction) => () => this.state.focused && this.props.graph_action({ id: this.state.focused, action });
 

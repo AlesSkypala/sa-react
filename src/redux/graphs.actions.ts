@@ -5,6 +5,7 @@ import { DataService, DialogService } from '../services';
 import { getLdevModeFromDataset, toLdevInternalFromVariant } from '../utils/ldev';
 import { isHomogenous, splitTraceId } from '../utils/trace';
 import { GraphsState } from './graphs';
+import Logger from '../Logger';
 
 const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: string): void => {
     const selected = graph.traces.filter(t => t.active);
@@ -97,12 +98,12 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
 
             const activeTraces = graph.traces.filter(t => t.active);
 
-            if (!isHomogenous(activeTraces)) { console.log('not a homogenous set of traces!'); return {}; }
+            if (!isHomogenous(activeTraces)) { Logger.info('The graph does not contain a homogenous trace set.'); return {}; }
 
             const [ source, dataset ] = splitTraceId(activeTraces[0]);
             const mode = getLdevModeFromDataset(dataset ?? '');
 
-            if (!mode) { console.log('not a valid ldev set!'); return {}; }
+            if (!mode) { Logger.info('The graph contains a homogenous set, but the set is not related to the LDEV map.'); return {}; }
 
             const map = await DataService.getHomogenousLdevMap(activeTraces, mode);
 

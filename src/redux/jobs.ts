@@ -3,7 +3,7 @@ import { SliceStateDraft } from './helpers';
 import type { default as DataJob } from '../services/DataJob';
 import { add_traces } from './graphs';
 import { randomColorDark } from '../utils/color';
-
+import Logger from '../Logger';
 
 export const invoke_job = createAsyncThunk(
     'jobs/invoke',
@@ -19,7 +19,7 @@ export const invoke_job = createAsyncThunk(
             result = await job.invoke();
             dispatch(change_state({ handle: job.handle, state: 'completed' }));
         } catch (err) {
-            console.log(err);
+            Logger.error(err);
             dispatch(change_state({ handle: job.handle, state: 'error' }));
             return;
         }

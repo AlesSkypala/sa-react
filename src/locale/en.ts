@@ -158,6 +158,11 @@ const en_lang = {
         id: 'ID: {{id}}',
         path: 'Path: {{path}}',
         favorites: 'Favorites',
+    },
+
+    error: {
+        title: 'An unexpected error has occurred!',
+        directions: 'Please, save your console log (enter the developer menu by pressing F12 and follow the instructions in the gif above) and email it to us.'
     }
 };
 
