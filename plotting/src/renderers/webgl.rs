@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
-    OffscreenCanvas, WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlUniformLocation,
+    OffscreenCanvas, WebGlBuffer, WebGlProgram, WebGl2RenderingContext, WebGlUniformLocation,
 };
 
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
 };
 
 use super::{AxisTick, RenderJobResult, Renderer};
+use serde::{Deserialize, Serialize};
 
 struct BufferEntry {
     points: i32,
@@ -31,7 +32,7 @@ pub struct WebGlRenderer {
     height: u32,
 
     _canvas: OffscreenCanvas,
-    context: WebGlRenderingContext,
+    context: WebGl2RenderingContext,
     trace_buffer: WebGlBuffer,
 
     tp_size_pos: WebGlUniformLocation,
@@ -48,19 +49,26 @@ pub struct WebGlRenderer {
     bundles: HashMap<usize, BufferBundle>,
 }
 
+#[derive(Serialize, Deserialize)]
+struct ContextOpts {
+    antialias: bool,
+}
+
 impl WebGlRenderer {
     pub fn new(elem: OffscreenCanvas) -> Result<Self, JsValue> {
         crate::utils::set_panic_hook();
 
+        let opts = JsValue::from_serde(&ContextOpts { antialias: true }).unwrap();
+
         let context = elem
-            .get_context("webgl")
+            .get_context_with_context_options("webgl2", &opts)
             .unwrap()
             .unwrap()
-            .dyn_into::<WebGlRenderingContext>()?;
+            .dyn_into::<WebGl2RenderingContext>()?;
 
         let vert_shader = webgl_utils::compile_shader(
             &context,
-            WebGlRenderingContext::VERTEX_SHADER,
+            WebGl2RenderingContext::VERTEX_SHADER,
             r#"
             attribute vec2 aVertexPosition;
 
@@ -76,13 +84,13 @@ impl WebGlRenderer {
 
         let frag_shader = webgl_utils::compile_shader(
             &context,
-            WebGlRenderingContext::FRAGMENT_SHADER,
+            WebGl2RenderingContext::FRAGMENT_SHADER,
             r#"
             precision mediump float;
-            uniform vec3 color;
+            uniform vec4 color;
 
             void main() {
-                gl_FragColor = vec4(color, 1);
+                gl_FragColor = color;
             }
             "#,
         )?;
@@ -92,7 +100,7 @@ impl WebGlRenderer {
         let axes_program = {
             let vert_shader = webgl_utils::compile_shader(
                 &context,
-                WebGlRenderingContext::VERTEX_SHADER,
+                WebGl2RenderingContext::VERTEX_SHADER,
                 r#"
                 attribute vec2 aVertexPosition;
     
@@ -106,7 +114,7 @@ impl WebGlRenderer {
 
             let frag_shader = webgl_utils::compile_shader(
                 &context,
-                WebGlRenderingContext::FRAGMENT_SHADER,
+                WebGl2RenderingContext::FRAGMENT_SHADER,
                 r#"
                 precision mediump float;
                 uniform vec4 color;
@@ -149,7 +157,7 @@ impl WebGlRenderer {
 
     pub fn clear(&self) {
         self.context.clear_color(0.0, 0.0, 0.0, 0.0);
-        self.context.clear(WebGlRenderingContext::COLOR_BUFFER_BIT);
+        self.context.clear(WebGl2RenderingContext::COLOR_BUFFER_BIT);
     }
 
     pub fn render_axes(&self, job: &RenderJob, x_ticks: &[AxisTick], y_ticks: &[AxisTick]) {
@@ -165,7 +173,7 @@ impl WebGlRenderer {
         );
         gl.uniform4f(Some(&self.ap_color_pos), 0.3, 0.3, 0.3, 1.0);
         gl.bind_buffer(
-            WebGlRenderingContext::ARRAY_BUFFER,
+            WebGl2RenderingContext::ARRAY_BUFFER,
             Some(&self.trace_buffer),
         );
         gl.line_width(2.0);
@@ -188,15 +196,15 @@ impl WebGlRenderer {
             let vert_array = js_sys::Float32Array::view(&data);
 
             gl.buffer_data_with_array_buffer_view(
-                WebGlRenderingContext::ARRAY_BUFFER,
+                WebGl2RenderingContext::ARRAY_BUFFER,
                 &vert_array,
-                WebGlRenderingContext::STATIC_DRAW,
+                WebGl2RenderingContext::STATIC_DRAW,
             );
         }
 
-        gl.vertex_attrib_pointer_with_i32(0, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
+        gl.vertex_attrib_pointer_with_i32(0, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
         gl.enable_vertex_attrib_array(0);
-        gl.draw_arrays(WebGlRenderingContext::LINE_STRIP, 0, 3);
+        gl.draw_arrays(WebGl2RenderingContext::LINE_STRIP, 0, 3);
 
         const TICK_LEN: f32 = 4.0;
         let points = (x_ticks.len() + y_ticks.len()) * 2;
@@ -225,13 +233,13 @@ impl WebGlRenderer {
             let vert_array = js_sys::Float32Array::view(&data);
 
             gl.buffer_data_with_array_buffer_view(
-                WebGlRenderingContext::ARRAY_BUFFER,
+                WebGl2RenderingContext::ARRAY_BUFFER,
                 &vert_array,
-                WebGlRenderingContext::STATIC_DRAW,
+                WebGl2RenderingContext::STATIC_DRAW,
             );
         }
 
-        gl.draw_arrays(WebGlRenderingContext::LINES, 0, points as i32);
+        gl.draw_arrays(WebGl2RenderingContext::LINES, 0, points as i32);
     }
 
     pub fn render_grid(&self, job: &RenderJob, x_ticks: &[AxisTick], y_ticks: &[AxisTick]) {
@@ -253,11 +261,11 @@ impl WebGlRenderer {
         gl.uniform2f(Some(&self.tp_origin_pos), x_from, y_from);
         gl.uniform2f(Some(&self.tp_size_pos), x_to - x_from, y_to - y_from);
         gl.uniform2f(Some(&self.tp_transform_pos), 1.0, 0.0);
-        gl.uniform3f(Some(&self.tp_color_pos), 0.8, 0.8, 0.8);
+        gl.uniform4f(Some(&self.tp_color_pos), 0.35, 0.35, 0.35, 0.65);
         gl.line_width(1.0);
 
         gl.bind_buffer(
-            WebGlRenderingContext::ARRAY_BUFFER,
+            WebGl2RenderingContext::ARRAY_BUFFER,
             Some(&self.trace_buffer),
         );
         let points = (x_ticks.len() + y_ticks.len()) * 2;
@@ -282,19 +290,19 @@ impl WebGlRenderer {
             let vert_array = js_sys::Float32Array::view(&data);
 
             gl.buffer_data_with_array_buffer_view(
-                WebGlRenderingContext::ARRAY_BUFFER,
+                WebGl2RenderingContext::ARRAY_BUFFER,
                 &vert_array,
-                WebGlRenderingContext::STATIC_DRAW,
+                WebGl2RenderingContext::STATIC_DRAW,
             );
         }
 
-        gl.vertex_attrib_pointer_with_i32(0, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
+        gl.vertex_attrib_pointer_with_i32(0, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
         gl.enable_vertex_attrib_array(0);
-        gl.draw_arrays(WebGlRenderingContext::LINES, 0, points as i32);
+        gl.draw_arrays(WebGl2RenderingContext::LINES, 0, points as i32);
     }
 
     fn allocate_bundle_entry(
-        context: &WebGlRenderingContext,
+        context: &WebGl2RenderingContext,
         from: RangePrec,
         to: RangePrec,
         entry: &super::BundleEntry,
@@ -307,7 +315,7 @@ impl WebGlRenderer {
                 )),
             };
 
-        context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&buffer));
+        context.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&buffer));
         let points;
 
         unsafe {
@@ -324,9 +332,9 @@ impl WebGlRenderer {
             points = data.len() as i32 / 2;
 
             context.buffer_data_with_array_buffer_view(
-                WebGlRenderingContext::ARRAY_BUFFER,
+                WebGl2RenderingContext::ARRAY_BUFFER,
                 &vert_array,
-                WebGlRenderingContext::STATIC_DRAW,
+                WebGl2RenderingContext::STATIC_DRAW,
             );
         }
 
@@ -394,25 +402,26 @@ impl Renderer for WebGlRenderer {
                         continue;
                     }
 
-                    gl.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&row.buffer));
-                    gl.uniform3f(
+                    gl.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&row.buffer));
+                    gl.uniform4f(
                         Some(&self.tp_color_pos),
                         row.color[0],
                         row.color[1],
                         row.color[2],
+                        1.0,
                     );
                     gl.line_width(row.width);
 
                     gl.vertex_attrib_pointer_with_i32(
                         0,
                         2,
-                        WebGlRenderingContext::FLOAT,
+                        WebGl2RenderingContext::FLOAT,
                         false,
                         0,
                         0,
                     );
                     gl.enable_vertex_attrib_array(0);
-                    gl.draw_arrays(WebGlRenderingContext::LINE_STRIP, 0, row.points);
+                    gl.draw_arrays(WebGl2RenderingContext::LINE_STRIP, 0, row.points);
                 }
             }
         }
@@ -421,18 +430,19 @@ impl Renderer for WebGlRenderer {
 
         if job.get_traces().len() > 0 {
             gl.bind_buffer(
-                WebGlRenderingContext::ARRAY_BUFFER,
+                WebGl2RenderingContext::ARRAY_BUFFER,
                 Some(&self.trace_buffer),
             );
 
             for trace in job.get_traces() {
                 let n;
 
-                gl.uniform3f(
+                gl.uniform4f(
                     Some(&self.tp_color_pos),
                     trace.color[0] as f32 / 255.0,
                     trace.color[1] as f32 / 255.0,
                     trace.color[2] as f32 / 255.0,
+                    1.0,
                 );
                 gl.line_width(trace.width as f32);
 
@@ -449,15 +459,15 @@ impl Renderer for WebGlRenderer {
                     let vert_array = js_sys::Float32Array::view(&data);
 
                     gl.buffer_data_with_array_buffer_view(
-                        WebGlRenderingContext::ARRAY_BUFFER,
+                        WebGl2RenderingContext::ARRAY_BUFFER,
                         &vert_array,
-                        WebGlRenderingContext::STATIC_DRAW,
+                        WebGl2RenderingContext::STATIC_DRAW,
                     );
                 }
 
-                gl.vertex_attrib_pointer_with_i32(0, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
+                gl.vertex_attrib_pointer_with_i32(0, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
                 gl.enable_vertex_attrib_array(0);
-                gl.draw_arrays(WebGlRenderingContext::LINE_STRIP, 0, n as i32);
+                gl.draw_arrays(WebGl2RenderingContext::LINE_STRIP, 0, n as i32);
             }
         }
 
@@ -561,12 +571,12 @@ impl Drop for WebGlRenderer {
 }
 
 mod webgl_utils {
-    use web_sys::{WebGlProgram, WebGlRenderingContext, WebGlShader};
+    use web_sys::{WebGlProgram, WebGl2RenderingContext, WebGlShader};
 
     use crate::{renderers::AxisTick, structs::RangePrec};
 
     pub fn compile_shader(
-        context: &WebGlRenderingContext,
+        context: &WebGl2RenderingContext,
         shader_type: u32,
         source: &str,
     ) -> Result<WebGlShader, String> {
@@ -577,7 +587,7 @@ mod webgl_utils {
         context.compile_shader(&shader);
 
         if context
-            .get_shader_parameter(&shader, WebGlRenderingContext::COMPILE_STATUS)
+            .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
             .as_bool()
             .unwrap_or(false)
         {
@@ -590,7 +600,7 @@ mod webgl_utils {
     }
 
     pub fn link_program(
-        context: &WebGlRenderingContext,
+        context: &WebGl2RenderingContext,
         vert_shader: &WebGlShader,
         frag_shader: &WebGlShader,
     ) -> Result<WebGlProgram, String> {
@@ -603,7 +613,7 @@ mod webgl_utils {
         context.link_program(&program);
 
         if context
-            .get_program_parameter(&program, WebGlRenderingContext::LINK_STATUS)
+            .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
             .as_bool()
             .unwrap_or(false)
         {

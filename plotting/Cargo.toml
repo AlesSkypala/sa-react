@@ -28,9 +28,6 @@ console_error_panic_hook = { version = "0.1.6", optional = true }
 # Unfortunately, `wee_alloc` requires nightly Rust when targeting wasm for now.
 wee_alloc = { version = "0.4.5", optional = true }
 
-plotters = { version = "^0.3.0", default_features = false, features = [ "line_series" ] }
-plotters-canvas = { path = "../plotters_canvas" }
-
 lazy_static = "1.4.0"
 chrono = { version = "0.4", features=[ "wasmbind" ] }
 
@@ -44,7 +41,7 @@ features = [
     'OffscreenCanvas',
     'HtmlCanvasElement',
     'CanvasRenderingContext2d',
-    'WebGlRenderingContext',
+    'WebGl2RenderingContext',
     'WebGlBuffer',
     'WebGlProgram',
     'WebGlShader',

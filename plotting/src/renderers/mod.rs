@@ -1,4 +1,3 @@
-mod canvas;
 mod webgl;
 use std::{convert::TryInto, mem::size_of};
 
@@ -7,7 +6,6 @@ use wasm_bindgen::prelude::*;
 use web_sys::OffscreenCanvas;
 
 use crate::structs::{RangePrec, RenderJob};
-pub use canvas::OffscreenGraphRenderer;
 pub use webgl::WebGlRenderer;
 
 pub struct BundleEntry {
@@ -54,12 +52,6 @@ pub struct RendererContainer {
 
 #[wasm_bindgen]
 impl RendererContainer {
-    pub fn new_offscreen(elem: OffscreenCanvas) -> Result<RendererContainer, JsValue> {
-        Ok(Self {
-            renderer: Box::new(OffscreenGraphRenderer::new(elem)?),
-        })
-    }
-
     pub fn new_webgl(elem: OffscreenCanvas) -> Result<RendererContainer, JsValue> {
         Ok(Self {
             renderer: Box::new(WebGlRenderer::new(elem)?),
