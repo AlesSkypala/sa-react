@@ -28,8 +28,8 @@ export const invoke_job = createAsyncThunk(
             const traces: Trace[] | undefined = result.loadedTraces && Object.keys(result.loadedTraces)?.map(t => ({
                 id: t,
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                handle: result.loadedTraces![t],
-                title: t.split('::').reverse()[0],
+                handle: result.loadedTraces![t].handle,
+                title: result.loadedTraces?.[t].suggestedTitle ?? t.split('::').reverse()[0],
                 style: { width: 1, color: randomColorDark() },
                 active: true,
             }));

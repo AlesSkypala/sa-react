@@ -9,6 +9,7 @@ import { GraphsState } from './graphs';
 import Logger from '../Logger';
 import { Dispatch } from 'react';
 import { invoke_job } from './jobs';
+import { t } from '../locale';
 
 type ActionLogic<T = unknown> = ((state: GraphsState, graph: Graph) => unknown) | {
     asynch(state: Readonly<GraphsState>, graph: Readonly<Graph>, dispatch: Dispatch<unknown>): Promise<T>;
@@ -68,36 +69,36 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
     'avg': {
         asynch: async (_, graph, dispatch) => {
             const job = new DataJob(graph.xRange);
+            const handles = graph.traces.filter(t => t.active).map(t => t.handle);
 
             job.createOperation({
                 id: `local::avg::${Md5.hashStr(String(Math.random()))}`,
-                handles: graph.traces.filter(t => t.active).map(t => t.handle),
+                handles,
                 operation: 'avg',
                 xType: graph.xType,
+                title: t('datasets.avg', { count: handles.length }),
             }).relate(graph.id);
 
             dispatch(invoke_job(job));
         },
-        post: () => {
-            // Nothing to do
-        }
+        post: () => { /* Nothing to do */ }
     },
     'sum': {
         asynch: async (_, graph, dispatch) => {
             const job = new DataJob(graph.xRange);
+            const handles = graph.traces.filter(t => t.active).map(t => t.handle);
 
             job.createOperation({
                 id: `local::sum::${Md5.hashStr(String(Math.random()))}`,
-                handles: graph.traces.filter(t => t.active).map(t => t.handle),
+                handles,
                 operation: 'sum',
                 xType: graph.xType,
+                title: t('datasets.sum', { count: handles.length }),
             }).relate(graph.id);
 
             dispatch(invoke_job(job));
         },
-        post: () => {
-            // Nothing to do
-        }
+        post: () => { /* Nothing to do */ }
     },
     'del-sel': (_, graph) => {
         graph.traces = graph.traces.filter(t => !t.active);

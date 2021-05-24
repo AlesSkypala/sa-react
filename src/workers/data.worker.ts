@@ -82,7 +82,7 @@ export class DataWorkerProxy {
     public async invokeDataJob(job: DataJob): Promise<DataJobResult> {
         const sources = await DataService.getSources();
 
-        const result: { [key: string]: number } = {};
+        const result: DataJobResult['loadedTraces'] = {};
 
         for (const bulk of job.bulkDownload) {
             const trace = sources
@@ -102,9 +102,9 @@ export class DataWorkerProxy {
                 ids.push(trid);
 
                 if (trid in this.traces) {
-                    result[trid] = this.traces[trid];
+                    result[trid] = { handle: this.traces[trid] };
                 } else {
-                    result[trid] = this.traces[trid] = plotting.create_trace(trid, trace?.xType);
+                    result[trid] = { handle: this.traces[trid] = plotting.create_trace(trid, trace?.xType) };
                 }
             }
 
@@ -118,7 +118,8 @@ export class DataWorkerProxy {
         }
 
         for (const op of job.ops) {
-            const handle = result[op.id] = this.traces[op.id] = plotting.create_trace(op.id, op.xType);
+            const handle = this.traces[op.id] = plotting.create_trace(op.id, op.xType);
+            result[op.id] = { handle, suggestedTitle: op.title };
 
             plotting.op_traces(handle, new Uint32Array(op.handles), op.operation, job.range[0], job.range[1]);
         }

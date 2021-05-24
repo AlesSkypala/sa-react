@@ -158,6 +158,11 @@ const en_lang = {
         id: 'ID: {{id}}',
         path: 'Path: {{path}}',
         favorites: 'Favorites',
+
+        avg: 'Average of {{count}} trace',
+        avg_plural: 'Average of {{count}} traces',
+        sum: 'Sum of {{count}} trace',
+        sum_plural: 'Sum of {{count}} traces',
     },
 
     error: {

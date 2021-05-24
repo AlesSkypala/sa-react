@@ -6,7 +6,9 @@ type OpTrace = {
     id: Trace['id'],
     xType: Graph['xType'],
     operation: 'sum' | 'avg',
-    handles: number[]
+    handles: number[],
+
+    title?: string,
 };
 
 class DataJob {

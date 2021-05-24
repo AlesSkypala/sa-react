@@ -6,5 +6,5 @@ type DataJobState =
 ;
 
 type DataJobResult = {
-    loadedTraces?: { [key: string]: number };
+    loadedTraces?: { [key: string]: { handle: number, suggestedTitle?: string } };
 };
