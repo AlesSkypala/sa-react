@@ -78,14 +78,14 @@ const relayout = ({ layout, items, stacking }: SliceStateDraft<typeof graphsSlic
 
 export const graph_action = createAsyncThunk(
     'graphs/graph_action',
-    async (payload: { id: Graph['id'], action: TraceAction }, { getState }) => {
+    async (payload: { id: Graph['id'], action: TraceAction }, { getState, dispatch }) => {
         const state = (getState() as RootStore).graphs;
         const graph = state.items.find(g => g.id === payload.id);
         const actionObj = actions[payload.action];
 
         if (!graph || typeof actionObj !== 'object') return { ...payload, data: undefined };
 
-        return { ...payload, data: await actionObj.asynch(state, graph) };
+        return { ...payload, data: await actionObj.asynch(state, graph, dispatch) };
     }
 );
 

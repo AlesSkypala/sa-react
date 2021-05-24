@@ -2,7 +2,7 @@ use plotting::data;
 
 #[test]
 fn add_segments() {
-    let ptr = data::create_trace("test", "datetime", "int");
+    let ptr = data::create_trace("test", "datetime");
 
     &data::get_trace_once(ptr, |deref| {
         assert_eq!(deref.id, "test");

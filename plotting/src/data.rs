@@ -1,7 +1,7 @@
 use std::convert::TryInto;
 use std::{cell::RefCell, collections::HashMap};
 
-use crate::structs::{DataPrec, RangePrec, TraceData};
+use crate::structs::{DataPrec, RangePrec, Segment, TraceData};
 use lazy_static::lazy_static;
 use wasm_bindgen::prelude::*;
 
@@ -100,7 +100,7 @@ lazy_static! {
 }
 
 #[wasm_bindgen]
-pub fn create_trace(id: &str, x_type: &str, y_type: &str) -> DataIdx {
+pub fn create_trace(id: &str, x_type: &str) -> DataIdx {
     unsafe {
         let handle = AVAIL_HANDLE;
 
@@ -112,7 +112,6 @@ pub fn create_trace(id: &str, x_type: &str, y_type: &str) -> DataIdx {
                 TraceData {
                     id: String::from(id.clone()),
                     x_type: String::from(x_type.clone()),
-                    y_type: String::from(y_type.clone()),
 
                     segments: vec![],
                 },
@@ -137,6 +136,39 @@ pub fn get_trace_once<T: FnOnce(&mut TraceData)>(handle: DataIdx, func: T) {
 
 pub fn get_trace_ret<T: FnOnce(&mut TraceData) -> R, R>(handle: DataIdx, func: T) -> R {
     DATA.with(|data| func(data.borrow_mut().get_mut(&handle).unwrap()))
+}
+
+#[wasm_bindgen]
+pub fn op_traces(output: DataIdx, ptrs: &[DataIdx], op: &str, from: RangePrec, to: RangePrec) {
+    let mul = match op {
+        "sum" => 1.0,
+        "avg" => 1.0 / ptrs.len() as f64,
+        _ => panic!("Unknown operation")
+    };
+
+    let mut data = get_trace_ret(*ptrs.first().unwrap(), |t| {
+        let mut current = Vec::<(i32, f64)>::new();
+        for (x, y) in t.get_data_high_prec(from, to) {
+            current.push((x as i32, y * mul));
+        }
+
+        current
+    });
+
+    for t in ptrs.iter().skip(1) {
+        get_trace(*t, |t| {
+            for (row, (_, y)) in data.iter_mut().zip(t.get_data_high_prec(from, to)) {
+                row.1 += y * mul;
+            }
+        });
+    }
+
+    unsafe {
+        let data = std::mem::transmute(data);
+        get_trace_once(output, move |t| {
+            t.push_segment(create_segment(t.x_type.as_str(), "double", from, to, data));
+        });
+    }
 }
 
 #[wasm_bindgen]
@@ -170,49 +202,53 @@ pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box
         row_idx += 1;
     }
 
+    for (d, handle) in out.drain(0..).zip(ptrs.iter()) {
+        get_trace_once(*handle, move |trace| {
+            trace.push_segment(create_segment(x_type, y_type, start, cur, d))
+        });
+    }
+}
+
+pub fn create_segment(x_type: &str, y_type: &str, from: RangePrec, to: RangePrec, d: Vec<u8>) -> Box<dyn Segment> {
     macro_rules! create_segment {
         ( $xt:ty, $yt:ty, $d:expr ) => {
             unsafe {
                 Box::new(crate::structs::DataSegment::<$xt, $yt> {
-                    from: start,
-                    to: cur,
+                    from,
+                    to,
                     data: std::mem::transmute($d),
                 })
             }
         };
     }
 
-    for (d, handle) in out.drain(0..).zip(ptrs.iter()) {
-        get_trace_once(*handle, move |trace| {
-            trace.push_segment(match (x_type, y_type) {
-                ("datetime", "short") => {
-                    create_segment!(type_map!("datetime"), type_map!("short"), d)
-                }
-                ("datetime", "int") => create_segment!(type_map!("datetime"), type_map!("int"), d),
-                ("datetime", "long") => {
-                    create_segment!(type_map!("datetime"), type_map!("long"), d)
-                }
-                ("datetime", "byte") => {
-                    create_segment!(type_map!("datetime"), type_map!("byte"), d)
-                }
-                ("datetime", "ushort") => {
-                    create_segment!(type_map!("datetime"), type_map!("ushort"), d)
-                }
-                ("datetime", "uint") => {
-                    create_segment!(type_map!("datetime"), type_map!("uint"), d)
-                }
-                ("datetime", "ulong") => {
-                    create_segment!(type_map!("datetime"), type_map!("ulong"), d)
-                }
-                ("datetime", "float") => {
-                    create_segment!(type_map!("datetime"), type_map!("float"), d)
-                }
-                ("datetime", "double") => {
-                    create_segment!(type_map!("datetime"), type_map!("double"), d)
-                }
-                _ => panic!("Unknown XY pair"),
-            })
-        });
+    match (x_type, y_type) {
+        ("datetime", "short") => {
+            create_segment!(type_map!("datetime"), type_map!("short"), d)
+        }
+        ("datetime", "int") => create_segment!(type_map!("datetime"), type_map!("int"), d),
+        ("datetime", "long") => {
+            create_segment!(type_map!("datetime"), type_map!("long"), d)
+        }
+        ("datetime", "byte") => {
+            create_segment!(type_map!("datetime"), type_map!("byte"), d)
+        }
+        ("datetime", "ushort") => {
+            create_segment!(type_map!("datetime"), type_map!("ushort"), d)
+        }
+        ("datetime", "uint") => {
+            create_segment!(type_map!("datetime"), type_map!("uint"), d)
+        }
+        ("datetime", "ulong") => {
+            create_segment!(type_map!("datetime"), type_map!("ulong"), d)
+        }
+        ("datetime", "float") => {
+            create_segment!(type_map!("datetime"), type_map!("float"), d)
+        }
+        ("datetime", "double") => {
+            create_segment!(type_map!("datetime"), type_map!("double"), d)
+        }
+        _ => panic!("Unknown XY pair"),
     }
 }
 

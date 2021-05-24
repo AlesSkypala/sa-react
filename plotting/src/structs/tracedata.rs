@@ -4,7 +4,6 @@ pub type DataPrec = f32;
 pub struct TraceData {
     pub id: String,
     pub x_type: String,
-    pub y_type: String,
 
     pub segments: Vec<Box<dyn Segment>>,
 }
@@ -12,10 +11,6 @@ pub struct TraceData {
 impl TraceData {
     pub fn get_x_type(&self) -> &String {
         &self.x_type
-    }
-
-    pub fn get_y_type(&self) -> &String {
-        &self.y_type
     }
 
     // fn get_segments(&self) -> &Vec<Box<dyn Segment>> {
@@ -39,6 +34,15 @@ impl TraceData {
     ) -> impl Iterator<Item = (DataPrec, DataPrec)> + 'a {
         self.get_segments_in(from, to)
             .flat_map(move |seg| seg.iter_in(from, to))
+    }
+
+    pub fn get_data_high_prec<'a>(
+        &'a self,
+        from: RangePrec,
+        to: RangePrec,
+    ) -> impl Iterator<Item = (RangePrec, RangePrec)> + 'a {
+        self.get_segments_in(from, to)
+            .flat_map(move |seg| seg.iter_high_prec(from, to))
     }
 
     pub fn get_data_with_origin<'a>(
@@ -144,6 +148,11 @@ pub trait Segment {
         x_orig: RangePrec,
         y_orig: RangePrec,
     ) -> Box<dyn Iterator<Item = (DataPrec, DataPrec)> + 'a>;
+    fn iter_high_prec<'a>(
+        &'a self,
+        from: RangePrec,
+        to: RangePrec,
+    ) -> Box<dyn Iterator<Item = (RangePrec, RangePrec)> + 'a>;
 
     fn shrink(&mut self, from: RangePrec, to: RangePrec);
 }
@@ -168,6 +177,20 @@ impl<X: SegmentNumeric + Copy, Y: SegmentNumeric + Copy> Segment for DataSegment
                 .skip_while(move |(x, _)| x.to_rangeprec() < from)
                 .take_while(move |(x, _)| x.to_rangeprec() < to)
                 .map(|(x, y)| (x.to_dataprec(), y.to_dataprec())),
+        )
+    }
+
+    fn iter_high_prec<'a>(
+        &'a self,
+        from: RangePrec,
+        to: RangePrec,
+    ) -> Box<dyn Iterator<Item = (RangePrec, RangePrec)> + 'a> {
+        Box::new(
+            (&self.data)
+                .iter()
+                .skip_while(move |(x, _)| x.to_rangeprec() < from)
+                .take_while(move |(x, _)| x.to_rangeprec() < to)
+                .map(|(x, y)| (x.to_rangeprec(), y.to_rangeprec())),
         )
     }
 

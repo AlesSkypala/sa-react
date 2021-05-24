@@ -2,30 +2,16 @@ import { Md5 } from 'ts-md5';
 import { dataWorker } from '..';
 import { TraceSearchModal } from '../components/Modals';
 import { DataService, DialogService } from '../services';
+import DataJob from '../services/DataJob';
 import { getLdevModeFromDataset, toLdevInternalFromVariant } from '../utils/ldev';
 import { isHomogenous, splitTraceId } from '../utils/trace';
 import { GraphsState } from './graphs';
 import Logger from '../Logger';
-
-const createCommonTrace = (graph: Graph, idPrefix: 'avg' | 'sum', titlePrefix: string): void => {
-    const selected = graph.traces.filter(t => t.active);
-
-    if (selected.length > 1) {
-        graph.traces = [
-            ...graph.traces,
-            {
-                id: idPrefix + '::' + Md5.hashStr(selected.map(s => s.id).join(','), false),
-                handle: -1,
-                title: `${titlePrefix} ${selected.length} křivek`,
-                style: { width: 1, color: [ 255, 255, 255 ] },
-                active: true,
-            }
-        ];
-    }
-};
+import { Dispatch } from 'react';
+import { invoke_job } from './jobs';
 
 type ActionLogic<T = unknown> = ((state: GraphsState, graph: Graph) => unknown) | {
-    asynch(state: Readonly<GraphsState>, graph: Readonly<Graph>): Promise<T>;
+    asynch(state: Readonly<GraphsState>, graph: Readonly<Graph>, dispatch: Dispatch<unknown>): Promise<T>;
     post(state: GraphsState, graph: Graph, data: T): unknown;
 };
 
@@ -79,8 +65,40 @@ const actions: { [k in TraceAction]: ActionLogic<unknown> } = {
         }
     },
 
-    'avg': (_, graph) => createCommonTrace(graph, 'avg', 'Průměr'),
-    'sum': (_, graph) => createCommonTrace(graph, 'sum', 'Průměr'),
+    'avg': {
+        asynch: async (_, graph, dispatch) => {
+            const job = new DataJob(graph.xRange);
+
+            job.createOperation({
+                id: `local::avg::${Md5.hashStr(String(Math.random()))}`,
+                handles: graph.traces.filter(t => t.active).map(t => t.handle),
+                operation: 'avg',
+                xType: graph.xType,
+            }).relate(graph.id);
+
+            dispatch(invoke_job(job));
+        },
+        post: () => {
+            // Nothing to do
+        }
+    },
+    'sum': {
+        asynch: async (_, graph, dispatch) => {
+            const job = new DataJob(graph.xRange);
+
+            job.createOperation({
+                id: `local::sum::${Md5.hashStr(String(Math.random()))}`,
+                handles: graph.traces.filter(t => t.active).map(t => t.handle),
+                operation: 'sum',
+                xType: graph.xType,
+            }).relate(graph.id);
+
+            dispatch(invoke_job(job));
+        },
+        post: () => {
+            // Nothing to do
+        }
+    },
     'del-sel': (_, graph) => {
         graph.traces = graph.traces.filter(t => !t.active);
     },

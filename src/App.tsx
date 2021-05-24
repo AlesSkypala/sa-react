@@ -70,6 +70,11 @@ class App extends React.Component<AppProps, AppState> {
             this.props.hide_graphs(visible.slice(0, visible.length - this.props.maxActive).map(v => v.id));
         }
 
+        const visibleIds = visible.map(g => g.id);
+        if (this.state.focused !== undefined && !visibleIds.includes(this.state.focused)) {
+            this.setState({ focused: visibleIds.length > 0 ? visibleIds.reverse()[0] : undefined });
+        }
+
         if (prevProps.darkMode !== this.props.darkMode) {
             this.applyDarkMode();
         }

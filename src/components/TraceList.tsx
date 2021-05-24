@@ -84,6 +84,8 @@ class TraceList extends React.PureComponent<Props, State> {
             const ldevMap: { [key: string]: string } = {};
 
             for (const source of sources) {
+                if (source === 'local') continue;
+
                 const ldevs = this.props.traces
                     .filter(t => getLdevMode(t) === 'ldev')
                     .map(t => toLdevInternal(t, 'ldev'));

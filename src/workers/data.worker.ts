@@ -104,7 +104,7 @@ export class DataWorkerProxy {
                 if (trid in this.traces) {
                     result[trid] = this.traces[trid];
                 } else {
-                    result[trid] = this.traces[trid] = plotting.create_trace(trid, trace?.xType, trace?.yType);
+                    result[trid] = this.traces[trid] = plotting.create_trace(trid, trace?.xType);
                 }
             }
 
@@ -113,7 +113,14 @@ export class DataWorkerProxy {
                 plotting.bulkload_segments(new Uint32Array(ids.map(i => this.traces[i])), trace.xType, trace.yType, new Uint8Array(data[1]));
             } else {
                 Logger.warn(`No data received via bulkload for job ${job.handle}!`);
+                throw new Error('Bulk load resulted in an empty dataset.');
             }
+        }
+
+        for (const op of job.ops) {
+            const handle = result[op.id] = this.traces[op.id] = plotting.create_trace(op.id, op.xType);
+
+            plotting.op_traces(handle, new Uint32Array(op.handles), op.operation, job.range[0], job.range[1]);
         }
 
         return {
