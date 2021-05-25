@@ -86,6 +86,13 @@ const en_lang = {
             copy: 'Copy existing',
         },
 
+        graphJobs: {
+            title: 'Jobs related to this graph',
+            running: '{{count}} job is running',
+            running_plural: '{{count}} jobs are running',
+            failed: 'Job {{handle}} has failed.',
+        },
+
         editGraph: {
             title: 'Edit the graph {{name}}',
         },
@@ -166,9 +173,14 @@ const en_lang = {
         sum_plural: 'Sum of {{count}} traces',
     },
 
+    warning: {
+        noVisibleSlots: 'No active contexts left. Either minimize a visible graph or increase your active context limit in the application settings.',
+    },
+
     error: {
         title: 'An unexpected error has occurred!',
-        directions: 'Please, save your console log (enter the developer menu by pressing F12 and follow the instructions in the gif above) and email it to us.'
+        directions: 'Please, save your console log (enter the developer menu by pressing F12 and follow the instructions in the gif above) and email it to us.',
+        jobFailed: 'Data job {{handle}} has failed.',
     }
 };
 

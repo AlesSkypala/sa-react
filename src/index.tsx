@@ -13,6 +13,7 @@ import store from './redux/store';
 import './index.scss';
 import 'react-virtualized/styles.css';
 import 'react-contexify/dist/ReactContexify.css';
+import 'react-toastify/dist/ReactToastify.css';
 import { loadTranslations } from './locale';
 
 export const dataWorker = wrap<DataWorkerProxy>(new DataWorker());

@@ -1,0 +1,20 @@
+.row.separated > .col {
+    border-right: solid 1px lightgray;
+
+    &:last-child {
+        border-right: none;
+    }
+}
+
+#source-select {
+    background-color: transparent;
+
+    &:focus {
+        box-shadow: none;
+    }
+
+    .dark-mode & {
+        color: white;
+        border: 1px solid #494949;
+    }
+}

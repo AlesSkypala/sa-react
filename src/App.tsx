@@ -8,6 +8,7 @@ import { GlobalHotKeys } from 'react-hotkeys';
 import { t } from './locale';
 import { AppSettings } from './redux/settings';
 import Helmet from 'react-helmet';
+import { ToastContainer } from 'react-toastify';
 
 
 export interface AppState {
@@ -176,6 +177,7 @@ class App extends React.Component<AppProps, AppState> {
                     ))}
                 </GraphContainer>
                 <ModalPortal />
+                <ToastContainer />
                 <div id="context-menu"></div>
                 <GlobalHotKeys
                     keyMap={{ SEL_ALL: 'ctrl+a', SEL_INV: 'ctrl+i', DEL_TRACE: 'del' }}

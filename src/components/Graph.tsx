@@ -26,6 +26,7 @@ import GraphDeleteConfirmation from './Modals/GraphDeleteConfirmation';
 import GraphGui from './GraphGui';
 
 import './Graph.scss';
+import GraphJobsModal from './Modals/GraphJobsModal';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {
     const elem = document.getElementById('context-menu');
@@ -331,6 +332,14 @@ class GraphComponent
         );
     }
 
+    private showJobs = () => {
+        DialogService.open(
+            GraphJobsModal,
+            () => { /* */ },
+            { id: this.props.id }
+        );
+    }
+
     private onLdevJoin = async () => {
         const avail = this.props.traces.filter(t => t.active);
         const availMap = avail.reduce<{ [key: string]: string}>((prev, next) => {
@@ -428,7 +437,7 @@ class GraphComponent
                 <div className='text-center position-relative'>
                     <h5 className='my-0 w-100 text-center'>{title}</h5>
                     <div style={{ right: 0, top: 0, bottom: 0 }} className='d-flex align-items-center position-absolute buttons'>
-                        {pendingJobs.length > 0 && (
+                        {pendingJobs.length + failedJobs.length > 0 && (
                             <OverlayTrigger
                                 trigger={[ 'focus', 'hover' ]}
                                 placement='left'
@@ -436,29 +445,17 @@ class GraphComponent
 
                                 overlay={(
                                     <Tooltip id={`load-tooltip-${this.props.id}`}>
-                                        {t('graph.pendingJobs', { count: pendingJobs.length })}
+                                        {pendingJobs.length > 0 ? t('graph.pendingJobs', { count: pendingJobs.length }) : undefined}
+                                        {failedJobs.length  > 0 ? t('graph.failedJobs',  { count: failedJobs.length  }) : undefined}
                                     </Tooltip>
                                 )}
                             >
-                                <Button size='sm' variant='link' className='opaque'>
-                                    <Spinner animation='border' variant='primary' size='sm' />
-                                </Button>
-                            </OverlayTrigger>
-                        )}
-                        {failedJobs.length > 0 && (
-                            <OverlayTrigger
-                                trigger={[ 'focus', 'hover' ]}
-                                placement='left'
-                                container={document.getElementById('context-menu')}
-
-                                overlay={(
-                                    <Tooltip id={`load-tooltip-${this.props.id}`}>
-                                        {t('graph.failedJobs', { count: failedJobs.length })}
-                                    </Tooltip>
-                                )}
-                            >
-                                <Button size='sm' variant='link' className='opaque'>
-                                    <FontAwesomeIcon icon={faExclamationTriangle} color='red' />
+                                <Button size='sm' variant='link' className='opaque' onClick={this.showJobs}>
+                                    {failedJobs.length > 0 ? (
+                                        <FontAwesomeIcon icon={faExclamationTriangle} color='red' />
+                                    ): (
+                                        <Spinner animation='border' variant='primary' size='sm' />
+                                    )}
                                 </Button>
                             </OverlayTrigger>
                         )}

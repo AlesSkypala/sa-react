@@ -4,7 +4,8 @@ import { Dropdown } from 'react-bootstrap';
 import * as React from 'react';
 import { connect, unhide_graphs, ReduxProps, remove_graphs } from '../redux';
 import './HiddenGraphs.scss';
-
+import Notif from '../services/Notifications';
+import { t } from '../locale';
 
 const dispatchProps = {
     remove_graphs,
@@ -46,7 +47,7 @@ class HiddenGraphs extends React.Component<Props, State> {
         } else {
             return <>
                 {hiddenGraphs.map(g =>
-                    <div className="hidden-graph" key={g.id} onClick={activeCount < activeMax ? this.unhideGraphCallback(g.id) : undefined}>
+                    <div className="hidden-graph" key={g.id} onClick={activeCount < activeMax ? this.unhideGraphCallback(g.id) : this.showNotif}>
                         <span className="hidden-graph-title">{g.title}</span>
                         <FontAwesomeIcon icon={faPlusSquare} className="hidden-graph-icon" />
                     </div>
@@ -57,6 +58,10 @@ class HiddenGraphs extends React.Component<Props, State> {
 
     unhideGraphCallback = (id: Graph['id']) => () => {
         this.props.unhide_graphs(id);
+    }
+
+    showNotif = () => {
+        Notif.notify(t('warning.noVisibleSlots'), { toastId: 'noVisibleSlots', type: 'warning' });
     }
 }
 

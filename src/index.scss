@@ -19,3 +19,11 @@ body {
 body.dark-mode {
     background-color: gray;
 }
+
+#root :is(.Toastify__toast-container--top-left, .Toastify__toast-container--top-center, .Toastify__toast-container--top-right) {
+    top: 4em;
+}
+
+#root .Toastify__toast--warning {
+    background-color: #df9012;
+}

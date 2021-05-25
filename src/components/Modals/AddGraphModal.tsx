@@ -11,7 +11,7 @@ import { generate_graph_id } from '../../redux';
 import { dateToTimestamp, getDayFromEnd, rangeIntersectsBounds } from '../../utils/datetime';
 import DatasetTree from '../DatasetTree';
 
-import './AddGraphModal.css';
+import './AddGraphModal.scss';
 
 let PREV_SOURCE: DataSource['id'] | undefined = undefined;
 let PREV_TIMERANGE: Graph['xRange'] | undefined = undefined;

@@ -19,6 +19,19 @@
             border-color: var(--teal);
         }
     }
+
+    .buttons > .btn {
+        opacity: 0.3;
+        transition: 0.3s;
+    }
+    
+    .buttons > :is(.btn.opaque, .btn:hover) {
+        opacity: 0.8;
+    }
+
+    .btn:focus {
+        box-shadow: none;
+    }
 }
 
 .graph-content {
@@ -111,15 +124,6 @@
         pointer-events: none;
         position:absolute;
         border-left: dashed 1px black;
-    }
-
-    .buttons > .btn {
-        opacity: 0.3;
-        transition: 0.3s;
-    }
-    
-    .buttons > :is(.btn.opaque, .btn:hover) {
-        opacity: 0.8;
     }
 
     .graph-resize-overlay {

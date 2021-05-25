@@ -7,12 +7,12 @@ import { connect,  set_stacking, add_graphs, hide_graphs, ReduxProps, remove_gra
 import { DialogService } from '../services';
 import { ConfirmModal } from './Modals';
 import { t } from '../locale';
-
-import './Header.css';
 import { Args } from './Modals/AddGraphModal';
 import HiddenGraphs from './HiddenGraphs';
 import SettingsModal from './Modals/SettingsModal';
 import AddGraphModal from './Modals/AddGraphModal';
+
+import './Header.css';
 
 const noop = () => undefined;
 
@@ -48,6 +48,25 @@ class HeaderComponent
     state = { hiddenGraphsCollapsed: false };
     spacingRef = React.createRef<HTMLDivElement>();
     numberOfHiddenGraphs = 0;
+
+    public componentDidUpdate() {
+        const numberOfHiddenGraphs = this.props.graphs.filter(g => !g.visible).length;
+        if (numberOfHiddenGraphs < this.numberOfHiddenGraphs) this.setState({ hiddenGraphsCollapsed: false });
+        this.numberOfHiddenGraphs = numberOfHiddenGraphs;
+
+        // hide if overflowing
+        requestAnimationFrame(() => {
+            if (!this.state.hiddenGraphsCollapsed) {
+                const width = this.spacingRef.current?.getBoundingClientRect()?.width;
+
+                if (width !== undefined && width < 5) {
+                    this.setState({
+                        hiddenGraphsCollapsed: true
+                    });
+                }
+            }
+        });
+    }
 
     addGraph = () =>
         DialogService.open(
@@ -111,29 +130,8 @@ class HeaderComponent
             {},
         );
 
-    manageCollapsing = () => {
-        // if number of hidden graphs decreased, try unhiding
-        const numberOfHiddenGraphs = this.props.graphs.filter(g => !g.visible).length;
-        if (numberOfHiddenGraphs < this.numberOfHiddenGraphs) this.setState({ hiddenGraphsCollapsed: false });
-        this.numberOfHiddenGraphs = numberOfHiddenGraphs;
-
-        // hide if overflowing
-        requestAnimationFrame(() => {
-            if (!this.state.hiddenGraphsCollapsed) {
-                const width = this.spacingRef.current?.getBoundingClientRect()?.width;
-
-                if (width !== undefined && width < 5) {
-                    this.setState({
-                        hiddenGraphsCollapsed: true
-                    });
-                }
-            }
-        });
-    }
-
     public render() {
         const {graphs, stacking, layoutUnlocked} = this.props;
-        this.manageCollapsing();
 
         return (
             <header className="main-header">

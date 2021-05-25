@@ -4,6 +4,8 @@ import type { default as DataJob } from '../services/DataJob';
 import { add_traces } from './graphs';
 import { randomColorDark } from '../utils/color';
 import Logger from '../Logger';
+import Notif from '../services/Notifications';
+import { t } from '../locale';
 
 export const invoke_job = createAsyncThunk(
     'jobs/invoke',
@@ -20,7 +22,11 @@ export const invoke_job = createAsyncThunk(
             dispatch(change_state({ handle: job.handle, state: 'completed' }));
         } catch (err) {
             Logger.error(err);
-            dispatch(change_state({ handle: job.handle, state: 'error' }));
+            Notif.notify(
+                `${t('error.jobFailed', { handle: job.handle })}\n${err.toString()}`,
+                { type: 'error' }
+            );
+            dispatch(change_state({ handle: job.handle, state: 'error', error: err }));
             return;
         }
 
@@ -43,6 +49,7 @@ export type PendingDataJob = {
     handle: number,
     state: DataJobState,
     relatedGraphs: Graph['id'][],
+    error?: Error
 };
 
 export const jobsSlice = createSlice({
@@ -54,7 +61,7 @@ export const jobsSlice = createSlice({
         insert_running: (_state, action: PayloadAction<PendingDataJob>) => {
             _state.items[action.payload.handle] = action.payload;
         },
-        change_state: (_state, action: PayloadAction<Pick<PendingDataJob, 'handle' | 'state'>>) => {
+        change_state: (_state, action: PayloadAction<Pick<PendingDataJob, 'handle' | 'state' | 'error'>>) => {
             const { handle, state } = action.payload;
 
             if (handle in _state.items) {
@@ -62,6 +69,10 @@ export const jobsSlice = createSlice({
                     delete _state.items[handle];
                 } else {
                     _state.items[handle].state = state;
+
+                    if ('error' in action.payload) {
+                        _state.items[handle].error = action.payload.error;
+                    }
                 }
             }
         },
