@@ -1,11 +1,12 @@
-import { faPlusSquare } from '@fortawesome/free-solid-svg-icons';
+import { faPlusSquare, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Dropdown } from 'react-bootstrap';
 import * as React from 'react';
 import { connect, unhide_graphs, ReduxProps, remove_graphs } from '../redux';
-import './HiddenGraphs.scss';
 import Notif from '../services/Notifications';
 import { t } from '../locale';
+import './HiddenGraphs.scss';
+
 
 const dispatchProps = {
     remove_graphs,
@@ -37,7 +38,7 @@ class HiddenGraphs extends React.Component<Props, State> {
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                     {hiddenGraphs.map(g =>
-                        <Dropdown.Item key={g.id} onClick={this.unhideGraphCallback(g.id)} disabled={activeCount >= activeMax}>
+                        <Dropdown.Item key={g.id} onClick={this.unhideGraphOrFail(g.id)} disabled={activeCount >= activeMax}>
                             <span className="hidden-graph-title">{g.title}</span>
                             <FontAwesomeIcon icon={faPlusSquare} className="hidden-graph-icon" />
                         </Dropdown.Item>
@@ -47,23 +48,35 @@ class HiddenGraphs extends React.Component<Props, State> {
         } else {
             return <>
                 {hiddenGraphs.map(g =>
-                    <div className="hidden-graph" key={g.id} onClick={activeCount < activeMax ? this.unhideGraphCallback(g.id) : this.showNotif}>
-                        <span className="hidden-graph-title">{g.title}</span>
-                        <FontAwesomeIcon icon={faPlusSquare} className="hidden-graph-icon" />
+                    <div className="hidden-graph" key={g.id}>
+                        <span className="hidden-graph-title" onClick={this.unhideGraphOrFail(g.id)}>{g.title}&nbsp;</span>
+                        <span className="hidden-graph-close" onClick={this.removeGraph(g.id)}>
+                            <FontAwesomeIcon icon={faTimes} className="hidden-graph-icon" />
+                        </span>
                     </div>
                 )}
             </>;
         }
     }
 
-    unhideGraphCallback = (id: Graph['id']) => () => {
-        this.props.unhide_graphs(id);
+    unhideGraphOrFail = (id: Graph['id']) => () => {
+        const { activeCount, activeMax } = this.props;
+        if (activeCount < activeMax) {
+            this.props.unhide_graphs(id);
+        } else {
+            this.showNotif();
+        }
+    }
+
+
+    removeGraph = (id: Graph['id']) => () => {
+        this.props.remove_graphs(id);
     }
 
     showNotif = () => {
         Notif.notify(t('warning.noVisibleSlots'), { toastId: 'noVisibleSlots', type: 'warning' });
     }
-}
 
+}
 
 export default connect(storeProps, dispatchProps)(HiddenGraphs);

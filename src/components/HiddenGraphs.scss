@@ -23,6 +23,13 @@
     font-size: .8em;
 }
 
+.hidden-graph-close {
+    border-left: 1px var(--gray) solid;
+    margin-left: .2em;
+    padding-left: .2em;
+}
+
 .hidden-graph-icon {
+    display: block;
     margin: .2em;
 }
