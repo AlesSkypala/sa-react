@@ -12,11 +12,11 @@ class Notifications {
                 message = (
                     <>
                         {split[0]}
-                        {split.slice(1).map(r => (
-                            <>
+                        {split.slice(1).map((r, i) => (
+                            <React.Fragment key={i}>
                                 <br/>
                                 {r}
-                            </>
+                            </React.Fragment>
                         ))}
                     </>
                 );

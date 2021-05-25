@@ -1,14 +1,12 @@
 import * as React from 'react';
-import { createPortal } from 'react-dom';
 import { connect } from 'react-redux';
 import debounce from 'lodash.debounce';
 import domtoimage from 'dom-to-image';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faWrench, faExclamationTriangle, faCamera, faMinusSquare } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faWrench, faExclamationTriangle, faCamera, faMinusSquare, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 
 import { Button, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
-import { Menu, useContextMenu, Submenu, Item, ItemParams, Separator } from 'react-contexify';
 
 import { dataWorker } from '..';
 import { transfer } from 'comlink';
@@ -27,11 +25,8 @@ import GraphGui from './GraphGui';
 
 import './Graph.scss';
 import GraphJobsModal from './Modals/GraphJobsModal';
+import ContextMenu from './ContextMenu';
 
-function MenuPortal({ children }: { children: React.ReactNode }) {
-    const elem = document.getElementById('context-menu');
-    return elem ? createPortal(children, elem) : <>{children}</>;
-}
 
 export const X_TICK_SPACE = 24;
 
@@ -315,8 +310,25 @@ class GraphComponent
 
     private debounceResize = debounce(this.updateSize, 300);
 
-    private onClone = ({ data }: ItemParams<unknown, 'active' | 'all'>) => {
+    private onClone = ({ data }: { data?: 'active' | 'all' }) => {
         this.props.clone_graph({ id: this.props.id, activeOnly: data === 'active' });
+    }
+    private onSelectTopLow = async ({ data }: { data?: number }) => {
+        if (data === undefined || data === 0) return;
+
+        const averages = await dataWorker.trace_averages(this.props.xRange[0], this.props.xRange[1], this.props.traces.map(t => t.handle));
+        averages.sort((a, b) => a[1] - b[1]);
+
+        const handles = new Set((data > 0 ? averages.slice(-data) : averages.slice(0, -data)).map(a => a[0]));
+        
+        this.props.toggle_traces({
+            id: this.props.id,
+            val: true,
+            negateRest: true,
+            traces: new Set(this.props.traces.filter(t => handles.has(t.handle)).map(t => t.id)),
+        });
+
+        // this.props.clone_graph({ id: this.props.id, activeOnly: data === 'active' });
     }
 
     private onLdevFilter = () => {
@@ -420,17 +432,20 @@ class GraphComponent
 
     public render() {
         const { title, traces } = this.props;
-        const { error } = this.state;
+        const { error, ldevSelectAvailable, ldevToHostGroupAvailable } = this.state;
 
         const pendingJobs = Object.values(this.props.jobs).filter(j => j.relatedGraphs.includes(this.props.id) && j.state === 'pending');
         const failedJobs  = Object.values(this.props.jobs).filter(j => j.relatedGraphs.includes(this.props.id) && j.state === 'error');
 
-        const menuShow = useContextMenu({ id: `graph-${this.props.id}-menu` }).show;
+        const menuShow = ContextMenu.invoker(`graph-menu-${this.props.id}`);
 
         const onContextMenu = (e: MouseEvent) => {
             e.preventDefault();
             menuShow(e);
         };
+
+        const iconUp   = <FontAwesomeIcon icon={faArrowUp}   color='green' />;
+        const iconDown = <FontAwesomeIcon icon={faArrowDown} color='red' />;
 
         return (
             <div className={`graph ${this.props.focused ? 'active' : ''}`} ref={this.graphRef}>
@@ -474,23 +489,37 @@ class GraphComponent
                         height={this.state.clientHeight}
                         // hidden={traces.length <= 0}
                     />
-                    <MenuPortal>
-                        <Menu id={`graph-${this.props.id}-menu`} theme={this.props.darkMode ? 'dark' : 'light'} animation={false}>
-                            <Submenu label="Clone Chart" arrow='>'>
-                                <Item onClick={this.onClone} data='all' data-clone="all">{t('graph.cloneAll')}</Item>
-                                <Item onClick={this.onClone} data='active' data-clone="active" disabled={!this.props.traces.find(t => t.active)}>{t('graph.cloneActive')}</Item>
-                            </Submenu>
-                            {this.state.ldevSelectAvailable && (
-                                <>
-                                    <Separator />
-                                    <Item onClick={this.onLdevFilter}>{t('graph.ldevSelect')}</Item>
-                                    {this.state.ldevToHostGroupAvailable && (
-                                        <Item onClick={this.onLdevJoin}>{t('graph.ldevJoin')}</Item>
-                                    )}
-                                </>
-                            )}
-                        </Menu>
-                    </MenuPortal>
+                    <ContextMenu
+                        darkMode={this.props.darkMode}
+                        id={`graph-menu-${this.props.id}`}
+                        tree={[
+                            {
+                                type: 'submenu',
+                                text: t('graph.clone'),
+                                children: [
+                                    { type: 'item', data: 'all', text: t('graph.cloneAll'), onClick: this.onClone  },
+                                    { type: 'item', data: 'active', text: t('graph.cloneActive'), onClick: this.onClone, disabled: !traces.some(t => t.active) },
+                                ]
+                            },
+                            {
+                                type: 'submenu',
+                                text: t('graph.select.title'),
+                                show: traces.length > 5,
+                                children: [
+                                    { type: 'item', text: <>{iconUp} {t('graph.select.top', { count: 5  })}</>, data: 5,  onClick: this.onSelectTopLow },
+                                    { type: 'item', text: <>{iconUp} {t('graph.select.top', { count: 10 })}</>, data: 10, onClick: this.onSelectTopLow, show: traces.length > 10 },
+                                    { type: 'item', text: <>{iconUp} {t('graph.select.top', { count: 20 })}</>, data: 20, onClick: this.onSelectTopLow, show: traces.length > 20 },
+                                    { type: 'separator' },
+                                    { type: 'item', text: <>{iconDown} {t('graph.select.low', { count: 5  })}</>, data: -5,  onClick: this.onSelectTopLow },
+                                    { type: 'item', text: <>{iconDown} {t('graph.select.low', { count: 10 })}</>, data: -10, onClick: this.onSelectTopLow, show: traces.length > 10 },
+                                    { type: 'item', text: <>{iconDown} {t('graph.select.low', { count: 20 })}</>, data: -20, onClick: this.onSelectTopLow, show: traces.length > 20 },
+                                ]
+                            },
+                            { type: 'separator', show: ldevSelectAvailable },
+                            { type: 'item', text: t('graph.ldevSelect'), onClick: this.onLdevFilter, show: ldevSelectAvailable },
+                            { type: 'item', text: t('graph.ldevJoin'),   onClick: this.onLdevJoin  , show: ldevSelectAvailable && ldevToHostGroupAvailable },
+                        ]}
+                    />
                     {!this.props.layoutLocked ? (
                         <div className='graph-resize-overlay'><h3>{t('graph.redrawNotice')}...</h3></div>
                     ) : (this.state.rendering && (

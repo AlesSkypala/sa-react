@@ -27,3 +27,7 @@ body.dark-mode {
 #root .Toastify__toast--warning {
     background-color: #df9012;
 }
+
+.react-contexify__item__content > svg:first-child {
+    margin-right: 0.5rem;
+}

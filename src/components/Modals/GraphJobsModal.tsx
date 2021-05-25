@@ -1,6 +1,6 @@
 
 import * as React from 'react';
-import { Button } from 'react-bootstrap';
+import { Button, ModalTitle } from 'react-bootstrap';
 import { ModalComponent } from '.';
 import { t } from '../../locale';
 import { connect } from '../../redux';
@@ -13,7 +13,7 @@ export interface Args {
 class GraphJobsModal extends ModalComponent<boolean, Args> {
 
     protected renderHeader(): JSX.Element {
-        return t('modals.graphJobs.title');
+        return <ModalTitle>{t('modals.graphJobs.title')}</ModalTitle>;
     }
     protected renderBody(): React.ReactNode {
         return <JobsList id={this.props.id} />;

@@ -172,6 +172,25 @@ pub fn op_traces(output: DataIdx, ptrs: &[DataIdx], op: &str, from: RangePrec, t
 }
 
 #[wasm_bindgen]
+pub fn trace_avgs(ptrs: &[DataIdx], from: RangePrec, to: RangePrec) -> JsValue {
+    JsValue::from_serde(
+        &ptrs.iter().map(|t| {
+            let mut sum = 0.0;
+            let mut idx = 0;
+
+            get_trace_once(*t, |trace| {
+                for (_, y) in trace.get_data_high_prec(from, to) {
+                    sum += y;
+                    idx += 1;
+                }
+            });
+
+            (*t, sum / idx as f64)
+        }).collect::<Vec<(DataIdx, f64)>>()
+    ).unwrap()
+}
+
+#[wasm_bindgen]
 pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box<[u8]>) {
     let x_desc = TYPE_SIZES.get(x_type).unwrap();
     let y_desc = TYPE_SIZES.get(y_type).unwrap();

@@ -145,6 +145,10 @@ export class DataWorkerProxy {
         return handles.map(t => plotting.is_zero(t, from, to));
     }
 
+    public trace_averages(from: number, to: number, handles: number[]): [number, number][] {
+        return plotting.trace_avgs(new Uint32Array(handles), from, to);
+    }
+
     public recommend_extents(from: number, to: number, handles: number[]): [ number, number, number, number ] {
         if (handles.length <= 0) {
             return [ from, to, 0, 1 ];

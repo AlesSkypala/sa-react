@@ -39,12 +39,19 @@ const en_lang = {
 
         noTraces: 'No active traces',
         redrawNotice: 'The graph will be rerendered after you lock the layout',
+        clone: 'Clone Graph',
         cloneAll: 'Clone All Series',
         cloneActive: 'Clone Active Series',
         ldevSelect: 'LDEV Select',
         ldevJoin: 'Join LDEV to HG',
 
         error: 'A critical error has occurred while rendering the graph:',
+
+        select: {
+            title: 'Select Traces',
+            top: 'Top {{count}}',
+            low: 'Low {{count}}',
+        }
     },
 
     modals: {
