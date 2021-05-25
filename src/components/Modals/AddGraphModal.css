@@ -5,3 +5,16 @@
 .row.separated > .col:last-child {
     border-right: none;
 }
+
+#source-select {
+    background-color: transparent;
+}
+
+.dark-mode #source-select {
+    color: white;
+    border: 1px solid #494949;
+}
+
+#source-select:focus {
+    box-shadow: none;
+}

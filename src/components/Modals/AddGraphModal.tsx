@@ -293,7 +293,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
             <Row className='separated'>
                 <Form.Group as={Col} md={3} className='d-flex flex-column'>
                     <Form.Label>{t('modals.addGraph.source')}</Form.Label>
-                    <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100'>
+                    <Form.Control as='select' multiple onChange={this.onSourceSelected} value={[this.state.selectedSource?.id ?? '']} className='h-100' id='source-select'>
                         {this.state.sources.map(s => (
                             <option disabled={s.datasets.length <= 0} key={s.id} value={s.id} title={this.generateSourceTooltip(s)}>{s.name}</option>
                         ))}
