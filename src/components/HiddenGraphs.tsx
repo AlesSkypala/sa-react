@@ -1,4 +1,4 @@
-import { faPlusSquare, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faTimes } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Dropdown } from 'react-bootstrap';
 import * as React from 'react';
@@ -38,9 +38,16 @@ class HiddenGraphs extends React.Component<Props, State> {
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                     {hiddenGraphs.map(g =>
-                        <Dropdown.Item key={g.id} onClick={this.unhideGraphOrFail(g.id)} disabled={activeCount >= activeMax}>
+                        <Dropdown.Item
+                            key={g.id}
+                            onClick={this.unhideGraphOrFail(g.id)}
+                            disabled={activeCount >= activeMax}
+                            className="hidden-graph collapsed"
+                        >
                             <span className="hidden-graph-title">{g.title}</span>
-                            <FontAwesomeIcon icon={faPlusSquare} className="hidden-graph-icon" />
+                            <span className="hidden-graph-close" onClick={this.removeGraph(g.id)}>
+                                <FontAwesomeIcon icon={faTimes} className="hidden-graph-icon" />
+                            </span>
                         </Dropdown.Item>
                     )}
                 </Dropdown.Menu>
@@ -48,7 +55,7 @@ class HiddenGraphs extends React.Component<Props, State> {
         } else {
             return <>
                 {hiddenGraphs.map(g =>
-                    <div className="hidden-graph" key={g.id}>
+                    <div className="hidden-graph uncollapsed" key={g.id}>
                         <span className="hidden-graph-title" onClick={this.unhideGraphOrFail(g.id)}>{g.title}&nbsp;</span>
                         <span className="hidden-graph-close" onClick={this.removeGraph(g.id)}>
                             <FontAwesomeIcon icon={faTimes} className="hidden-graph-icon" />
@@ -69,8 +76,11 @@ class HiddenGraphs extends React.Component<Props, State> {
     }
 
 
-    removeGraph = (id: Graph['id']) => () => {
+    removeGraph = (id: Graph['id']) => (e: React.MouseEvent) => {
         this.props.remove_graphs(id);
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
     }
 
     showNotif = () => {

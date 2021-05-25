@@ -1,4 +1,8 @@
-.hidden-graph {
+.hidden-graph-icon {
+    margin: .2em;
+}
+
+.hidden-graph.uncollapsed {
     display: inline-flex;
     align-items: center;
 
@@ -13,23 +17,49 @@
         color: white;
         background-color: var(--gray-dark);
     }
+
+    & .hidden-graph-title {
+        max-width: 100px;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        font-size: .8em;
+    }
+
+    & .hidden-graph-icon {
+        display: block;
+    }
+
+    & .hidden-graph-close {
+        border-left: 1px var(--gray) solid;
+        margin-left: .2em;
+        padding-left: .2em;
+    }
 }
 
-.hidden-graph-title {
-    max-width: 100px;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    font-size: .8em;
-}
+.hidden-graph.collapsed {
+    display: flex;
+    justify-content: space-between;
 
-.hidden-graph-close {
-    border-left: 1px var(--gray) solid;
-    margin-left: .2em;
-    padding-left: .2em;
-}
+    & .hidden-graph-title {
+        margin-right: 1em;
+    }
 
-.hidden-graph-icon {
-    display: block;
-    margin: .2em;
+    & .hidden-graph-close {
+        position: relative;
+
+        &::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 75%;
+            transform: translate(-50%, -50%);
+            width: 4em;
+            height: 2em;
+        }
+
+        &:hover > svg {
+            color: red !important;
+        }
+    }
 }
