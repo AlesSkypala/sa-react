@@ -6,15 +6,3 @@
     }
 }
 
-#source-select {
-    background-color: transparent;
-
-    &:focus {
-        box-shadow: none;
-    }
-
-    .dark-mode & {
-        color: white;
-        border: 1px solid #494949;
-    }
-}

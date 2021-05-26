@@ -4,8 +4,12 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import { t } from '../locale';
 import { favorite_dataset, ReduxProps, unfavorite_dataset } from '../redux';
+import { rangeIntersectsBounds } from '../utils/datetime';
 
 import './DatasetTree.scss';
+
+const expandStore: { [key: string]: string[] } = {};
+
 
 const knownIcons: { [key: string]: { [key: string]: IconDefinition } } = {
     'hp': {
@@ -37,34 +41,53 @@ export interface Props extends ReduxProps<typeof stateProps, typeof dispatchProp
     source: DataSource;
     selected: Dataset['id'][];
     disabled?: boolean;
+    dataRange: [number, number];
+
+    storeId?: string;
 
     onChange?(newsel: Props['selected']): void;
     onDoubleClick?(target: Dataset['id']): void;
 }
 
 type Leaf = {
-    icon?: string;
-    text: string[] | string;
+    text: string[];
+
     level: number;
+    idx: number;
+
+    cat?: string;
     value: Dataset | Leaf[];
 }
 
 export interface State {
     tree: { nodes: Leaf[], levels: Leaf[][] };
+    expanded: string[];
 }
 
 class DatasetTree extends React.Component<Props, State> {
     public state: State = {
         tree: { nodes: [], levels: [] },
+        expanded: [],
     }
 
     public componentDidMount() {
         this.buildTree(this.props);
+
+        if (this.props.storeId && this.props.storeId in expandStore) {
+            this.setState({ expanded: expandStore[this.props.storeId] });
+        }
+    }
+
+    public componentWillUnmount() {
+        if (this.props.storeId) {
+            expandStore[this.props.storeId] = [ ...this.state.expanded ];
+        }
     }
 
     public componentDidUpdate(prevProps: Props) {
-        if (this.props.source !== prevProps.source) {
+        if (this.props.source !== prevProps.source || this.props.dataRange !== prevProps.dataRange) {
             this.buildTree(this.props);
+            this.props.source !== prevProps.source && this.setState({ expanded: [] });
         } else if (this.props.favorites !== prevProps.favorites) {
             // eslint-disable-next-line react/no-direct-mutation-state
             this.state.tree.nodes[0].value = this.generateFavoriteLeaves();
@@ -74,14 +97,19 @@ class DatasetTree extends React.Component<Props, State> {
         }
     }
 
-    private generateFavoriteLeaves = () => {
+    private getIntersecting = (sets: Dataset[]): Dataset[] => sets.filter(d => rangeIntersectsBounds(this.props.dataRange, d.dataRange as [number, number][]))
+
+    private generateFavoriteLeaves = (): Leaf[] => {
         const { source, favorites } = this.props;
 
-        return source.datasets.filter(d => favorites.some(f => f.id === d.id && f.source === d.source)).map(d => ({
-            value: d,
-            text: [ ...d.category, d.id ],
-            level: 1,
-        }));
+        return this.getIntersecting(source.datasets)
+            .filter(d => favorites.some(f => f.id === d.id && f.source === d.source))
+            .map((d, i) => ({
+                value: d,
+                text: [ ...d.category, d.id ],
+                level: 1,
+                idx: i
+            }));
     }
 
     private buildTree = ({ source }: Props) => {
@@ -91,17 +119,20 @@ class DatasetTree extends React.Component<Props, State> {
         const categories: { [cat: string]: Leaf } = {};
 
         nodes.push(categories['favorites'] = {
+            cat: 'favorites',
             value: this.generateFavoriteLeaves(),
-            text: 'favorites',
+            text: [ 'favorites' ],
             level: -1,
+            idx: 0,
         });
 
-        for (const set of source.datasets) {
+        for (const set of this.getIntersecting(source.datasets)) {
             const cat = set.category.join('::');
             const leaf: Leaf = {
                 value: set,
-                text: set.id,
+                text: [ set.id ],
                 level: -1,
+                idx: -1,
             };
 
             if (!cat) {
@@ -115,9 +146,11 @@ class DatasetTree extends React.Component<Props, State> {
 
                         if (!(lvlCat in categories)) {
                             prevLevel.push(categories[lvlCat] = {
-                                text: lvlCat,
+                                text: [ lvl ],
+                                cat: lvlCat,
                                 value: [],
                                 level: -1,
+                                idx: -1,
                             });
                         }
 
@@ -136,7 +169,7 @@ class DatasetTree extends React.Component<Props, State> {
         levels.push(nodes);
         
         for (let levelIdx = 1, level = createLevel(nodes); level.length > 0; ++levelIdx) {
-            level.forEach(n => n.level = levelIdx);
+            level.forEach((n, i) => { n.level = levelIdx; n.idx = i; });
             levels.push(level);
             
             level = createLevel(level);
@@ -191,16 +224,31 @@ class DatasetTree extends React.Component<Props, State> {
         }
     }
 
-    private leafFavorite = (leaf: Leaf, isFavorite: boolean) => {
+    private leafFavorite = (leaf: Leaf, value: boolean) => {
         if (Array.isArray(leaf.value)) return;
         const { source, id } = leaf.value;
 
-        if (isFavorite) {
+        if (value) {
             this.props.unfavorite_dataset([ { source, id } ]);
         } else {
             this.props.favorite_dataset([ { source, id } ]);
         }
     };
+
+    private leafExpand = (leaf: Leaf) => {
+        if (!leaf.cat) { return; }
+
+        let catIdx: number;
+
+        if ((catIdx = this.state.expanded.indexOf(leaf.cat)) >= 0) {
+            const expanded = [ ...this.state.expanded ];
+            expanded.splice(catIdx, 1);
+
+            this.setState({ expanded });
+        } else {
+            this.setState({ expanded: [ ...this.state.expanded, leaf.cat ] });
+        }
+    }
 
     public render() {
         const { className, disabled, source, selected } = this.props;
@@ -208,17 +256,19 @@ class DatasetTree extends React.Component<Props, State> {
 
         return (
             <div className={`dstree ${disabled ? 'disabled' : ''} ${className ?? ''}`}>
-                {nodes.map((leaf, i) => (
+                {nodes.map(leaf => (
                     <LeafComponent
-                        key={i}
+                        key={leaf.cat ? leaf.cat : (leaf.value as Dataset).id}
                         leaf={leaf}
                         source={source}
                         selected={selected}
                         favorites={this.props.favorites}
+                        expanded={this.state.expanded}
 
                         onToggle={this.leafClicked}
                         onDoubleClick={this.leafDoubleClicked}
                         onFavoriteToggle={this.leafFavorite}
+                        onExpand={this.leafExpand}
                     />))}
             </div>
         );
@@ -230,23 +280,15 @@ type LeafProps = {
     source: DataSource,
     selected: string[],
     favorites: Props['favorites'];
+    expanded: State['expanded'];
     
     onToggle?(leaf: Leaf, e: React.MouseEvent<HTMLElement>): void;
     onDoubleClick?(leaf: Leaf, e: React.MouseEvent<HTMLElement>): void;
-    onFavoriteToggle?(leaf: Leaf, isFavorite: boolean): void;
+    onFavoriteToggle?(leaf: Leaf, value: boolean): void;
+    onExpand?(leaf: Leaf): void;
 }
 
-class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
-    public state = {
-        expanded: false,
-    };
-
-    public componentDidUpdate(prevProps: LeafProps) {
-        if (prevProps.leaf !== this.props.leaf) {
-            this.setState({ expanded: false });
-        }
-    }
-
+class LeafComponent extends React.PureComponent<LeafProps> {
     private onClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
 
@@ -259,7 +301,7 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
 
     private toggleExpand = (e: React.MouseEvent<HTMLElement>) => {
         e.stopPropagation();
-        Array.isArray(this.props.leaf.value) && this.setState({ expanded: !this.state.expanded });
+        Array.isArray(this.props.leaf.value) && this.props.onExpand && this.props.onExpand(this.props.leaf);
     }
 
     getTitle = (sourceType: DataSource['type'], id: Dataset['id']) => {
@@ -281,13 +323,13 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
             return faChartLine;
         }
 
-        const text = Array.isArray(leaf.text) ? leaf.text[leaf.text.length - 1] : leaf.text;
+        const text = leaf.text[leaf.text.length - 1];
 
         if (sourceType in knownIcons && text in knownIcons[sourceType]) {
             return knownIcons[sourceType][text];
         }
 
-        if (leaf.text === 'favorites') return faStar;
+        if (leaf.cat === 'favorites') return faStar;
 
         return faFolder;
     }
@@ -312,7 +354,7 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
 
     getTooltip = () => {
         const { source, leaf } = this.props;
-        const text = Array.isArray(leaf.text) ? leaf.text[leaf.text.length - 1] : leaf.text;
+        const text = leaf.text[leaf.text.length - 1];
         let tooltip = this.getTitle(source.type, text) + '\n\n';
 
         if (Array.isArray(leaf.value)) {
@@ -344,32 +386,34 @@ class LeafComponent extends React.Component<LeafProps, { expanded: boolean }> {
     }
 
     public render() {
-        const { leaf, source, selected, onToggle, onDoubleClick, favorites } = this.props;
-        const { expanded } = this.state;
+        const { leaf, source, selected, onToggle, onDoubleClick, favorites, expanded } = this.props;
         const active = this.isActive(leaf, selected);
-        const title =  Array.isArray(leaf.text) ? leaf.text.map(t => this.getTitle(source.type, t)).join(' > ') : this.getTitle(source.type, leaf.text);
+        const title =  leaf.text.map(t => this.getTitle(source.type, t)).join(' > ');
         const tooltip = this.getTooltip();
-        const hasChildren = Array.isArray(leaf.value);
+        const children = Array.isArray(leaf.value) ? leaf.value : undefined;
         const isFavorite = !Array.isArray(leaf.value) && favorites.some(f => f.id === (leaf.value as Dataset).id && f.source === (leaf.value as Dataset).source);
 
+        const isExpanded = leaf.cat && expanded.includes(leaf.cat);
+
         return (
-            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} key={Array.isArray(leaf.text) ? leaf.text.join('::') : leaf.text} title={tooltip}>
+            <div className={`item ${active ? 'active' : ''}`} onClick={this.onClick} title={tooltip}>
                 <div className='item-row'>
-                    <span className='expander' onClick={this.toggleExpand}>{hasChildren && (<FontAwesomeIcon icon={expanded ? faAngleDown : faAngleRight} />)}</span>
+                    <span className='expander' onClick={this.toggleExpand}>{children && (<FontAwesomeIcon icon={isExpanded ? faAngleDown : faAngleRight} />)}</span>
                     <FontAwesomeIcon className='icon' icon={this.getIcon(source.type, leaf)} />
                     <span className='label' onDoubleClick={this.onDoubleClick}>{title}</span>
-                    {!hasChildren && (
+                    {!children && (
                         <FontAwesomeIcon className='fav' icon={faStar} style={{ color: isFavorite ? 'orange' : 'lightgray' }}  onClick={this.onFavorite}/>
                     )}
                 </div>
-                {hasChildren && expanded && (
-                    <div className='children'>{(leaf.value as Leaf[]).map((l, i) => (
+                {children && isExpanded && (
+                    <div className='children'>{children.map(l => (
                         <LeafComponent
+                            key={l.cat ? l.cat : (l.value as Dataset).id} 
                             leaf={l}
-                            key={i}
                             source={source}
                             selected={selected}
                             favorites={favorites}
+                            expanded={expanded}
 
                             onToggle={onToggle}
                             onDoubleClick={onDoubleClick}

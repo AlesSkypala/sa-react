@@ -5,9 +5,6 @@
     height: 100%;
 }
 
-#root {
-    height: 100%;
-}
 #context-menu > * {
     z-index: 1000;
 }
@@ -20,14 +17,40 @@ body.dark-mode {
     background-color: gray;
 }
 
-#root :is(.Toastify__toast-container--top-left, .Toastify__toast-container--top-center, .Toastify__toast-container--top-right) {
-    top: 4em;
-}
+#root {
+    height: 100%;
 
-#root .Toastify__toast--warning {
-    background-color: #df9012;
+    :is(.Toastify__toast-container--top-left, .Toastify__toast-container--top-center, .Toastify__toast-container--top-right) {
+        top: 4em;
+    }
+
+    .Toastify__toast--warning {
+        background-color: #df9012;
+    }
 }
 
 .react-contexify__item__content > svg:first-child {
     margin-right: 0.5rem;
+}
+
+
+body select.form-control {
+    background-color: transparent !important;
+
+    &:focus {
+        box-shadow: none;
+    }
+
+    .dark-mode & {
+        color: white;
+        border: 1px solid #494949;
+
+        &:not([multiple]) > option {
+            color: black;
+        }
+
+        // > option {
+        //     color: black;
+        // }
+    }
 }

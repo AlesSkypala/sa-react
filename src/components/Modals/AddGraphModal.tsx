@@ -316,8 +316,10 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
                         <DatasetTree
                             disabled={setsDisabled}
                             source={selectedSource}
+                            dataRange={selectedRange ?? [0, 0]}
                             selected={(selectedDatasets ?? []).map(ds => ds.id)}
 
+                            storeId='add-graph-tree'
                             onChange={this.onSetSelected}
                             onDoubleClick={this.onSetQuick}
                         />}
