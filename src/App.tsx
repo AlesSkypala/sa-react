@@ -47,6 +47,8 @@ class App extends React.Component<AppProps, AppState> {
         const saved = localStorage.getItem('settings');
         if (saved) {
             const settings = JSON.parse(saved) as Partial<AppSettings>;
+            if (settings.favoriteDatasets) { settings.favoriteDatasets = settings.favoriteDatasets.filter(d => d.per); }
+            
             props.set_settings(settings);
         }
     }

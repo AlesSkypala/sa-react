@@ -103,7 +103,7 @@ class DatasetTree extends React.Component<Props, State> {
         const { source, favorites } = this.props;
 
         return this.getIntersecting(source.datasets)
-            .filter(d => favorites.some(f => f.id === d.id && f.source === d.source))
+            .filter(d => favorites.some(f => f.id === d.id && source[f.per] === f.source))
             .map((d, i) => ({
                 value: d,
                 text: [ ...d.category, d.id ],
@@ -226,12 +226,12 @@ class DatasetTree extends React.Component<Props, State> {
 
     private leafFavorite = (leaf: Leaf, value: boolean) => {
         if (Array.isArray(leaf.value)) return;
-        const { source, id } = leaf.value;
+        const { id } = leaf.value;
 
         if (value) {
-            this.props.unfavorite_dataset([ { source, id } ]);
+            this.props.unfavorite_dataset([ { per: 'type', source: this.props.source.type, id } ]);
         } else {
-            this.props.favorite_dataset([ { source, id } ]);
+            this.props.favorite_dataset([ { per: 'type', source: this.props.source.type, id } ]);
         }
     };
 
@@ -288,7 +288,7 @@ type LeafProps = {
     onExpand?(leaf: Leaf): void;
 }
 
-class LeafComponent extends React.PureComponent<LeafProps> {
+class LeafComponent extends React.Component<LeafProps> {
     private onClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
 
@@ -376,13 +376,17 @@ class LeafComponent extends React.PureComponent<LeafProps> {
 
     onFavorite = (e: React.MouseEvent) => {
         e.stopPropagation();
-        const { leaf, favorites } = this.props;
+        const { leaf } = this.props;
 
         if (Array.isArray(leaf.value)) return;
 
-        const isFavorite = !Array.isArray(leaf.value) && favorites.some(f => f.id === (leaf.value as Dataset).id && f.source === (leaf.value as Dataset).source);
+        this.props.onFavoriteToggle && this.props.onFavoriteToggle(leaf, this.isFavorite());
+    }
 
-        this.props.onFavoriteToggle && this.props.onFavoriteToggle(leaf, isFavorite);
+    isFavorite = () => {
+        const { leaf, favorites, source } = this.props;
+
+        return !Array.isArray(leaf.value) && favorites.some(f => f.id === (leaf.value as Dataset).id && source[f.per] === f.source);
     }
 
     public render() {
@@ -391,7 +395,7 @@ class LeafComponent extends React.PureComponent<LeafProps> {
         const title =  leaf.text.map(t => this.getTitle(source.type, t)).join(' > ');
         const tooltip = this.getTooltip();
         const children = Array.isArray(leaf.value) ? leaf.value : undefined;
-        const isFavorite = !Array.isArray(leaf.value) && favorites.some(f => f.id === (leaf.value as Dataset).id && f.source === (leaf.value as Dataset).source);
+        const isFavorite = this.isFavorite();
 
         const isExpanded = leaf.cat && expanded.includes(leaf.cat);
 

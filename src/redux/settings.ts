@@ -5,7 +5,7 @@ export type AppSettings = {
     darkMode: boolean,
     askGraphClose: boolean,
     activeContexts: number,
-    favoriteDatasets: { source: string, id: string }[],
+    favoriteDatasets: { per: 'id' | 'type', source: string, id: string }[],
 }
 
 export const settingsSlice = createSlice({
