@@ -49,6 +49,13 @@ interface TraceStyle {
     width: number;
 }
 
+type TraceMetas = {
+    handle: number,
+    avg: number,
+    min: number,
+    max: number,
+}
+
 type DateTimeType = number;
 type XType = keyof XTypeTypeMap;
 type XTypeTypeMap = {

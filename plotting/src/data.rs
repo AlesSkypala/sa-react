@@ -4,6 +4,7 @@ use std::{cell::RefCell, collections::HashMap};
 use crate::structs::{DataPrec, RangePrec, Segment, TraceData};
 use lazy_static::lazy_static;
 use wasm_bindgen::prelude::*;
+use serde::{Deserialize, Serialize};
 
 // pub type DataPtr = *mut TraceData;
 pub type DataIdx = usize;
@@ -194,6 +195,33 @@ pub fn trace_avgs(ptrs: &[DataIdx], from: RangePrec, to: RangePrec) -> JsValue {
     .unwrap()
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct TraceMetas {
+    pub avg: RangePrec,
+    pub min: RangePrec,
+    pub max: RangePrec,
+}
+
+#[wasm_bindgen]
+pub fn get_trace_metas(ptr: DataIdx, from: RangePrec, to: RangePrec) -> JsValue {
+    let mut metas = TraceMetas { avg: 0.0, min: RangePrec::MAX, max: RangePrec::MIN };
+    let mut pts = 0;
+
+    get_trace_once(ptr, |trace| {
+        for (_x, y) in trace.get_data_high_prec(from, to) {
+            metas.avg += y;
+            metas.min = RangePrec::min(metas.min, y);
+            metas.max = RangePrec::max(metas.max, y);
+
+            pts += 1;
+        }
+    });
+
+    metas.avg = metas.avg / pts as RangePrec;
+
+    JsValue::from_serde(&metas).unwrap()
+}
+
 pub fn get_data_at_iter<'a>(
     ptrs: &'a [DataIdx],
     x: RangePrec,
@@ -218,9 +246,10 @@ pub fn get_data_at(ptrs: &[DataIdx], x: RangePrec) -> JsValue {
 }
 
 #[wasm_bindgen]
-pub fn find_closest(ptrs: &[DataIdx], x: RangePrec, y: RangePrec) -> Option<DataIdx> {
+pub fn find_closest(ptrs: &[DataIdx], x: RangePrec, y: RangePrec, max_dy: RangePrec) -> Option<DataIdx> {
     let mut dists: Vec<(DataIdx, RangePrec)> = get_data_at_iter(ptrs, x)
         .map(|d| (d.0, (d.1 - y).abs()))
+        .filter(|(_, dy)| *dy < max_dy)
         .collect();
 
     dists.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());

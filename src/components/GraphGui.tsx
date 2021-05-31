@@ -47,6 +47,8 @@ export interface State {
         pos: [ number, number ],
         value: [ number, number ],
         trace: Trace,
+        metas: TraceMetas,
+        left: boolean,
     }
 }
 
@@ -395,18 +397,21 @@ class GraphGui extends React.Component<Props, State> {
 
         if (downPos && zoom) {
             downPos[1] = 1 - downPos[1];
+            const relDown = [ ...downPos ];
             downPos = Vec.add(Vec.mul(downPos, [ zoom[1] - zoom[0], zoom[3] - zoom[2] ]), [ zoom[0], zoom[2] ]);
 
-            dataWorker.closest_trace(downPos[0], downPos[1], this.props.traces.filter(t => t.active).map(t => t.handle)).then((h: number | undefined) => {
-                if (h === undefined) return;
+            dataWorker.closest_trace(downPos[0], downPos[1], Math.max(1, (zoom[3] - zoom[2]) * 0.05), this.props.traces.filter(t => t.active).map(t => t.handle), this.props.xRange).then((h: TraceMetas | number | undefined) => {
+                if (typeof h !== 'object') return;
 
-                const trace = this.props.traces.find(t => t.handle === h);
+                const trace = this.props.traces.find(t => t.handle === h.handle);
                 
                 trace && this.setState({
                     tooltip: {
                         trace,
                         pos: Vec.getPosIn(this.outerGraphBox(), this.input.pos) as [number, number],
                         value: downPos as [number, number],
+                        metas: h,
+                        left: relDown[0] > 0.8 || relDown[1] > 0.8,
                     }
                 });
             });
@@ -509,10 +514,8 @@ class GraphGui extends React.Component<Props, State> {
                     downPos[1] = 1 - downPos[1];
                     downPos = Vec.add(Vec.mul(downPos, [ zoom[1] - zoom[0], zoom[3] - zoom[2] ]), [ zoom[0], zoom[2] ]);
 
-                    dataWorker.closest_trace(downPos[0], downPos[1], this.props.traces.filter(t => t.active).map(t => t.handle)).then((h: number | undefined) => {
-                        if (h === undefined) return;
-
-                        const trace = this.props.traces.find(t => t.handle === h);
+                    dataWorker.closest_trace(downPos[0], downPos[1], (zoom[3] - zoom[2]) * 0.03, this.props.traces.filter(t => t.active).map(t => t.handle)).then((h: TraceMetas | number | undefined) => {
+                        const trace = typeof h === 'number' ? this.props.traces.find(t => t.handle === h) : undefined;
 
                         this.props.onTraceSelect(trace);
                         this.props.onContextMenu(e);
@@ -606,13 +609,23 @@ class GraphGui extends React.Component<Props, State> {
                     ))}
                 </div>
                 {tooltip && (
-                    <div className='data-tooltip' style={{ left: tooltip.pos[0], bottom: `calc(100% - ${tooltip.pos[1]}px` }}>
-                        {tooltip.trace.title}<br/><br/>
+                    <div
+                        className='data-tooltip'
+                        style={tooltip.left ? {
+                            right: `calc(100% - ${tooltip.pos[0]}px)`, top: tooltip.pos[1],
+                        } : { left: tooltip.pos[0], bottom: `calc(100% - ${tooltip.pos[1]}px` }}
+                    >
+                        <div className='title'>
+                            <b>{tooltip.trace.title}</b>
+                            <div className='tip-color' style={{ backgroundColor: `rgb(${tooltip.trace.style.color[0]}, ${tooltip.trace.style.color[1]}, ${tooltip.trace.style.color[2]})` }} />
+                        </div>
+                        <small>
                         X: {this.getXTickString(tooltip.value[0])} <br/>
                         Y: {this.getYTickString(tooltip.value[1], order)} <br/>
-                        Min: <br/>
-                        Max: <br/>
-                        Avg: <br/>
+                        Min: {this.getYTickString(tooltip.metas.min, order)} <br/>
+                        Max: {this.getYTickString(tooltip.metas.max, order)} <br/>
+                        Avg: {this.getYTickString(tooltip.metas.avg, order)}
+                        </small>
                     </div>
                 )}
             </>

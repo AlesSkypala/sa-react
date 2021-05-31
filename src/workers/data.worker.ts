@@ -149,8 +149,16 @@ export class DataWorkerProxy {
         return plotting.trace_avgs(new Uint32Array(handles), from, to);
     }
 
-    public closest_trace(x: number, y: number, handles: number[]): number | undefined {
-        return plotting.find_closest(new Uint32Array(handles), x, y);
+    public closest_trace(x: number, y: number, max_dy: number, handles: number[], metaRange?: Graph['xRange']): TraceMetas | number | undefined {
+        const handle = plotting.find_closest(new Uint32Array(handles), x, y, max_dy);
+
+        if (handle === undefined) return undefined;
+        if (!metaRange) return handle;
+        
+        return {
+            ...plotting.get_trace_metas(handle, metaRange[0], metaRange[1]),
+            handle,
+        };
     }
 
     public recommend_extents(from: number, to: number, handles: number[]): [ number, number, number, number ] {

@@ -160,5 +160,18 @@
             border-radius: 2px;
             border: none;
         }
+
+        .title {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .tip-color {
+            width: 1em;
+            height: 1em;
+            border-radius: 0.5em;
+            margin-left: 0.25em;
+        }
     }
 }
