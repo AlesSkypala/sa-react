@@ -150,13 +150,15 @@
         box-sizing: content-box;
 
         color: black;
-        background-color: white;
+        background-color: #f8f9faee;
         border-radius: 2px;
+        border: solid 1px #adadad;
 
         .dark-mode & {
             color: white;
             background-color: rgba(40, 40, 40, 0.98);
             border-radius: 2px;
+            border: none;
         }
     }
 }
