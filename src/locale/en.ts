@@ -44,6 +44,10 @@ const en_lang = {
         cloneActive: 'Clone Active Series',
         ldevSelect: 'LDEV Select',
         ldevJoin: 'Join LDEV to HG',
+        pointsMode: 'Points mode',
+        deselectTrace: 'Deselect trace',
+        deleteTrace: 'Delete trace',
+        editTrace: 'Edit trace',
 
         error: 'A critical error has occurred while rendering the graph:',
 
@@ -52,6 +56,12 @@ const en_lang = {
             top: 'Top {{count}}',
             low: 'Low {{count}}',
         }
+    },
+
+    trace: {
+        title: 'Trace title',
+        color: 'Trace color',
+        width: 'Trace width',
     },
 
     modals: {
@@ -102,6 +112,10 @@ const en_lang = {
 
         editGraph: {
             title: 'Edit the graph {{name}}',
+        },
+
+        editTrace: {
+            title: 'Edit the trace {{title}}',
         },
 
         removeGraph: {

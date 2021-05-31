@@ -10,6 +10,8 @@ import { colorToHex } from '../utils/color';
 import './TraceList.scss';
 import { getLdevMode, toLdevInternal, toLdevInternalFromVariant } from '../utils/ldev';
 import { splitTraceId } from '../utils/trace';
+import ContextMenu from './ContextMenu';
+import { t } from '../locale';
 // import { withHotKeys } from 'react-hotkeys';
 
 
@@ -41,20 +43,26 @@ const buttons: { label: string, action: TraceAction }[][] = [
 
 export interface Props {
     traces: Trace[];
+    darkMode: boolean;
 
     onSelect(id: Trace['id'], toggle: boolean): void;
     onAction(action: TraceAction): void;
+
+    onEdit(trace: Trace): void;
+    onDelete(trace: Trace): void;
 }
 
 export interface State {
     ldevMap: { [key: string]: string };
     active: Trace['id'] | undefined;
+    contextTrace: Trace | undefined;
 }
 
 class TraceList extends React.PureComponent<Props, State> {
     public state: State = {
         ldevMap: {},
         active: undefined,
+        contextTrace: undefined,
     };
 
     private listRef = React.createRef<HTMLDivElement>();
@@ -138,10 +146,34 @@ class TraceList extends React.PureComponent<Props, State> {
     }
 
     rowRenderer = (props: VirtualizedRowProps) => {
-        return <TraceListRow key={props.index} virtualizedRow={props} parentList={this} />;
+        return <TraceListRow key={props.index} virtualizedRow={props} parentList={this} onContext={this.onContext} />;
+    }
+
+    onContext = (trace: Trace, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.setState({ contextTrace: trace });
+        ContextMenu.invoker('trace-list-menu')(e);
+    }
+
+    onContextItem = ({ data }: { data?: 'del' | 'edit' }) => {
+        const trace = this.state.contextTrace;
+        if (!trace) return;
+
+        switch (data) {
+            case 'del':
+                this.props.onDelete(trace);
+                return;
+            case 'edit':
+                this.props.onEdit(trace);
+                return;
+        }
     }
 
     public render() {
+        const { contextTrace } = this.state;
+
         return (
             <React.Fragment>
                 <div>
@@ -168,6 +200,14 @@ class TraceList extends React.PureComponent<Props, State> {
                         )}
                     </AutoSizer>
                 </div>
+                <ContextMenu
+                    id='trace-list-menu'
+                    darkMode={this.props.darkMode}
+                    tree={[
+                        { type: 'item', text: t('graph.deleteTrace'), show: Boolean(contextTrace), data: 'del',  onClick: this.onContextItem },
+                        { type: 'item', text: t('graph.editTrace'),   show: Boolean(contextTrace), data: 'edit', onClick: this.onContextItem },
+                    ]}
+                />
             </React.Fragment>
         );
     }
@@ -178,6 +218,7 @@ export default TraceList;
 interface RowProps {
     virtualizedRow: VirtualizedRowProps;
     parentList: TraceList;
+    onContext(trace: Trace, e: React.MouseEvent): void;
 }
 interface TraceListRowState {
     showTooltip: boolean;
@@ -187,7 +228,7 @@ class TraceListRow extends React.Component<RowProps, TraceListRowState> {
     public state = { showTooltip: false };
     private spanRef = React.createRef<HTMLElement>();
 
-    checkForEllipsis() {
+    checkForEllipsis = () => {
         const e = this.spanRef.current;
         const showTooltip = e !== null && e.offsetWidth < e.scrollWidth;
         if (this.state.showTooltip !== showTooltip) this.setState({ showTooltip });
@@ -199,6 +240,12 @@ class TraceListRow extends React.Component<RowProps, TraceListRowState> {
 
     componentDidUpdate() {
         this.checkForEllipsis();
+    }
+
+    onContext = (e: React.MouseEvent) => {
+        const { onContext } = this.props;
+        
+        onContext && onContext(this.props.parentList.props.traces[this.props.virtualizedRow.index], e);
     }
 
     render() {
@@ -224,6 +271,7 @@ class TraceListRow extends React.Component<RowProps, TraceListRowState> {
                 style={virtualizedRow.style}
                 className={`trace-row-outer ${parentList.state.active === trace.id ? 'active' : ''}`}
                 onClick={parentList.traceClicked}
+                onContextMenu={this.onContext}
             >
                 <OverlayTrigger
                     trigger={showTooltip ? [ 'focus', 'hover' ] : []}

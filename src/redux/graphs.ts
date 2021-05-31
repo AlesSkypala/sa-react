@@ -113,6 +113,7 @@ export const graph_threshold_select = createAsyncThunk(
 );
 
 type GraphEdit = Partial<Pick<Graph, 'title' | 'xLabel' | 'yLabel'| 'zoom'>>;
+type TraceEdit = Partial<Pick<Trace, 'title'>> & { style?: Partial<TraceStyle> };
 
 export const graphsSlice = createSlice({
     name: 'graphs',
@@ -174,6 +175,30 @@ export const graphsSlice = createSlice({
 
             if (graph) {
                 graph.traces.push(...action.payload.traces);
+            }
+        },
+
+        edit_traces: (state, action: PayloadAction<{ id: Graph['id'], traces: Set<Trace['id']>, edit: TraceEdit }>) => {
+            const { id, traces, edit } = action.payload;
+            const graph = state.items.find(g => g.id === id);
+
+            if (graph) {
+                graph.traces.forEach(t => {
+                    if (!traces.has(t.id)) return;
+
+                    ++t.rev;
+
+                    if (edit.title) { t.title = edit.title; }
+                    if (edit.style) { t.style = { ...t.style, ...edit.style }; }
+                });
+            }
+        },
+
+        remove_traces: (state, action: PayloadAction<{ id: Graph['id'], traces: Set<Trace['id']> }>) => {
+            const graph = state.items.find(g => g.id === action.payload.id);
+
+            if (graph) {
+                graph.traces = graph.traces.filter(t => !action.payload.traces.has(t.id));
             }
         },
 
@@ -246,6 +271,7 @@ export const {
     clone_graph, edit_graph,
     set_layout, set_stacking,
     add_traces, toggle_traces,
+    remove_traces, edit_traces,
 } = graphsSlice.actions;
 
 export default graphsSlice.reducer;

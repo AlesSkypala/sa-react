@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
-    OffscreenCanvas, WebGlBuffer, WebGlProgram, WebGl2RenderingContext, WebGlUniformLocation,
+    OffscreenCanvas, WebGl2RenderingContext, WebGlBuffer, WebGlProgram, WebGlUniformLocation,
 };
 
 use crate::{
@@ -571,7 +571,7 @@ impl Drop for WebGlRenderer {
 }
 
 mod webgl_utils {
-    use web_sys::{WebGlProgram, WebGl2RenderingContext, WebGlShader};
+    use web_sys::{WebGl2RenderingContext, WebGlProgram, WebGlShader};
 
     use crate::{renderers::AxisTick, structs::RangePrec};
 

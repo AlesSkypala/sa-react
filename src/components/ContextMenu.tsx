@@ -38,9 +38,9 @@ type Leaf = LeafItem<any> | {
 
 class ContextMenu extends React.PureComponent<Props> {
 
-    static invoker = (id: string): ((e: TriggerEvent) => void) => {
-        return useContextMenu({ id }).show;
-    };
+    static invoker<T = unknown>(id: string, props?: T): ((e: TriggerEvent) => void) {
+        return useContextMenu({ id, props }).show;
+    }
 
     public render() {
         const { darkMode, id, tree } = this.props;
@@ -65,7 +65,7 @@ class ContextMenu extends React.PureComponent<Props> {
 
         return (
             <MenuPortal>
-                <Menu id={id} theme={darkMode ? 'dark' : 'light'} animation={false}>
+                <Menu id={id} theme={darkMode ? 'dark' : 'light'} animation={false} dir='up'>
                     {tree.map((l, i) => renderLeaf(l, 0, i))}
                 </Menu>
             </MenuPortal>

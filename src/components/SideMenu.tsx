@@ -1,9 +1,11 @@
 import * as React from 'react';
 import TraceList from './TraceList';
 import { connect } from 'react-redux';
-import { ReduxProps, graph_action, edit_graph, toggle_traces } from '../redux';
+import { ReduxProps, graph_action, edit_graph, toggle_traces, remove_traces, edit_traces } from '../redux';
 import { t } from '../locale';
 import './SideMenu.css';
+import { DialogService } from '../services';
+import TraceEditModal from './Modals/TraceEditModal';
 
 class SideMenuComponent
     extends React.Component<Props, State> {
@@ -14,6 +16,28 @@ class SideMenuComponent
             this.props.toggle_traces({ id: this.props.selectedGraph.id, traces: new Set([ id ]), val: toggle });
         }
     };
+    onDelete = (trace: Trace) => {
+        if (this.props.selectedGraph) {
+            this.props.remove_traces({ id: this.props.selectedGraph.id, traces: new Set([ trace.id ]) });
+        }
+    }
+    onEdit = (trace: Trace) => {
+        DialogService.open(
+            TraceEditModal,
+            (res) => {
+                if (res && this.props.selectedGraph) {
+                    this.props.edit_traces({
+                        id: this.props.selectedGraph.id,
+                        traces: new Set([ trace.id ]),
+                        edit: res,
+                    });
+                }
+            },
+            {
+                trace,
+            }
+        );
+    }
 
     public render() {
         const { selectedGraph } = this.props;
@@ -24,8 +48,11 @@ class SideMenuComponent
                     {selectedGraph ? (
                         <TraceList
                             traces={selectedGraph.traces}
+                            darkMode={this.props.darkMode}
                             onSelect={this.onTraceSelect}
                             onAction={this.onAction}
+                            onDelete={this.onDelete}
+                            onEdit={this.onEdit}
                         />
                     ) : (
                         <ul className='sidebar-menu'>
@@ -43,9 +70,15 @@ const dispatchProps = {
     graph_action,
     edit_graph,
     toggle_traces,
+    remove_traces,
+    edit_traces,
 };
 
-type Props = ReduxProps<() => unknown, typeof dispatchProps> & {
+const storeProps = (store: RootStore) => ({
+    darkMode: store.settings.darkMode,
+});
+
+type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {
     selectedGraph?: Graph;
 
     onTraceAddClick(): void;
@@ -53,4 +86,4 @@ type Props = ReduxProps<() => unknown, typeof dispatchProps> & {
 
 interface State { }
 
-export default connect(undefined, dispatchProps)(SideMenuComponent);
+export default connect(storeProps, dispatchProps)(SideMenuComponent);

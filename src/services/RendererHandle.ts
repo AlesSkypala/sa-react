@@ -6,7 +6,7 @@ import type { RenderJob as WasmRenderJob } from '../plotting';
 class RendererHandle {
 
     get raw_handle(): number { return this.handle; }
-    public bundles: { handle: number, traces: Set<number> }[] = [];
+    public bundles: { handle: number, traces: { [handle: number]: number } }[] = [];
 
     constructor(private handle: number) {
 
@@ -31,7 +31,7 @@ class RendererHandle {
         return new RenderJob(this, x_type, traces, blacklist);
     }
 
-    public async createBundle(range: Graph['xRange'], traces: Pick<Trace, 'handle' | 'style'>[]): Promise<number> {
+    public async createBundle(range: Graph['xRange'], traces: Pick<Trace, 'handle' | 'style' | 'rev'>[]): Promise<number> {
         const data = new ArrayBuffer(traces.length * TRACE_LEN);
         const view = new DataView(data);
         let cursor = 0;
@@ -48,7 +48,7 @@ class RendererHandle {
 
         const handle = await dataWorker.createBundle(this.handle, range, transfer(data, [data]));
 
-        this.bundles.push({ handle, traces: new Set(traces.map(t => t.handle)) });
+        this.bundles.push({ handle, traces: traces.reduce<{ [handle: number]: number }>((prev, t) => { prev[t.handle] = t.rev; return prev; }, {}) });
 
         return handle;
     }
@@ -166,22 +166,27 @@ export class RebundleJob {
         this.modifView    = new DataView(this.modif);
     }
 
-    public addTrace(trace: Pick<Trace, 'handle' | 'style'>) {
-        this.renderer.bundles.find(r => r.handle === this.bundle)?.traces.add(trace.handle);
+    public addTrace(trace: Pick<Trace, 'handle' | 'style' | 'rev'>) {
+        const bundle = this.renderer.bundles.find(r => r.handle === this.bundle);
+        bundle && (bundle.traces[trace.handle] = trace.rev);
 
         writeTrace(trace, this.additionView!, this.additionCursor);
         this.additionCursor += TRACE_LEN;
         return this;
     }
 
-    public modifyTrace(trace: Pick<Trace, 'handle' | 'style'>) {
+    public modifyTrace(trace: Pick<Trace, 'handle' | 'style' | 'rev'>) {
+        const bundle = this.renderer.bundles.find(r => r.handle === this.bundle);
+        bundle && (bundle.traces[trace.handle] = trace.rev);
+        
         writeTrace(trace, this.modifView!, this.modifCursor);
         this.modifCursor += TRACE_LEN;
         return this;
     }
 
     public deleteTrace(trace: Pick<Trace, 'handle'>) {
-        this.renderer.bundles.find(r => r.handle === this.bundle)?.traces.delete(trace.handle);
+        const bundle = this.renderer.bundles.find(r => r.handle === this.bundle);
+        bundle && (delete bundle.traces[trace.handle]);
 
         this.deletionView!.setUint32(this.deletionCursor, trace.handle);
         this.deletionCursor += Uint32Array.BYTES_PER_ELEMENT;

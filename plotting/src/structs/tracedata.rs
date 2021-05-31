@@ -45,6 +45,20 @@ impl TraceData {
             .flat_map(move |seg| seg.iter_high_prec(from, to))
     }
 
+    pub fn get_data_at(&self, x: RangePrec) -> Option<RangePrec> {
+        let seg = self
+            .segments
+            .iter()
+            .find(|s| s.contains(x))
+            .map(|s| s.value_at(x));
+
+        if seg.is_none() {
+            None
+        } else {
+            seg.unwrap()
+        }
+    }
+
     pub fn get_data_with_origin<'a>(
         &'a self,
         from: RangePrec,
@@ -154,6 +168,8 @@ pub trait Segment {
         to: RangePrec,
     ) -> Box<dyn Iterator<Item = (RangePrec, RangePrec)> + 'a>;
 
+    fn value_at(&self, x: RangePrec) -> Option<RangePrec>;
+
     fn shrink(&mut self, from: RangePrec, to: RangePrec);
 }
 
@@ -213,6 +229,27 @@ impl<X: SegmentNumeric + Copy, Y: SegmentNumeric + Copy> Segment for DataSegment
                     )
                 }),
         )
+    }
+
+    fn value_at(&self, x: RangePrec) -> Option<RangePrec> {
+        if !self.contains(x) {
+            return None;
+        }
+
+        for window in self.data.windows(2) {
+            let left = window[0];
+            let right = window[1];
+
+            if left.0.to_rangeprec() <= x && right.0.to_rangeprec() >= x {
+                return Some(
+                    ((right.0.to_rangeprec() - x) * left.1.to_rangeprec()
+                        + (x - left.0.to_rangeprec()) * right.1.to_rangeprec())
+                        / (right.0.to_rangeprec() - left.0.to_rangeprec()),
+                );
+            }
+        }
+
+        None
     }
 
     fn from(&self) -> RangePrec {

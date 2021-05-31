@@ -14,7 +14,7 @@ import { AppEvents, DataService, DialogService } from '../services';
 import DataJob from '../services/DataJob';
 
 import { t } from '../locale';
-import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings, invoke_job, add_graphs, generate_graph_id } from '../redux';
+import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings, invoke_job, add_graphs, generate_graph_id, remove_traces, edit_traces } from '../redux';
 import { GraphEditModal, LdevSelectModal } from './Modals';
 import RendererHandle from '../services/RendererHandle';
 import { PendingDataJob } from '../redux/jobs';
@@ -25,7 +25,9 @@ import GraphGui from './GraphGui';
 
 import './Graph.scss';
 import GraphJobsModal from './Modals/GraphJobsModal';
+import TraceEditModal from './Modals/TraceEditModal';
 import ContextMenu from './ContextMenu';
+import Logger from '../Logger';
 
 
 export const X_TICK_SPACE = 24;
@@ -40,6 +42,8 @@ const dispatchProps = {
     hide_graphs,
     set_settings,
     invoke_job,
+    remove_traces,
+    edit_traces,
 };
 
 const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
@@ -69,6 +73,7 @@ export type State = {
 
     ldevSelectAvailable: boolean;
     ldevToHostGroupAvailable: boolean;
+    selectedTrace: Trace | undefined;
 
     clientWidth: number,
     clientHeight: number,
@@ -81,6 +86,7 @@ class GraphComponent
         rendering: false,
         ldevSelectAvailable: false,
         ldevToHostGroupAvailable: false,
+        selectedTrace: undefined,
         error: undefined,
         xTicks: [],
         yTicks: [],
@@ -105,7 +111,7 @@ class GraphComponent
             if (!t.active) {
                 disabled.push(t);
             } else {
-                if (!this.renderer?.bundles.some(b => b.traces.has(t.handle))) {
+                if (!this.renderer?.bundles.some(b => t.handle in b.traces)) {
                     enabledOffbundle.push(t);
                 }
             }
@@ -169,6 +175,7 @@ class GraphComponent
         this.renderer && await this.renderer.dispose();
     }
 
+    private prevRev: { [handle: number]: number } = {};
     public async componentDidUpdate(prevProps: Props) {
         let redraw: boolean | undefined = undefined;
 
@@ -202,6 +209,8 @@ class GraphComponent
             for (const trace of this.props.traces) {
                 if (!prev.has(trace.id)) {
                     toAdd.push(trace);
+                } else if (trace.handle in this.prevRev && trace.rev > this.prevRev[trace.handle]) {
+                    toMod.push(trace);
                 }
             }
 
@@ -233,17 +242,17 @@ class GraphComponent
     private rebundle = async (toAdd: Trace[], toDel: number[], toMod: Trace[]): Promise<void> => {
         for (const bundle of this.renderer?.bundles ?? []) {
             const toAddHere = [] as Trace[]; // TODO: be smart about this and reduce number of traces for a new bundle
-            const toDelHere = toDel.filter(r => bundle.traces.has(r));
-            const toModHere = toMod.filter(r => bundle.traces.has(r.handle));
+            const toDelHere = toDel.filter(r => r in bundle.traces);
+            const toModHere = toMod.filter(r => r.handle in bundle.traces);
 
-            if (toDelHere.length > 0) {
-                console.trace(`rebundling ${bundle.handle}`);
+            if (toAddHere.length + toDelHere.length + toModHere.length > 0) {
+                Logger.debug(`rebundling ${bundle.handle}`);
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 const rebundle = this.renderer!.rebundle(bundle.handle, toAddHere.length, toDelHere.length, toModHere.length);
 
-                toAddHere.forEach(t => rebundle.addTrace(t));
-                toDelHere.forEach(t => rebundle.deleteTrace({ handle: t }));
-                toModHere.forEach(t => rebundle.modifyTrace(t));
+                toAddHere.forEach(t => { rebundle.addTrace(t); this.prevRev[t.handle] = t.rev; });
+                toDelHere.forEach(t => { rebundle.deleteTrace({ handle: t }); delete this.prevRev[t]; });
+                toModHere.forEach(t => { rebundle.modifyTrace(t); this.prevRev[t.handle] = t.rev; });
 
                 try {
                     await rebundle.invoke();
@@ -257,6 +266,7 @@ class GraphComponent
         if (toAdd.length > 0) {
             try {
                 await this.renderer?.createBundle(this.props.xRange, toAdd);
+                toAdd.forEach(t => this.prevRev[t.handle] = t.rev);
             } catch (error) {
                 this.setState({ error });
                 return;
@@ -430,9 +440,48 @@ class GraphComponent
         }
     }
 
+    private onTraceContext = ({ data }: { data?: { id: Trace['id'], action: 'delete' | 'deselect' | 'points' | 'edit' } }) => {
+        if (!data) return;
+
+        switch (data.action) {
+            case 'deselect':
+                this.props.toggle_traces({ id: this.props.id, traces: new Set([ data.id ]), val: false });
+                return;
+            case 'delete':
+                this.props.remove_traces({ id: this.props.id, traces: new Set([ data.id ]) });
+                return;
+            case 'edit':
+                {
+                    const trace = this.props.traces.find(t => t.id === data.id);
+                    if (!trace) return;
+
+                    DialogService.open(
+                        TraceEditModal,
+                        (res) => {
+                            if (res) {
+                                this.props.edit_traces({
+                                    id: this.props.id,
+                                    traces: new Set([ data.id ]),
+                                    edit: res,
+                                });
+                            }
+                        },
+                        {
+                            trace,
+                        }
+                    );
+                }
+                return;
+        }
+    }
+
+    private onPointsMode = ({ data }: { data?: Trace['id'] }) => {
+        if (!data) return;
+    }
+
     public render() {
         const { title, traces } = this.props;
-        const { error, ldevSelectAvailable, ldevToHostGroupAvailable } = this.state;
+        const { error, ldevSelectAvailable, ldevToHostGroupAvailable, selectedTrace } = this.state;
 
         const pendingJobs = Object.values(this.props.jobs).filter(j => j.relatedGraphs.includes(this.props.id) && j.state === 'pending');
         const failedJobs  = Object.values(this.props.jobs).filter(j => j.relatedGraphs.includes(this.props.id) && j.state === 'error');
@@ -515,9 +564,16 @@ class GraphComponent
                                     { type: 'item', text: <>{iconDown} {t('graph.select.low', { count: 20 })}</>, data: -20, onClick: this.onSelectTopLow, show: traces.length > 20 },
                                 ]
                             },
+
                             { type: 'separator', show: ldevSelectAvailable },
                             { type: 'item', text: t('graph.ldevSelect'), onClick: this.onLdevFilter, show: ldevSelectAvailable },
                             { type: 'item', text: t('graph.ldevJoin'),   onClick: this.onLdevJoin  , show: ldevSelectAvailable && ldevToHostGroupAvailable },
+
+                            { type: 'separator', show: Boolean(selectedTrace) },
+                            { type: 'item', text: t('graph.pointsMode'),    show: false,                  data: selectedTrace && { id: selectedTrace.id, action: 'points' },   onClick: this.onTraceContext },
+                            { type: 'item', text: t('graph.deselectTrace'), show: Boolean(selectedTrace), data: selectedTrace && { id: selectedTrace.id, action: 'deselect' }, onClick: this.onTraceContext },
+                            { type: 'item', text: t('graph.deleteTrace'),   show: Boolean(selectedTrace), data: selectedTrace && { id: selectedTrace.id, action: 'delete' },   onClick: this.onTraceContext },
+                            { type: 'item', text: t('graph.editTrace'),     show: Boolean(selectedTrace), data: selectedTrace && { id: selectedTrace.id, action: 'edit' },     onClick: this.onTraceContext },
                         ]}
                     />
                     {!this.props.layoutLocked ? (
@@ -534,6 +590,7 @@ class GraphComponent
                             yTicks={this.state.yTicks}
                             zoomRecommendation={this.state.zoomRecommendation}
                             onContextMenu={onContextMenu}
+                            onTraceSelect={(t) => this.setState({ selectedTrace: t })}
                         />
                     )}
                 </div>

@@ -38,9 +38,11 @@ export interface Props extends Graph, DispatchProps<typeof dispatchProps> {
     height: number;
 
     onContextMenu(e: MouseEvent): void,
+    onTraceSelect(trace: Trace | undefined): void;
 }
 
-export interface State { }
+export interface State { 
+}
 
 type DownAction = 'zoom' | 'shiftX' | 'shiftY' | 'pan';
 type InputData = {
@@ -56,6 +58,8 @@ type InputData = {
 }
 
 class GraphGui extends React.Component<Props, State> {
+    public state: State = { };
+
     private canvasRef = React.createRef<HTMLCanvasElement>();
     private xTicksRef = React.createRef<HTMLDivElement>();
     private yTicksRef = React.createRef<HTMLDivElement>();
@@ -458,7 +462,23 @@ class GraphGui extends React.Component<Props, State> {
                     zoom[2] - delta[1], zoom[3] - delta[1]
                 ] });
             } else {
-                this.props.onContextMenu(e);
+                let downPos = Vec.getPosIn(innerBox, down.pos, false, true);
+
+                this.props.onTraceSelect(undefined);
+
+                if (downPos) {
+                    downPos[1] = 1 - downPos[1];
+                    downPos = Vec.add(Vec.mul(downPos, [ zoom[1] - zoom[0], zoom[3] - zoom[2] ]), [ zoom[0], zoom[2] ]);
+
+                    dataWorker.closest_trace(downPos[0], downPos[1], this.props.traces.filter(t => t.active).map(t => t.handle)).then((h: number | undefined) => {
+                        if (h === undefined) return;
+
+                        const trace = this.props.traces.find(t => t.handle === h);
+
+                        this.props.onTraceSelect(trace);
+                        this.props.onContextMenu(e);
+                    });
+                }
             }
         }
     };

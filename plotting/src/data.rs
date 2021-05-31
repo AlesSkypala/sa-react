@@ -101,25 +101,27 @@ lazy_static! {
 
 #[wasm_bindgen]
 pub fn create_trace(id: &str, x_type: &str) -> DataIdx {
-    unsafe {
-        let handle = AVAIL_HANDLE;
+    let handle = unsafe {
+        let prev = AVAIL_HANDLE;
 
         AVAIL_HANDLE += 1;
 
-        DATA.with(|data| {
-            data.borrow_mut().insert(
-                handle,
-                TraceData {
-                    id: String::from(id.clone()),
-                    x_type: String::from(x_type.clone()),
+        prev
+    };
 
-                    segments: vec![],
-                },
-            )
-        });
+    DATA.with(|data| {
+        data.borrow_mut().insert(
+            handle,
+            TraceData {
+                id: String::from(id.clone()),
+                x_type: String::from(x_type.clone()),
 
-        handle
-    }
+                segments: vec![],
+            },
+        )
+    });
+
+    handle
 }
 
 pub fn dispose_trace(handle: DataIdx) {
@@ -143,7 +145,7 @@ pub fn op_traces(output: DataIdx, ptrs: &[DataIdx], op: &str, from: RangePrec, t
     let mul = match op {
         "sum" => 1.0,
         "avg" => 1.0 / ptrs.len() as f64,
-        _ => panic!("Unknown operation")
+        _ => panic!("Unknown operation"),
     };
 
     let mut data = get_trace_ret(*ptrs.first().unwrap(), |t| {
@@ -163,31 +165,67 @@ pub fn op_traces(output: DataIdx, ptrs: &[DataIdx], op: &str, from: RangePrec, t
         });
     }
 
-    unsafe {
-        let data = std::mem::transmute(data);
-        get_trace_once(output, move |t| {
-            t.push_segment(create_segment(t.x_type.as_str(), "double", from, to, data));
-        });
-    }
+    let data = unsafe { std::mem::transmute(data) };
+    get_trace_once(output, move |t| {
+        t.push_segment(create_segment(t.x_type.as_str(), "double", from, to, data));
+    });
 }
 
 #[wasm_bindgen]
 pub fn trace_avgs(ptrs: &[DataIdx], from: RangePrec, to: RangePrec) -> JsValue {
     JsValue::from_serde(
-        &ptrs.iter().map(|t| {
-            let mut sum = 0.0;
-            let mut idx = 0;
+        &ptrs
+            .iter()
+            .map(|t| {
+                let mut sum = 0.0;
+                let mut idx = 0;
 
-            get_trace_once(*t, |trace| {
-                for (_, y) in trace.get_data_high_prec(from, to) {
-                    sum += y;
-                    idx += 1;
-                }
-            });
+                get_trace_once(*t, |trace| {
+                    for (_, y) in trace.get_data_high_prec(from, to) {
+                        sum += y;
+                        idx += 1;
+                    }
+                });
 
-            (*t, sum / idx as f64)
-        }).collect::<Vec<(DataIdx, f64)>>()
-    ).unwrap()
+                (*t, sum / idx as f64)
+            })
+            .collect::<Vec<(DataIdx, f64)>>(),
+    )
+    .unwrap()
+}
+
+pub fn get_data_at_iter<'a>(
+    ptrs: &'a [DataIdx],
+    x: RangePrec,
+) -> impl Iterator<Item = (DataIdx, RangePrec)> + 'a {
+    ptrs.iter()
+        .map(move |&p| (p, get_trace_ret(p, |trace| trace.get_data_at(x))))
+        .filter(|a| a.1.is_some())
+        .map(|(a, b)| (a, b.unwrap()))
+}
+
+#[wasm_bindgen]
+pub fn get_data_at(ptrs: &[DataIdx], x: RangePrec) -> JsValue {
+    JsValue::from_serde(
+        &ptrs
+            .iter()
+            .map(move |&p| (p, get_trace_ret(p, |trace| trace.get_data_at(x))))
+            .filter(|a| a.1.is_some())
+            .map(|(a, b)| (a, b.unwrap()))
+            .collect::<Vec<(DataIdx, RangePrec)>>(),
+    )
+    .unwrap()
+}
+
+#[wasm_bindgen]
+pub fn find_closest(ptrs: &[DataIdx], x: RangePrec, y: RangePrec) -> Option<DataIdx> {
+    let mut dists: Vec<(DataIdx, RangePrec)> = get_data_at_iter(ptrs, x)
+        .map(|d| (d.0, (d.1 - y).abs()))
+        .collect();
+
+    dists.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap());
+
+    dists.first().map(|f| f.0)
 }
 
 #[wasm_bindgen]
@@ -228,16 +266,20 @@ pub fn bulkload_segments(ptrs: &[DataIdx], x_type: &str, y_type: &str, data: Box
     }
 }
 
-pub fn create_segment(x_type: &str, y_type: &str, from: RangePrec, to: RangePrec, d: Vec<u8>) -> Box<dyn Segment> {
+pub fn create_segment(
+    x_type: &str,
+    y_type: &str,
+    from: RangePrec,
+    to: RangePrec,
+    d: Vec<u8>,
+) -> Box<dyn Segment> {
     macro_rules! create_segment {
         ( $xt:ty, $yt:ty, $d:expr ) => {
-            unsafe {
-                Box::new(crate::structs::DataSegment::<$xt, $yt> {
-                    from,
-                    to,
-                    data: std::mem::transmute($d),
-                })
-            }
+            Box::new(crate::structs::DataSegment::<$xt, $yt> {
+                from,
+                to,
+                data: unsafe { std::mem::transmute($d) },
+            })
         };
     }
 
