@@ -1,7 +1,7 @@
 import { faCaretRight } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as React from 'react';
-import { Item, Menu, Separator, Submenu, TriggerEvent, useContextMenu } from 'react-contexify';
+import { Item, Menu, Separator, Submenu, TriggerEvent, useContextMenu,  } from 'react-contexify';
 import { createPortal } from 'react-dom';
 
 function MenuPortal({ children }: { children: React.ReactNode }) {

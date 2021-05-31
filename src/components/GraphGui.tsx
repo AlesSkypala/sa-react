@@ -10,6 +10,7 @@ import { DispatchProps, edit_graph, graph_threshold_select } from '../redux';
 import { connect } from 'react-redux';
 import * as Vec from '../utils/position';
 import * as canvas from '../utils/canvas';
+import { debounce } from 'lodash';
 
 const COMPACT_RADIUS = 16;
 let GLOBAL_RULER: RulerData | undefined = undefined;
@@ -41,7 +42,12 @@ export interface Props extends Graph, DispatchProps<typeof dispatchProps> {
     onTraceSelect(trace: Trace | undefined): void;
 }
 
-export interface State { 
+export interface State {
+    tooltip?: {
+        pos: [ number, number ],
+        value: [ number, number ],
+        trace: Trace,
+    }
 }
 
 type DownAction = 'zoom' | 'shiftX' | 'shiftY' | 'pan';
@@ -372,7 +378,40 @@ class GraphGui extends React.Component<Props, State> {
 
     private canvasMouseMove = (e: MouseEvent) => {
         this.input = this.eventToInputData(this.input, e, 'move');
+
+        const pos = Vec.getPosIn(this.innerGraphBox(), this.input.pos);
+
+        if (pos) {
+            this.state.tooltip && this.setState({ tooltip: undefined });
+            this.mouseStop();
+        } else {
+            this.mouseStop.cancel();
+        }
     }
+
+    private mouseStop = debounce(() => {
+        const { zoom } = this.props;
+        let downPos = Vec.getPosIn(this.innerGraphBox(), this.input.pos, false, true);
+
+        if (downPos && zoom) {
+            downPos[1] = 1 - downPos[1];
+            downPos = Vec.add(Vec.mul(downPos, [ zoom[1] - zoom[0], zoom[3] - zoom[2] ]), [ zoom[0], zoom[2] ]);
+
+            dataWorker.closest_trace(downPos[0], downPos[1], this.props.traces.filter(t => t.active).map(t => t.handle)).then((h: number | undefined) => {
+                if (h === undefined) return;
+
+                const trace = this.props.traces.find(t => t.handle === h);
+                
+                trace && this.setState({
+                    tooltip: {
+                        trace,
+                        pos: Vec.getPosIn(this.outerGraphBox(), this.input.pos) as [number, number],
+                        value: downPos as [number, number],
+                    }
+                });
+            });
+        }
+    }, 330);
 
     private canvasRuler = (e: React.MouseEvent<HTMLCanvasElement>) => {
         const pos = Vec.getPosIn(this.innerGraphBox(), this.eventToInputData(this.input, e, 'move').pos, true, true);
@@ -528,6 +567,7 @@ class GraphGui extends React.Component<Props, State> {
 
     public render() {
         const { xLabel, yLabel, xTicks, yTicks, xRange, metadata, zoom } = this.props;
+        const { tooltip } = this.state;
         const { margin, xLabelSpace, yLabelSpace } = this.props.style;
 
         const order = zoom ? Math.floor(Math.log10(Math.abs(zoom[3] - zoom[2]))) - 1 : -1;
@@ -565,6 +605,16 @@ class GraphGui extends React.Component<Props, State> {
                         <span className='tick' style={{ bottom: `${100 * tick.pos}%` }} key={i}>{this.getYTickString(tick.val, order)}</span>
                     ))}
                 </div>
+                {tooltip && (
+                    <div className='data-tooltip' style={{ left: tooltip.pos[0], bottom: `calc(100% - ${tooltip.pos[1]}px` }}>
+                        {tooltip.trace.title}<br/><br/>
+                        X: {this.getXTickString(tooltip.value[0])} <br/>
+                        Y: {this.getYTickString(tooltip.value[1], order)} <br/>
+                        Min: <br/>
+                        Max: <br/>
+                        Avg: <br/>
+                    </div>
+                )}
             </>
         );
     }

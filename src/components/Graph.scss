@@ -140,4 +140,23 @@
         justify-content: center;
         align-items: center;
     }
+
+    .data-tooltip {
+        position: absolute;
+        z-index: 5000;
+
+        pointer-events: none;
+        padding: 0.5rem;
+        box-sizing: content-box;
+
+        color: black;
+        background-color: white;
+        border-radius: 2px;
+
+        .dark-mode & {
+            color: white;
+            background-color: rgba(40, 40, 40, 0.98);
+            border-radius: 2px;
+        }
+    }
 }
