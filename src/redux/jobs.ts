@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { SliceStateDraft } from './helpers';
 import type { default as DataJob } from '../services/DataJob';
 import { add_traces } from './graphs';
-import { randomColorDark } from '../utils/color';
+import { randomContrastingColor } from '../utils/color';
 import Logger from '../Logger';
 import Notif from '../services/Notifications';
 import { t } from '../locale';
@@ -36,7 +36,7 @@ export const invoke_job = createAsyncThunk(
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 handle: result.loadedTraces![t].handle,
                 title: result.loadedTraces?.[t].suggestedTitle ?? t.split('::').reverse()[0],
-                style: { width: 1, color: randomColorDark() },
+                style: { width: 1, color: randomContrastingColor() },
                 active: true,
                 rev: 0,
             }));

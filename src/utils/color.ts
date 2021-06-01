@@ -1,4 +1,5 @@
 export type Color = [R: number, G: number, B: number];
+const deg = 1/360;
 
 export function colorToHex(color: Color): string {
     return '#' + color.map(c => c.toString(16).padStart(2, '0')).join('');
@@ -8,13 +9,23 @@ export function randomColor(): Color {
     return [0, 0, 0].map(() => Math.floor(255 * Math.random())) as Color;
 }
 
-export function randomColorDark(): Color {
+export function randomContrastingColor(): Color {
     // for a tutorial on custom probability distributions see:
     // https://programming.guide/generate-random-value-with-distribution.html
 
     const h = Math.random();
     const s = Math.sqrt(0.2 + Math.random() * 0.8);
-    const l = 0.2 + Math.random() * 0.6;
+    const l = 0.3 + Math.random() * 0.5;
+
+    // dark violet and dark red are unreadable against dark background
+    if (l < 0.55 && ( 210*deg < h || h < 10*deg )) {
+        return randomContrastingColor();
+    }
+
+    // light yellow is unreadable against white background
+    if (l > 0.7 && 30*deg < h && h < 100*deg) {
+        return randomContrastingColor();
+    }
 
     return hslToColor(h, s, l);
 }

@@ -51,6 +51,7 @@
 
     & .hidden-graph-close {
         position: relative;
+        pointer-events: auto;
 
         &::after {
             content: '';

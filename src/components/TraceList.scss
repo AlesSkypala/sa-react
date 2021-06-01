@@ -1,7 +1,9 @@
+$trace-height: 25px;
+
 .btn-group.btn-group-stretch {
     display: flex;
     overflow: hidden;
-    
+
     .btn {
         flex: 1
     }
@@ -10,7 +12,7 @@
 .trace-row-outer {
     background-color: white;
     display: flex;
-    height: 35px;
+    height: $trace-height;
     user-select: none;
 
     .dark-mode & {
@@ -66,4 +68,15 @@
 
 .ReactVirtualized__Grid {
     outline: none;
+}
+
+.trace-checkbox {
+    padding: 0 5px;
+}
+
+.trace-color-indicator {
+    height: 20px;
+    width: .3rem;
+    min-width: .3rem;
+    margin: 0 .2rem 0 -.2rem;
 }

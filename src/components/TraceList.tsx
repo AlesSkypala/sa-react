@@ -4,7 +4,8 @@ import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { DataService, DialogService } from '../services';
 import LdevMapModal from './Modals/LdevMapModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckSquare, faSitemap, faSquare } from '@fortawesome/free-solid-svg-icons';
+import { faSitemap } from '@fortawesome/free-solid-svg-icons';
+import { faCheckSquare, faSquare } from '@fortawesome/free-regular-svg-icons';
 import { colorToHex } from '../utils/color';
 
 import './TraceList.scss';
@@ -280,9 +281,10 @@ class TraceListRow extends React.Component<RowProps, TraceListRowState> {
                     overlay={<Tooltip id={`trace-row-tooltip-${ldevId}`}>{rowTitle}</Tooltip>}
                 >
                     <div className="trace-row-inner">
-                        <span className='btn-select mr-1 trace-color-indicator' style={{color}}>
+                        <span className='btn-select mr-1 trace-checkbox' style={{color}}>
                             <FontAwesomeIcon icon={isActive ? faCheckSquare : faSquare} />
                         </span>
+                        <span className='trace-color-indicator' style={{backgroundColor: color}}></span>
                         <span className='trace-row-title' ref={this.spanRef}>{rowTitle}</span>
                         { hasMap && (<button className='btn ldev btn-sm' data-trace={trace.id} onClick={parentList.onLdevClick}><FontAwesomeIcon icon={faSitemap} /></button>) }
                     </div>
