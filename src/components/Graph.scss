@@ -144,7 +144,7 @@
 
 .data-tooltip {
     position: fixed;
-    z-index: 5000 !important;
+    z-index: 999 !important;
 
     pointer-events: none;
     padding: 0.5rem;
