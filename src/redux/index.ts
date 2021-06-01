@@ -5,6 +5,7 @@ export {
     add_graphs, remove_graphs,
     hide_graphs, unhide_graphs,
     clone_graph, edit_graph,
+    focus_graph,
     set_layout, set_stacking,
     graph_action, graph_threshold_select,
     generate_graph_id, toggle_traces,

@@ -1,56 +1,39 @@
 import * as React from 'react';
 import { AutoSizer, List as VirtualizedList, ListRowProps as VirtualizedRowProps } from 'react-virtualized';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { DataService, DialogService } from '../services';
-import LdevMapModal from './Modals/LdevMapModal';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSitemap } from '@fortawesome/free-solid-svg-icons';
 import { faCheckSquare, faSquare } from '@fortawesome/free-regular-svg-icons';
-import { colorToHex } from '../utils/color';
 
-import './TraceList.scss';
+import { DataService, DialogService } from '../services';
+import { connect, ReduxProps, toggle_traces, remove_traces, edit_traces } from '../redux';
 import { getLdevMode, toLdevInternal, toLdevInternalFromVariant } from '../utils/ldev';
 import { splitTraceId } from '../utils/trace';
-import ContextMenu from './ContextMenu';
+import { colorToHex } from '../utils/color';
 import { t } from '../locale';
-// import { withHotKeys } from 'react-hotkeys';
+
+import LdevMapModal from './Modals/LdevMapModal';
+import TraceEditModal from './Modals/TraceEditModal';
+import ContextMenu from './ContextMenu';
+
+import './TraceList.scss';
 
 
-const buttons: { label: string, action: TraceAction }[][] = [
-    [
-        { label: 'Filter', action: 'filter' },
-        { label: 'SelUniq', action: 'sel-unq' },
-        { label: 'Search', action: 'search' },
-        { label: 'Thres', action: 'tres' }
-    ],
-    [
-        { label: 'AllSel', action: 'sel-all' },
-        { label: 'InvSel', action: 'inv' },
-        { label: 'DeSel', action: 'des' },
-        { label: 'DelZero', action: 'del-zero' }
-    ],
-    [
-        { label: 'Sum', action: 'sum' },
-        { label: 'Average', action: 'avg' },
-        { label: 'DelUnsel', action: 'del-unsel' },
-        { label: 'Sort', action: 'sort' } ],
-    [
-        { label: 'Name Sync', action: 'name-sync' },
-        { label: 'Bind Sync', action: 'bind-sync' },
-        { label: 'Zoom Sync', action: 'zoom-sync' }
-    ],
-    // { label: 'DelSel', action: 'del-sel' },
-];
+const dispatchProps = {
+    toggle_traces,
+    remove_traces,
+    edit_traces,
+};
 
-export interface Props {
+const storeProps = (store: RootStore) => ({
+    darkMode: store.settings.darkMode,
+    selectedGraph: store.graphs.focused,
+});
+
+export interface Props
+extends ReduxProps<typeof storeProps, typeof dispatchProps> {
     traces: Trace[];
     darkMode: boolean;
-
-    onSelect(id: Trace['id'], toggle: boolean): void;
-    onAction(action: TraceAction): void;
-
-    onEdit(trace: Trace): void;
-    onDelete(trace: Trace): void;
 }
 
 export interface State {
@@ -115,15 +98,15 @@ class TraceList extends React.PureComponent<Props, State> {
     traceClicked = (e: React.MouseEvent<HTMLLIElement>) => {
         const id = e.currentTarget.dataset.id as Trace['id'];
         const active = e.currentTarget.dataset.active === 'true';
-        this.props.onSelect(id, !active);
         this.setState({ active: id });
         this.listRef.current?.focus();
+
+        const { selectedGraph } = this.props;
+        if (selectedGraph) {
+            this.props.toggle_traces({ id: selectedGraph, traces: new Set([ id ]), val: !active });
+        }
     }
 
-    actionClicked = (e: React.MouseEvent<HTMLButtonElement>) => {
-        const action = e.currentTarget.dataset.action as TraceAction;
-        this.props.onAction(action);
-    }
 
     hasLdevMaps = (trace: Trace) => {
         return DataService.hasLdevMap(trace.id); // trace.features.includes('ldev_map');
@@ -160,61 +143,68 @@ class TraceList extends React.PureComponent<Props, State> {
 
     onContextItem = ({ data }: { data?: 'del' | 'edit' }) => {
         const trace = this.state.contextTrace;
-        if (!trace) return;
+        const { selectedGraph } = this.props;
+        if (!trace || !selectedGraph) return;
 
         switch (data) {
             case 'del':
-                this.props.onDelete(trace);
+                this.props.remove_traces({ id: selectedGraph, traces: new Set([ trace.id ]) });
                 return;
             case 'edit':
-                this.props.onEdit(trace);
+                this.onEdit(trace);
                 return;
         }
     }
 
+    onEdit = (trace: Trace) => {
+        DialogService.open(
+            TraceEditModal,
+            (res) => {
+                if (res && this.props.selectedGraph) {
+                    this.props.edit_traces({
+                        id: this.props.selectedGraph,
+                        traces: new Set([ trace.id ]),
+                        edit: res,
+                    });
+                }
+            },
+            {
+                trace,
+            }
+        );
+    }
+
+
     public render() {
         const { contextTrace } = this.state;
 
-        return (
-            <React.Fragment>
-                <div>
-                    {buttons.map((row, i) => (
-                        <div key={i} className='btn-group btn-group-stretch'>
-                            {row.map(btn => (
-                                <button className='btn btn-secondary btn-sm' key={btn.action} data-action={btn.action} onClick={this.actionClicked}>{btn.label}</button>
-                            ))}
-                        </div>
-                    ))}
-                </div>
-                <div style={{flexGrow: 1}} tabIndex={0} ref={this.listRef}>
-                    <AutoSizer>
-                        {({height, width}) => (
-                            <VirtualizedList
-                                containerProps={{ className: 'list-group' }}
-                                height={height}
-                                width={width}
-                                rowHeight={25}
-                                rowCount={this.props.traces.length}
-                                rowRenderer={this.rowRenderer}
-                                map={this.state.ldevMap}
-                            />
-                        )}
-                    </AutoSizer>
-                </div>
-                <ContextMenu
-                    id='trace-list-menu'
-                    darkMode={this.props.darkMode}
-                    tree={[
-                        { type: 'item', text: t('graph.context.deleteTrace'), show: Boolean(contextTrace), data: 'del',  onClick: this.onContextItem },
-                        { type: 'item', text: t('graph.context.editTrace'),   show: Boolean(contextTrace), data: 'edit', onClick: this.onContextItem },
-                    ]}
-                />
-            </React.Fragment>
-        );
+        return <>
+            <div style={{flexGrow: 1}} tabIndex={0} ref={this.listRef}>
+                <AutoSizer>
+                    {({height, width}) => (
+                        <VirtualizedList
+                            containerProps={{ className: 'list-group' }}
+                            height={height}
+                            width={width}
+                            rowHeight={25}
+                            rowCount={this.props.traces.length}
+                            rowRenderer={this.rowRenderer}
+                            map={this.state.ldevMap}
+                        />
+                    )}
+                </AutoSizer>
+            </div>
+            <ContextMenu
+                id='trace-list-menu'
+                darkMode={this.props.darkMode}
+                tree={[
+                    { type: 'item', text: t('graph.context.deleteTrace'), show: Boolean(contextTrace), data: 'del',  onClick: this.onContextItem },
+                    { type: 'item', text: t('graph.context.editTrace'),   show: Boolean(contextTrace), data: 'edit', onClick: this.onContextItem },
+                ]}
+            />
+        </>;
     }
 }
-
-export default TraceList;
 
 interface RowProps {
     virtualizedRow: VirtualizedRowProps;
@@ -245,7 +235,7 @@ class TraceListRow extends React.Component<RowProps, TraceListRowState> {
 
     onContext = (e: React.MouseEvent) => {
         const { onContext } = this.props;
-        
+
         onContext && onContext(this.props.parentList.props.traces[this.props.virtualizedRow.index], e);
     }
 
@@ -293,3 +283,5 @@ class TraceListRow extends React.Component<RowProps, TraceListRowState> {
         );
     }
 }
+
+export default connect(storeProps, dispatchProps)(TraceList);

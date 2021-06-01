@@ -121,6 +121,7 @@ export const graphsSlice = createSlice({
         items: [] as Readonly<Graph>[],
         layout: [] as Readonly<Layout>[],
         stacking: 'grid' as StackingType,
+        focused: undefined as Graph['id'] | undefined,
         threshold: false,
     },
     reducers: {
@@ -132,10 +133,15 @@ export const graphsSlice = createSlice({
             emitRelayoutEvent(state.stacking, state.layout);
         },
 
+        focus_graph: (state, action: PayloadAction<Graph['id'] | undefined>) => {
+            state.focused = action.payload;
+        },
+
         remove_graphs: (state, action: PayloadAction<Graph['id'] | Graph['id'][]>) => {
             const ids = Array.isArray(action.payload) ? action.payload : [ action.payload ];
 
             state.items = state.items.filter(g => !ids.includes(g.id));
+            ids.forEach( id => { if (state.focused === id) state.focused = undefined; } );
 
             state.layout = relayout(state);
             emitRelayoutEvent(state.stacking, state.layout);
@@ -145,6 +151,7 @@ export const graphsSlice = createSlice({
             const ids = Array.isArray(action.payload) ? action.payload : [ action.payload ];
 
             state.items.forEach(g => { if (ids.includes(g.id)) g.visible = false; });
+            ids.forEach( id => { if (state.focused === id) state.focused = undefined; } );
 
             state.layout = relayout(state);
             emitRelayoutEvent(state.stacking, state.layout);
@@ -269,6 +276,7 @@ export const {
     add_graphs, remove_graphs,
     hide_graphs, unhide_graphs,
     clone_graph, edit_graph,
+    focus_graph,
     set_layout, set_stacking,
     add_traces, toggle_traces,
     remove_traces, edit_traces,
