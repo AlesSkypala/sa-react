@@ -4,7 +4,7 @@ import { Button, Col, Form, ModalTitle, Row } from 'react-bootstrap';
 import { ModalComponent, ModalProps } from '.';
 import { t } from '../../locale';
 // import { store } from '../../redux';
-import { ChromePicker, ColorResult } from 'react-color';
+import { ChromePicker, ChromePickerProps, ColorResult } from 'react-color';
 
 interface Args {
     trace: Trace,
@@ -20,7 +20,7 @@ type Returns = Partial<Omit<Trace, 'style'>> & { style?: Partial<TraceStyle> };
 
 class TraceEditModal
     extends ModalComponent<Returns, Args, State> {
-    
+
     constructor(props: ModalProps<Returns, Args>) {
         super(props);
 
@@ -49,6 +49,12 @@ class TraceEditModal
 
         const { title, color, width } = this.state;
 
+        const styles: ChromePickerProps['styles'] = {
+            default: {
+                picker: { fontFamily: 'unset' }
+            }
+        };
+
         return (
             <Form onSubmit={this.onFormSubmit}>
                 <Row>
@@ -64,7 +70,7 @@ class TraceEditModal
                     </Col>
                     <Form.Group as={Col}>
                         <Form.Label>{t('trace.color')}</Form.Label>
-                        <ChromePicker disableAlpha color={{ r: color[0], g: color[1], b: color[2] }} onChange={this.onColorChange} />
+                        <ChromePicker disableAlpha styles={styles} color={{ r: color[0], g: color[1], b: color[2] }} onChange={this.onColorChange} />
                     </Form.Group>
                 </Row>
                 <Form.Control type="submit" hidden />
@@ -76,7 +82,7 @@ class TraceEditModal
 
         const { title, color, width } = this.state;
         const { trace } = this.props;
-        
+
         if (title !== trace.title) { diff.title = title; }
         if (color.some((v, i) => trace.style.color[i] !== v)) { diff.style = { color }; }
         if (Number(width) !== trace.style.width) { diff.style = { ...(diff.style ?? {}), width: Number(width) }; }
