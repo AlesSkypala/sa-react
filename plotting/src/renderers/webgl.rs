@@ -78,6 +78,7 @@ impl WebGlRenderer {
 
             void main() {
                 gl_Position = vec4(vec2(-1,-1) + vec2(2,2) * (aVertexPosition * vec2(1,transform.x) + vec2(0, transform.y) - origin) / size, 0, 1);
+                gl_PointSize = 4.0;
             }
             "#,
         )?;
@@ -422,6 +423,7 @@ impl Renderer for WebGlRenderer {
                     );
                     gl.enable_vertex_attrib_array(0);
                     gl.draw_arrays(WebGl2RenderingContext::LINE_STRIP, 0, row.points);
+                    // gl.draw_arrays(WebGl2RenderingContext::POINTS, 0, row.points);
                 }
             }
         }

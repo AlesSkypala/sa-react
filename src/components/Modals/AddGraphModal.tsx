@@ -7,9 +7,9 @@ import DataJob from '../../services/DataJob';
 import DateTimeRange from '../DateTimeRange';
 import { Props } from './ModalComponent';
 import { t } from '../../locale';
-import { generate_graph_id } from '../../redux';
 import { dateToTimestamp, getDayFromEnd, rangeIntersectsBounds } from '../../utils/datetime';
 import DatasetTree from '../DatasetTree';
+import * as GraphUtils from '../../utils/graph';
 
 import './AddGraphModal.scss';
 
@@ -50,18 +50,6 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
                 selectedDatasets: prevSource && PREV_DATASETS ? prevSource.datasets.filter(d => PREV_DATASETS?.includes(d.id)) : undefined,
             });
         });
-    }
-
-    getTitle = (sourceType: DataSource['type'], id: Trace['id']) => {
-        if (sourceType === 'hp') {
-            let match;
-
-            if ((match = id.match(/([\w_]+_MPU)-(\d+)$/))) {
-                return t(`datasets.titles.hp.${match[1]}`, id, { val: match[2] });
-            }
-        }
-
-        return t(`datasets.titles.${sourceType}.${id}`, id);
     }
 
     onRangeChange = (range: Graph['xRange']) => {
@@ -107,7 +95,6 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         if (this.state.selectedSource === undefined) throw new Error('Unexpected error: No source selected when creating a graph.');
 
         const xRange = [...this.state.selectedRange] as Graph['xRange'];
-        const id = generate_graph_id();
 
         const sourceType = this.state.selectedSource.type;
         const sourceName = this.state.selectedSource.name;
@@ -116,35 +103,20 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         const units = new Set<string>();
         datasets.forEach( d => units.add(d.units) );
 
-        const graph: Graph = {
-            id,
-            visible: true,
-
-            title:  t('graph.new'),
-            xLabel: t('graph.xAxis'),
-            yLabel: t('graph.yAxis'),
-
+        const graph: Graph = GraphUtils.createGraph({
             // !
             // TODO: this must be reworked to take into account the real xtype of selected traces
             xType: 'datetime',
-
-            style: {
-                margin: 5,
-                xLabelSpace: 24,
-                yLabelSpace: 60,
-            },
+            xRange,
 
             metadata: {
                 sourceNames: [ sourceName ],
-                datasetNames: datasets.map( d => this.getTitle(sourceType, d.id) ),
+                datasetNames: datasets.map( d => GraphUtils.getTitle(sourceType, d.id) ),
                 units: [...units],
             },
+        });
 
-            xRange,
-            traces: [],
-        };
-
-        const job = new DataJob(xRange).relate(id);
+        const job = new DataJob(xRange).relate(graph.id);
         datasets.forEach( t => job.downloadBulk({ source: t.source, id: t.id }) );
         this.props.onAddGraphs && this.props.onAddGraphs([ [ graph ], [ job ] ]);
         this.props.onClose([ [ graph ], [ job ] ]);
@@ -164,39 +136,25 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         const sourceName = this.state.selectedSource.name;
 
         this.state.selectedDatasets.forEach(dataset => {
-            const id = generate_graph_id();
-
-            const datasetName = this.getTitle(sourceType, dataset.id);
+            const datasetName = GraphUtils.getTitle(sourceType, dataset.id);
             const title = `${datasetName} [${dataset.units === 'percent' ? '%' : dataset.units}]`;
+            let graph;
 
-            graphs.push({
-                id, title,
-                visible: true,
+            graphs.push(graph = GraphUtils.createGraph({
+                title,
 
-                xLabel: t('graph.xAxis'),
-                yLabel: t('graph.yAxis'),
-
-                // !
                 // TODO: this must be reworked to take into account the real xtype of selected traces
                 xType: 'datetime',
+                xRange,
 
                 metadata: {
                     sourceNames: [ sourceName ],
                     datasetNames: [ datasetName ],
                     units: [ dataset.units ],
                 },
+            }));
 
-                style: {
-                    margin: 5,
-                    xLabelSpace: 24,
-                    yLabelSpace: 60,
-                },
-
-                xRange,
-                traces: [],
-            });
-
-            jobs.push(new DataJob(xRange).downloadBulk({ source: dataset.source, id: dataset.id }).relate(id));
+            jobs.push(new DataJob(xRange).downloadBulk({ source: dataset.source, id: dataset.id }).relate(graph.id));
         });
 
         this.props.onAddGraphs && this.props.onAddGraphs([ graphs, jobs ]);
@@ -211,43 +169,28 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         if (!dataset) return;
 
         const xRange = [...this.state.selectedRange] as Graph['xRange'];
-        const id = generate_graph_id();
 
         const sourceType = this.state.selectedSource.type;
         const sourceName = this.state.selectedSource.name;
 
-        const datasetName = this.getTitle(sourceType, dataset.id);
+        const datasetName = GraphUtils.getTitle(sourceType, dataset.id);
         const title = `${datasetName} [${dataset.units === 'percent' ? '%' : dataset.units}]`;
 
-        const graph: Graph = {
-            id,
-            visible: true,
+        const graph: Graph = GraphUtils.createGraph({
             title,
 
-            xLabel: t('graph.xAxis'),
-            yLabel: t('graph.yAxis'),
-
-            // !
             // TODO: this must be reworked to take into account the real xtype of selected traces
             xType: 'datetime',
-
-            style: {
-                margin: 5,
-                xLabelSpace: 24,
-                yLabelSpace: 60,
-            },
+            xRange,
 
             metadata: {
                 sourceNames: [ sourceName ],
-                datasetNames: [ this.getTitle(sourceType, dataset.id) ],
+                datasetNames: [ GraphUtils.getTitle(sourceType, dataset.id) ],
                 units: [ dataset.units ],
             },
+        });
 
-            xRange,
-            traces: [],
-        };
-
-        const job = new DataJob(xRange).relate(id);
+        const job = new DataJob(xRange).relate(graph.id);
         job.downloadBulk({ source: dataset.source, id: dataset.id });
         this.props.onAddGraphs && this.props.onAddGraphs([ [ graph ], [ job ] ]);
     }

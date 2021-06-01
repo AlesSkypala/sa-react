@@ -29,8 +29,14 @@ body.dark-mode {
     }
 }
 
-.react-contexify__item__content > svg:first-child {
-    margin-right: 0.5rem;
+#context-menu {
+    .react-contexify__item__content > svg:first-child {
+        margin-right: 0.5rem;
+    }
+
+    .react-contexify__item__content {
+        padding: 4px 8px;
+    }
 }
 
 

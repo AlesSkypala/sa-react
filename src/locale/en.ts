@@ -37,25 +37,30 @@ const en_lang = {
         failedJobs:  '{{count}} job has failed',
         failedJobs_plural:  '{{count}} jobs have failed',
 
+        context: {
+            clone: 'Clone Graph',
+            cloneAll: 'Clone All Series',
+            cloneActive: 'Clone Active Series',
+            ldevSelect: 'LDEV Select',
+            ldevJoin: 'Join LDEV to HG',
+            pointsMode: 'Points mode',
+            deselectTrace: 'Deselect trace',
+            deleteTrace: 'Delete trace',
+            editTrace: 'Edit trace',
+
+            select: {
+                title: 'Select Traces',
+                top: 'Top {{count}}',
+                low: 'Low {{count}}',
+            },
+
+            transform: 'Transform',
+            toavgsum: 'To AVG/SUM',
+        },
+
         noTraces: 'No active traces',
         redrawNotice: 'The graph will be rerendered after you lock the layout',
-        clone: 'Clone Graph',
-        cloneAll: 'Clone All Series',
-        cloneActive: 'Clone Active Series',
-        ldevSelect: 'LDEV Select',
-        ldevJoin: 'Join LDEV to HG',
-        pointsMode: 'Points mode',
-        deselectTrace: 'Deselect trace',
-        deleteTrace: 'Delete trace',
-        editTrace: 'Edit trace',
-
         error: 'A critical error has occurred while rendering the graph:',
-
-        select: {
-            title: 'Select Traces',
-            top: 'Top {{count}}',
-            low: 'Low {{count}}',
-        }
     },
 
     trace: {

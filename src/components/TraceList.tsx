@@ -205,8 +205,8 @@ class TraceList extends React.PureComponent<Props, State> {
                     id='trace-list-menu'
                     darkMode={this.props.darkMode}
                     tree={[
-                        { type: 'item', text: t('graph.deleteTrace'), show: Boolean(contextTrace), data: 'del',  onClick: this.onContextItem },
-                        { type: 'item', text: t('graph.editTrace'),   show: Boolean(contextTrace), data: 'edit', onClick: this.onContextItem },
+                        { type: 'item', text: t('graph.context.deleteTrace'), show: Boolean(contextTrace), data: 'del',  onClick: this.onContextItem },
+                        { type: 'item', text: t('graph.context.editTrace'),   show: Boolean(contextTrace), data: 'edit', onClick: this.onContextItem },
                     ]}
                 />
             </React.Fragment>

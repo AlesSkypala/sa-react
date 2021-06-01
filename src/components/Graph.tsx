@@ -12,9 +12,10 @@ import { dataWorker } from '..';
 import { transfer } from 'comlink';
 import { AppEvents, DataService, DialogService } from '../services';
 import DataJob from '../services/DataJob';
+import * as GraphUtils from '../utils/graph';
 
 import { t } from '../locale';
-import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings, invoke_job, add_graphs, generate_graph_id, remove_traces, edit_traces } from '../redux';
+import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings, invoke_job, add_graphs, remove_traces, edit_traces } from '../redux';
 import { GraphEditModal, LdevSelectModal } from './Modals';
 import RendererHandle from '../services/RendererHandle';
 import { PendingDataJob } from '../redux/jobs';
@@ -22,13 +23,12 @@ import { isHomogenous, splitTraceId } from '../utils/trace';
 import { getLdevMode, relatesTo, toLdevInternal } from '../utils/ldev';
 import GraphDeleteConfirmation from './Modals/GraphDeleteConfirmation';
 import GraphGui from './GraphGui';
-
-import './Graph.scss';
 import GraphJobsModal from './Modals/GraphJobsModal';
 import TraceEditModal from './Modals/TraceEditModal';
 import ContextMenu from './ContextMenu';
 import Logger from '../Logger';
 
+import './Graph.scss';
 
 export const X_TICK_SPACE = 24;
 
@@ -386,35 +386,25 @@ class GraphComponent
             return prev;
         }, {});
 
-        const id = generate_graph_id();
-        const graph: Graph = {
-            id,
+        const graph: Graph = GraphUtils.createGraph({
             title: `Hostgroups ${this.props.title}`,
-            visible: true,
 
             xLabel: this.props.xLabel,
             yLabel: this.props.yLabel,
 
+            xRange: this.props.xRange,
             xType: 'datetime',
 
             metadata: {
                 ...this.props.metadata
             },
 
-            style: {
-                margin: 5,
-                xLabelSpace: 24,
-                yLabelSpace: 60,
-            },
-
-            xRange: this.props.xRange,
-            traces: [],
-        };
+        });
 
         this.props.add_graphs(graph);
 
         const job = new DataJob(this.props.xRange);
-        job.relate(id);
+        job.relate(graph.id);
         
         for (const hg in newMap) {
             job.createOperation({
@@ -472,6 +462,54 @@ class GraphComponent
                     );
                 }
                 return;
+        }
+    }
+
+    private onTransform = ({ data }: { data?: string}) => {
+        switch (data) {
+            case 'avgsum':
+                {
+                    const graph: Graph = GraphUtils.createGraph({
+                        title: `AVG/SUM of ${this.props.title}`,
+            
+                        xLabel: this.props.xLabel,
+                        yLabel: this.props.yLabel,
+            
+                        xRange: this.props.xRange,
+                        xType: 'datetime',
+            
+                        metadata: {
+                            ...this.props.metadata
+                        },
+            
+                    });
+            
+                    this.props.add_graphs(graph);
+            
+                    const job = new DataJob(this.props.xRange);
+                    job.relate(graph.id);
+
+                    const handles = this.props.traces.filter(t => t.active).map(t => t.handle);
+                    
+                    job.createOperation({
+                        id: 'local::calculated::avg',
+                        handles,
+                        operation: 'avg',
+                        title: 'Average',
+                        xType: this.props.xType,
+                    });
+
+                    job.createOperation({
+                        id: 'local::calculated::sum',
+                        handles,
+                        operation: 'sum',
+                        title: 'Sum',
+                        xType: this.props.xType,
+                    });
+            
+                    this.props.invoke_job(job);
+                }
+                break;
         }
     }
 
@@ -544,36 +582,43 @@ class GraphComponent
                         tree={[
                             {
                                 type: 'submenu',
-                                text: t('graph.clone'),
+                                text: t('graph.context.clone'),
                                 children: [
-                                    { type: 'item', data: 'all', text: t('graph.cloneAll'), onClick: this.onClone  },
-                                    { type: 'item', data: 'active', text: t('graph.cloneActive'), onClick: this.onClone, disabled: !traces.some(t => t.active) },
+                                    { type: 'item', data: 'all', text: t('graph.context.cloneAll'), onClick: this.onClone  },
+                                    { type: 'item', data: 'active', text: t('graph.context.cloneActive'), onClick: this.onClone, disabled: !traces.some(t => t.active) },
                                 ]
                             },
                             {
                                 type: 'submenu',
-                                text: t('graph.select.title'),
+                                text: t('graph.context.transform'),
+                                children: [
+                                    { type: 'item', data: 'avgsum', text: t('graph.context.toavgsum'), onClick: this.onTransform  },
+                                ]
+                            },
+                            {
+                                type: 'submenu',
+                                text: t('graph.context.select.title'),
                                 show: traces.length > 5,
                                 children: [
-                                    { type: 'item', text: <>{iconUp} {t('graph.select.top', { count: 5  })}</>, data: 5,  onClick: this.onSelectTopLow },
-                                    { type: 'item', text: <>{iconUp} {t('graph.select.top', { count: 10 })}</>, data: 10, onClick: this.onSelectTopLow, show: traces.length > 10 },
-                                    { type: 'item', text: <>{iconUp} {t('graph.select.top', { count: 20 })}</>, data: 20, onClick: this.onSelectTopLow, show: traces.length > 20 },
+                                    { type: 'item', text: <>{iconUp} {t('graph.context.select.top', { count: 5  })}</>, data: 5,  onClick: this.onSelectTopLow },
+                                    { type: 'item', text: <>{iconUp} {t('graph.context.select.top', { count: 10 })}</>, data: 10, onClick: this.onSelectTopLow, show: traces.length > 10 },
+                                    { type: 'item', text: <>{iconUp} {t('graph.context.select.top', { count: 20 })}</>, data: 20, onClick: this.onSelectTopLow, show: traces.length > 20 },
                                     { type: 'separator' },
-                                    { type: 'item', text: <>{iconDown} {t('graph.select.low', { count: 5  })}</>, data: -5,  onClick: this.onSelectTopLow },
-                                    { type: 'item', text: <>{iconDown} {t('graph.select.low', { count: 10 })}</>, data: -10, onClick: this.onSelectTopLow, show: traces.length > 10 },
-                                    { type: 'item', text: <>{iconDown} {t('graph.select.low', { count: 20 })}</>, data: -20, onClick: this.onSelectTopLow, show: traces.length > 20 },
+                                    { type: 'item', text: <>{iconDown} {t('graph.context.select.low', { count: 5  })}</>, data: -5,  onClick: this.onSelectTopLow },
+                                    { type: 'item', text: <>{iconDown} {t('graph.context.select.low', { count: 10 })}</>, data: -10, onClick: this.onSelectTopLow, show: traces.length > 10 },
+                                    { type: 'item', text: <>{iconDown} {t('graph.context.select.low', { count: 20 })}</>, data: -20, onClick: this.onSelectTopLow, show: traces.length > 20 },
                                 ]
                             },
 
                             { type: 'separator', show: ldevSelectAvailable },
-                            { type: 'item', text: t('graph.ldevSelect'), onClick: this.onLdevFilter, show: ldevSelectAvailable },
-                            { type: 'item', text: t('graph.ldevJoin'),   onClick: this.onLdevJoin  , show: ldevSelectAvailable && ldevToHostGroupAvailable },
+                            { type: 'item', text: t('graph.context.ldevSelect'), onClick: this.onLdevFilter, show: ldevSelectAvailable },
+                            { type: 'item', text: t('graph.context.ldevJoin'),   onClick: this.onLdevJoin  , show: ldevSelectAvailable && ldevToHostGroupAvailable },
 
                             { type: 'separator', show: Boolean(selectedTrace) },
-                            { type: 'item', text: t('graph.pointsMode'),    show: false,                  data: selectedTrace && { id: selectedTrace.id, action: 'points' },   onClick: this.onTraceContext },
-                            { type: 'item', text: t('graph.deselectTrace'), show: Boolean(selectedTrace), data: selectedTrace && { id: selectedTrace.id, action: 'deselect' }, onClick: this.onTraceContext },
-                            { type: 'item', text: t('graph.deleteTrace'),   show: Boolean(selectedTrace), data: selectedTrace && { id: selectedTrace.id, action: 'delete' },   onClick: this.onTraceContext },
-                            { type: 'item', text: t('graph.editTrace'),     show: Boolean(selectedTrace), data: selectedTrace && { id: selectedTrace.id, action: 'edit' },     onClick: this.onTraceContext },
+                            { type: 'item', text: t('graph.context.pointsMode'),    show: false,                       data: selectedTrace && { id: selectedTrace.id, action: 'points' },   onClick: this.onTraceContext },
+                            { type: 'item', text: t('graph.context.deselectTrace'), show: selectedTrace !== undefined, data: selectedTrace && { id: selectedTrace.id, action: 'deselect' }, onClick: this.onTraceContext },
+                            { type: 'item', text: t('graph.context.deleteTrace'),   show: selectedTrace !== undefined, data: selectedTrace && { id: selectedTrace.id, action: 'delete' },   onClick: this.onTraceContext },
+                            { type: 'item', text: t('graph.context.editTrace'),     show: selectedTrace !== undefined, data: selectedTrace && { id: selectedTrace.id, action: 'edit' },     onClick: this.onTraceContext },
                         ]}
                     />
                     {!this.props.layoutLocked ? (

@@ -11,6 +11,7 @@ import { connect } from 'react-redux';
 import * as Vec from '../utils/position';
 import * as canvas from '../utils/canvas';
 import { debounce } from 'lodash';
+import { ContextMenuPortal } from './ContextMenu';
 
 const COMPACT_RADIUS = 16;
 let GLOBAL_RULER: RulerData | undefined = undefined;
@@ -44,11 +45,10 @@ export interface Props extends Graph, DispatchProps<typeof dispatchProps> {
 
 export interface State {
     tooltip?: {
-        pos: [ number, number ],
+        pos: React.CSSProperties,
         value: [ number, number ],
         trace: Trace,
         metas: TraceMetas,
-        left: boolean,
     }
 }
 
@@ -397,7 +397,7 @@ class GraphGui extends React.Component<Props, State> {
 
         if (downPos && zoom) {
             downPos[1] = 1 - downPos[1];
-            const relDown = [ ...downPos ];
+            // const relDown = [ ...downPos ];
             downPos = Vec.add(Vec.mul(downPos, [ zoom[1] - zoom[0], zoom[3] - zoom[2] ]), [ zoom[0], zoom[2] ]);
 
             dataWorker.closest_trace(downPos[0], downPos[1], Math.max(1, (zoom[3] - zoom[2]) * 0.05), this.props.traces.filter(t => t.active).map(t => t.handle), this.props.xRange).then((h: TraceMetas | number | undefined) => {
@@ -408,10 +408,13 @@ class GraphGui extends React.Component<Props, State> {
                 trace && this.setState({
                     tooltip: {
                         trace,
-                        pos: Vec.getPosIn(this.outerGraphBox(), this.input.pos) as [number, number],
+                        pos: {
+                            left: `min(100vw - 120px, ${this.input.pos[0]}px)`,
+                            top: `max(164px, ${this.input.pos[1]}px)`,
+                            transform: 'translateY(-100%)',
+                        },
                         value: downPos as [number, number],
                         metas: h,
-                        left: relDown[0] > 0.8 || relDown[1] > 0.8,
                     }
                 });
             });
@@ -609,24 +612,24 @@ class GraphGui extends React.Component<Props, State> {
                     ))}
                 </div>
                 {tooltip && (
-                    <div
-                        className='data-tooltip'
-                        style={tooltip.left ? {
-                            right: `calc(100% - ${tooltip.pos[0]}px)`, top: tooltip.pos[1],
-                        } : { left: tooltip.pos[0], bottom: `calc(100% - ${tooltip.pos[1]}px` }}
-                    >
-                        <div className='title'>
-                            <b>{tooltip.trace.title}</b>
-                            <div className='tip-color' style={{ backgroundColor: `rgb(${tooltip.trace.style.color[0]}, ${tooltip.trace.style.color[1]}, ${tooltip.trace.style.color[2]})` }} />
+                    <ContextMenuPortal>
+                        <div
+                            className='data-tooltip'
+                            style={tooltip.pos}
+                        >
+                            <div className='title'>
+                                <b>{tooltip.trace.title}</b>
+                                <div className='tip-color' style={{ backgroundColor: `rgb(${tooltip.trace.style.color[0]}, ${tooltip.trace.style.color[1]}, ${tooltip.trace.style.color[2]})` }} />
+                            </div>
+                            <small>
+                            X: {this.getXTickString(tooltip.value[0])} <br/>
+                            Y: {this.getYTickString(tooltip.value[1], order)} <br/>
+                            Min: {this.getYTickString(tooltip.metas.min, order)} <br/>
+                            Max: {this.getYTickString(tooltip.metas.max, order)} <br/>
+                            Avg: {this.getYTickString(tooltip.metas.avg, order)}
+                            </small>
                         </div>
-                        <small>
-                        X: {this.getXTickString(tooltip.value[0])} <br/>
-                        Y: {this.getYTickString(tooltip.value[1], order)} <br/>
-                        Min: {this.getYTickString(tooltip.metas.min, order)} <br/>
-                        Max: {this.getYTickString(tooltip.metas.max, order)} <br/>
-                        Avg: {this.getYTickString(tooltip.metas.avg, order)}
-                        </small>
-                    </div>
+                    </ContextMenuPortal>
                 )}
             </>
         );

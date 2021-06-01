@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Item, Menu, Separator, Submenu, TriggerEvent, useContextMenu,  } from 'react-contexify';
 import { createPortal } from 'react-dom';
 
-function MenuPortal({ children }: { children: React.ReactNode }) {
+export function ContextMenuPortal({ children }: { children: React.ReactNode }) {
     const elem = document.getElementById('context-menu');
     return elem ? createPortal(children, elem) : <>{children}</>;
 }
@@ -64,11 +64,11 @@ class ContextMenu extends React.PureComponent<Props> {
         };
 
         return (
-            <MenuPortal>
+            <ContextMenuPortal>
                 <Menu id={id} theme={darkMode ? 'dark' : 'light'} animation={false} dir='up'>
                     {tree.map((l, i) => renderLeaf(l, 0, i))}
                 </Menu>
-            </MenuPortal>
+            </ContextMenuPortal>
         );
     }
 }

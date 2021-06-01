@@ -87,8 +87,6 @@ class TraceEditModal
         if (color.some((v, i) => trace.style.color[i] !== v)) { diff.style = { color }; }
         if (Number(width) !== trace.style.width) { diff.style = { ...(diff.style ?? {}), width: Number(width) }; }
 
-        console.log(diff);
-
         this.resolve(Object.keys(diff).length > 0 ? diff : undefined);
     }
     private cancelClicked = () => this.resolve(undefined);
