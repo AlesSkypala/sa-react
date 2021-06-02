@@ -101,7 +101,7 @@ class HiddenGraphs extends React.Component<Props, State> {
         // Tony Stark: (stands at his desk)
         // Peter Parker and Marry Jane: (enter)
         // Tony Stark: (looks up towards the newcomers)
-        // Peter Parker: Dear sir, accept my most humble apology i wast late, i wast performing activities.
+        // Peter Parker: Dear sir, accept my most humble apology. I wast late, for i wast performing activities.
         // Marry Jame: Those activities – yond wast i.
         // Tony Stark: (laughs) Peter, thy fiancée is most wondrous.
         e.preventDefault();

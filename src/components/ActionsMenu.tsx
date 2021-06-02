@@ -1,16 +1,24 @@
 import React from 'react';
 import { connect, ReduxProps, graph_action } from '../redux';
 
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import {  } from '@fortawesome/free-solid-svg-icons';
+
+import './ActionsMenu.scss';
+
+
 const storeProps = (state: RootStore) => ({
     graphs: state.graphs.items,
-    focused: state.graphs.focused
+    focused: state.graphs.focused,
 });
 
 const dispatchProps = {
-    graph_action
+    graph_action,
 };
 
-type Props = ReduxProps<typeof storeProps, typeof dispatchProps>;
+interface Props extends ReduxProps<typeof storeProps, typeof dispatchProps> {}
+
+interface State {}
 
 
 const buttons: { label: string, action: TraceAction }[][] = [
@@ -39,7 +47,7 @@ const buttons: { label: string, action: TraceAction }[][] = [
     // { label: 'DelSel', action: 'del-sel' },
 ];
 
-class ActionsMenu extends React.Component<Props> {
+class ActionsMenu extends React.Component<Props, State> {
     render() {
         return <div>
             {buttons.map((row, i) => (

@@ -1,0 +1,48 @@
+.btn-group.btn-group-stretch {
+    display: flex;
+    overflow: hidden;
+
+    .btn {
+        flex: 1;
+    }
+}
+
+.trace-search-row {
+    display: flex;
+    background-color: var(--primary-background-color);
+
+    > span, > span.btn {
+        padding: .3rem .3rem;
+    }
+
+    .trace-search-input input {
+        width: 100%;
+        padding: 0;
+        margin-left: .2rem;
+
+        border: none;
+
+        background-color: transparent;
+        color: var(--primary-text-color);
+
+        &.non-empty:not(:focus) {
+            border-bottom: 1px solid var(--secondary-text-color);
+            padding-bottom: -1px;
+        }
+
+        &:focus {
+            outline: none;
+            border-bottom: 1px solid var(--primary-text-color);
+            padding-bottom: -1px;
+        }
+
+        &::placeholder {
+            color: var(--secondary-text-color);
+        }
+    }
+
+    .trace-search-clear.hidden {
+        visibility: hidden;
+    }
+
+}

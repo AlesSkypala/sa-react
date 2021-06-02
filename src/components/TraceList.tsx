@@ -12,6 +12,7 @@ import { splitTraceId } from '../utils/trace';
 import { colorToHex } from '../utils/color';
 import { t } from '../locale';
 
+import TraceSearchBar from './TraceSearchBar';
 import LdevMapModal from './Modals/LdevMapModal';
 import TraceEditModal from './Modals/TraceEditModal';
 import ContextMenu from './ContextMenu';
@@ -40,6 +41,11 @@ export interface State {
     ldevMap: { [key: string]: string };
     active: Trace['id'] | undefined;
     contextTrace: Trace | undefined;
+
+    filter?: Filter;
+    sorter?: Sorter;
+
+    traceList: Trace[];
 }
 
 class TraceList extends React.PureComponent<Props, State> {
@@ -47,16 +53,34 @@ class TraceList extends React.PureComponent<Props, State> {
         ldevMap: {},
         active: undefined,
         contextTrace: undefined,
+        traceList: [],
     };
 
     private listRef = React.createRef<HTMLDivElement>();
 
-    public async componentDidUpdate(prevProps: Props) {
+    public async componentDidUpdate(prevProps: Props, prevState: State) {
+        this.filterAndSort(prevProps, prevState);
         await this.fetchLdevNames(prevProps);
     }
 
     public async componentDidMount() {
+        this.setState({ traceList: this.props.traces });
         await this.fetchLdevNames();
+    }
+
+    public filterAndSort(prevProps: Props, prevState: State) {
+        if (prevProps.traces === this.props.traces
+            && prevState.filter === this.state.filter
+            && prevState.sorter === this.state.sorter) return;
+
+        const { filter, sorter } = this.state;
+        let { traces } = this.props;
+        traces = [...traces];
+
+        if (filter) traces = traces.filter(filter);
+        if (sorter) traces = traces.sort(sorter);
+
+        this.setState({ traceList: traces });
     }
 
     public async fetchLdevNames(prevProps?: Props) {
@@ -65,7 +89,7 @@ class TraceList extends React.PureComponent<Props, State> {
             if (prevProps?.traces && this.props.traces && this.props.traces.length === prevProps.traces.length) {
                 const ids = new Set(this.props.traces.map(t => t.id));
 
-                if (!prevProps.traces.some(t => !ids.has(t.id))) {
+                if (prevProps.traces.every(t => ids.has(t.id))) {
                     return;
                 }
             }
@@ -174,11 +198,25 @@ class TraceList extends React.PureComponent<Props, State> {
         );
     }
 
+    onFilter = (fn: Filter | undefined) => {
+        this.setState({ filter: fn });
+    }
+
+    onSort = (fn: Sorter | undefined) => {
+        this.setState({ sorter: fn });
+    }
+
 
     public render() {
-        const { contextTrace } = this.state;
+        const { contextTrace, traceList } = this.state;
+
+        console.log('rendered');
 
         return <>
+            <TraceSearchBar
+                onFilter={ this.onFilter }
+                onSort={ this.onSort }
+            />
             <div style={{flexGrow: 1}} tabIndex={0} ref={this.listRef}>
                 <AutoSizer>
                     {({height, width}) => (
@@ -187,7 +225,7 @@ class TraceList extends React.PureComponent<Props, State> {
                             height={height}
                             width={width}
                             rowHeight={25}
-                            rowCount={this.props.traces.length}
+                            rowCount={traceList.length}
                             rowRenderer={this.rowRenderer}
                             map={this.state.ldevMap}
                         />
@@ -234,16 +272,16 @@ class TraceListRow extends React.Component<RowProps, TraceListRowState> {
     }
 
     onContext = (e: React.MouseEvent) => {
-        const { onContext } = this.props;
+        const { onContext, parentList } = this.props;
 
-        onContext && onContext(this.props.parentList.props.traces[this.props.virtualizedRow.index], e);
+        if (onContext) onContext(parentList.state.traceList[this.props.virtualizedRow.index], e);
     }
 
     render() {
         const { virtualizedRow, parentList } = this.props;
         const { showTooltip } = this.state;
 
-        const trace = parentList.props.traces[virtualizedRow.index];
+        const trace = parentList.state.traceList[virtualizedRow.index];
         const color = colorToHex(trace.style.color);
 
         const hasMap = parentList.hasLdevMaps(trace);

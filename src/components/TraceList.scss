@@ -1,23 +1,10 @@
 $trace-height: 25px;
 
-.btn-group.btn-group-stretch {
-    display: flex;
-    overflow: hidden;
-
-    .btn {
-        flex: 1
-    }
-}
-
 .trace-row-outer {
-    background-color: white;
+    background-color: var(--primary-background-color);
     display: flex;
     height: $trace-height;
     user-select: none;
-
-    .dark-mode & {
-        background-color: var(--gray-dark);
-    }
 }
 
 .trace-row-inner {

@@ -5,7 +5,7 @@ import { t } from '../locale';
 import TraceList from './TraceList';
 import ActionsMenu from './ActionsMenu';
 
-import './SideMenu.css';
+import './SideMenu.scss';
 
 const dispatchProps = {};
 
@@ -18,7 +18,7 @@ type Props = ReduxProps<typeof storeProps, typeof dispatchProps> & {
     onTraceAddClick(): void;
 }
 
-interface State { }
+interface State {}
 
 class SideMenuComponent
     extends React.Component<Props, State> {

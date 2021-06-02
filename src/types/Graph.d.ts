@@ -76,3 +76,6 @@ type TraceAction = 'sel-unq' | 'sel-all' | 'inv' | 'des' | 'tres' |
 type StackingType = 'horizontal' | 'vertical' | 'grid' | 'freeform';
 
 type RulerData = { xType: Graph['xType'], value: Graph['xRange'][0] };
+
+type Filter = (t: Trace) => boolean;
+type Sorter = (a: Trace, b: Trace) => number;

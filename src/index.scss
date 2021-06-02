@@ -9,11 +9,17 @@
     z-index: 1000;
 }
 
-body { 
+body {
+    --primary-text-color: black;
+    --secondary-text-color: #333;
+    --primary-background-color: #ecf0f5;
     background-color: #ecf0f5;
 }
 
-body.dark-mode {
+.dark-mode body {
+    --primary-text-color: white;
+    --secondary-text-color: lightgray;
+    --primary-background-color: var(--gray-dark);
     background-color: gray;
 }
 
