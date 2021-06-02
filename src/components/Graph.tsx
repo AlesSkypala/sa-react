@@ -444,23 +444,21 @@ class GraphComponent
                 this.props.remove_traces({ id: this.props.id, traces: new Set([ data.id ]) });
                 return;
             case 'edit':
-                {
-                    DialogService.open(
-                        TraceEditModal,
-                        (res) => {
-                            if (res) {
-                                this.props.edit_traces({
-                                    id: this.props.id,
-                                    traces: new Set([ data.id ]),
-                                    edit: res,
-                                });
-                            }
-                        },
-                        {
-                            trace,
+                DialogService.open(
+                    TraceEditModal,
+                    (res) => {
+                        if (res) {
+                            this.props.edit_traces({
+                                id: this.props.id,
+                                traces: new Set([ data.id ]),
+                                edit: res,
+                            });
                         }
-                    );
-                }
+                    },
+                    {
+                        trace,
+                    }
+                );
                 return;
             case 'points':
                 this.props.edit_traces({ id: this.props.id, traces: new Set([ data.id ]), edit: { style: { points: !trace.style.points }} });
