@@ -19,6 +19,7 @@ struct BufferEntry {
     buffer: WebGlBuffer,
     width: f32,
     color: [f32; 3],
+    points_mode: bool,
 }
 
 struct BufferBundle {
@@ -349,6 +350,7 @@ impl WebGlRenderer {
                 entry.color[1] as f32 / 255.0,
                 entry.color[2] as f32 / 255.0,
             ],
+            points_mode: entry.points_mode,
         })
     }
 }
@@ -423,7 +425,7 @@ impl Renderer for WebGlRenderer {
                     );
                     gl.enable_vertex_attrib_array(0);
                     gl.draw_arrays(WebGl2RenderingContext::LINE_STRIP, 0, row.points);
-                    // gl.draw_arrays(WebGl2RenderingContext::POINTS, 0, row.points);
+                    if row.points_mode { gl.draw_arrays(WebGl2RenderingContext::POINTS, 0, row.points); }
                 }
             }
         }
@@ -554,6 +556,7 @@ impl Renderer for WebGlRenderer {
                     row.color[1] as f32 / 255.0,
                     row.color[2] as f32 / 255.0,
                 ];
+                buffer.points_mode = row.points_mode;
             }
         }
 

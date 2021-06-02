@@ -433,6 +433,9 @@ class GraphComponent
     private onTraceContext = ({ data }: { data?: { id: Trace['id'], action: 'delete' | 'deselect' | 'points' | 'edit' } }) => {
         if (!data) return;
 
+        const trace = this.props.traces.find(t => t.id === data.id);
+        if (!trace) return;
+
         switch (data.action) {
             case 'deselect':
                 this.props.toggle_traces({ id: this.props.id, traces: new Set([ data.id ]), val: false });
@@ -442,9 +445,6 @@ class GraphComponent
                 return;
             case 'edit':
                 {
-                    const trace = this.props.traces.find(t => t.id === data.id);
-                    if (!trace) return;
-
                     DialogService.open(
                         TraceEditModal,
                         (res) => {
@@ -461,6 +461,9 @@ class GraphComponent
                         }
                     );
                 }
+                return;
+            case 'points':
+                this.props.edit_traces({ id: this.props.id, traces: new Set([ data.id ]), edit: { style: { points: !trace.style.points }} });
                 return;
         }
     }
@@ -615,7 +618,7 @@ class GraphComponent
                             { type: 'item', text: t('graph.context.ldevJoin'),   onClick: this.onLdevJoin  , show: ldevSelectAvailable && ldevToHostGroupAvailable },
 
                             { type: 'separator', show: Boolean(selectedTrace) },
-                            { type: 'item', text: t('graph.context.pointsMode'),    show: false,                       data: selectedTrace && { id: selectedTrace.id, action: 'points' },   onClick: this.onTraceContext },
+                            { type: 'item', text: t('graph.context.pointsMode'),    show: selectedTrace !== undefined, data: selectedTrace && { id: selectedTrace.id, action: 'points' },   onClick: this.onTraceContext },
                             { type: 'item', text: t('graph.context.deselectTrace'), show: selectedTrace !== undefined, data: selectedTrace && { id: selectedTrace.id, action: 'deselect' }, onClick: this.onTraceContext },
                             { type: 'item', text: t('graph.context.deleteTrace'),   show: selectedTrace !== undefined, data: selectedTrace && { id: selectedTrace.id, action: 'delete' },   onClick: this.onTraceContext },
                             { type: 'item', text: t('graph.context.editTrace'),     show: selectedTrace !== undefined, data: selectedTrace && { id: selectedTrace.id, action: 'edit' },     onClick: this.onTraceContext },

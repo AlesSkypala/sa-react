@@ -12,6 +12,7 @@ pub struct BundleEntry {
     handle: usize,
     width: u32,
     color: [u8; 3],
+    points_mode: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -50,6 +51,8 @@ pub struct RendererContainer {
     renderer: Box<dyn Renderer>,
 }
 
+const ROW_LEN: usize = std::mem::size_of::<u32>() * 2 + 4;
+
 #[wasm_bindgen]
 impl RendererContainer {
     pub fn new_webgl(elem: OffscreenCanvas) -> Result<RendererContainer, JsValue> {
@@ -72,13 +75,14 @@ impl RendererContainer {
         to: RangePrec,
         stream: &[u8],
     ) -> Result<usize, JsValue> {
-        let mut vec = Vec::with_capacity(stream.len() / 11);
+        let mut vec = Vec::with_capacity(stream.len() / ROW_LEN);
 
-        for row in stream.chunks_exact(11) {
+        for row in stream.chunks_exact(ROW_LEN) {
             vec.push(BundleEntry {
                 handle: u32::from_be_bytes(row[0..4].try_into().unwrap()) as usize,
                 width: u32::from_be_bytes(row[4..8].try_into().unwrap()),
                 color: row[8..11].try_into().unwrap(),
+                points_mode: row[11] > 0,
             });
         }
 
@@ -92,27 +96,29 @@ impl RendererContainer {
         add: &[u8],
         modif: &[u8],
     ) -> Result<(), JsValue> {
-        let mut to_add = Vec::with_capacity(add.len() / 11);
-        let mut to_mod = Vec::with_capacity(modif.len() / 11);
+        let mut to_add = Vec::with_capacity(add.len() / ROW_LEN);
+        let mut to_mod = Vec::with_capacity(modif.len() / ROW_LEN);
         let mut to_del = Vec::with_capacity(del.len() / size_of::<usize>());
 
         for row in del.chunks_exact(size_of::<usize>()) {
             to_del.push(usize::from_be_bytes(row.try_into().unwrap()));
         }
 
-        for row in add.chunks_exact(11) {
+        for row in add.chunks_exact(ROW_LEN) {
             to_add.push(BundleEntry {
                 handle: u32::from_be_bytes(row[0..4].try_into().unwrap()) as usize,
                 width: u32::from_be_bytes(row[4..8].try_into().unwrap()),
                 color: row[8..11].try_into().unwrap(),
+                points_mode: row[11] > 0,
             });
         }
 
-        for row in modif.chunks_exact(11) {
+        for row in modif.chunks_exact(ROW_LEN) {
             to_mod.push(BundleEntry {
                 handle: u32::from_be_bytes(row[0..4].try_into().unwrap()) as usize,
                 width: u32::from_be_bytes(row[4..8].try_into().unwrap()),
                 color: row[8..11].try_into().unwrap(),
+                points_mode: row[11] > 0,
             });
         }
 

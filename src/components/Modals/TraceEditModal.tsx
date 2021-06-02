@@ -14,6 +14,7 @@ interface State {
     title: string,
     color: Trace['style']['color'],
     width: Trace['style']['width'],
+    points: Trace['style']['points'],
 }
 
 type Returns = Partial<Omit<Trace, 'style'>> & { style?: Partial<TraceStyle> };
@@ -28,6 +29,7 @@ class TraceEditModal
             title: props.trace.title,
             color: props.trace.style.color,
             width: props.trace.style.width,
+            points: props.trace.style.points,
         };
     }
 
@@ -39,6 +41,7 @@ class TraceEditModal
 
     private onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); this.okClicked(); }
     private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
+    private onFormCheck  = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.checked } as never);
     private onColorChange = (color: ColorResult) => {
         const { r, g, b } = color.rgb;
 
@@ -47,7 +50,7 @@ class TraceEditModal
 
     protected renderBody(): JSX.Element {
 
-        const { title, color, width } = this.state;
+        const { title, color, width, points } = this.state;
 
         const styles: ChromePickerProps['styles'] = {
             default: {
@@ -67,6 +70,9 @@ class TraceEditModal
                             <Form.Label>{t('trace.width')}</Form.Label>
                             <Form.Control name='width'  value={width}  onChange={this.onFormChange} type='number' min={1} max={8} />
                         </Form.Group>
+                        <Form.Group>
+                            <Form.Check name='points' checked={points} onChange={this.onFormCheck} label={t('trace.pointsMode')} />
+                        </Form.Group>
                     </Col>
                     <Form.Group as={Col}>
                         <Form.Label>{t('trace.color')}</Form.Label>
@@ -80,12 +86,13 @@ class TraceEditModal
     private okClicked = () => {
         const diff: Returns = {};
 
-        const { title, color, width } = this.state;
+        const { title, color, width, points } = this.state;
         const { trace } = this.props;
 
         if (title !== trace.title) { diff.title = title; }
         if (color.some((v, i) => trace.style.color[i] !== v)) { diff.style = { color }; }
         if (Number(width) !== trace.style.width) { diff.style = { ...(diff.style ?? {}), width: Number(width) }; }
+        if (points !== trace.style.points) { diff.style = { ...(diff.style ?? {}), points }; }
 
         this.resolve(Object.keys(diff).length > 0 ? diff : undefined);
     }

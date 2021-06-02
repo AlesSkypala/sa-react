@@ -58,7 +58,7 @@ class RendererHandle {
     }
 }
 
-const TRACE_LEN = 2 * Uint32Array.BYTES_PER_ELEMENT + 3 * Uint8Array.BYTES_PER_ELEMENT;
+const TRACE_LEN = 2 * Uint32Array.BYTES_PER_ELEMENT + 4 * Uint8Array.BYTES_PER_ELEMENT;
 
 const writeTrace = (trace: Pick<Trace, 'handle' | 'style'>, view: DataView, cursor: number) => {
     view.setUint32(cursor, trace.handle);
@@ -66,6 +66,7 @@ const writeTrace = (trace: Pick<Trace, 'handle' | 'style'>, view: DataView, curs
     view.setUint8( cursor + 8, trace.style.color[0]);
     view.setUint8( cursor + 9, trace.style.color[1]);
     view.setUint8( cursor + 10, trace.style.color[2]);
+    view.setUint8( cursor + 11, trace.style.points ? 1 : 0);
 };
 
 export class RenderJob {

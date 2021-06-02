@@ -47,6 +47,7 @@ interface Trace {
 interface TraceStyle {
     color: [number, number, number];
     width: number;
+    points: boolean;
 }
 
 type TraceMetas = {

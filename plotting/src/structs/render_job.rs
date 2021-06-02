@@ -56,11 +56,12 @@ impl RenderJob {
         }
     }
 
-    pub fn add_trace(&mut self, idx: DataIdx, color: &[u8], width: u32) {
+    pub fn add_trace(&mut self, idx: DataIdx, color: &[u8], width: u32, points_mode: bool) {
         self.traces.push(TraceStyle {
             idx,
             color: color.try_into().unwrap(),
             width,
+            points_mode,
         });
     }
 
@@ -73,13 +74,14 @@ impl RenderJob {
     }
 
     pub fn deserialize_traces(&mut self, data: &[u8]) {
-        const TRACE_ROW_SIZE: usize = 2 * size_of::<u32>() + 3;
+        const TRACE_ROW_SIZE: usize = 2 * size_of::<u32>() + 4;
 
         for row in data.chunks_exact(TRACE_ROW_SIZE) {
             self.add_trace(
                 usize::from_be_bytes(row[0..4].try_into().unwrap()),
                 &row[8..11],
                 u32::from_be_bytes(row[4..8].try_into().unwrap()),
+                row[11] > 0,
             );
         }
     }
@@ -117,4 +119,5 @@ pub struct TraceStyle {
     pub idx: usize,
     pub color: [u8; 3],
     pub width: u32,
+    pub points_mode: bool,
 }

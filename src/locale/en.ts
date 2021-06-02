@@ -67,6 +67,7 @@ const en_lang = {
         title: 'Trace title',
         color: 'Trace color',
         width: 'Trace width',
+        pointsMode: 'Points mode',
     },
 
     modals: {

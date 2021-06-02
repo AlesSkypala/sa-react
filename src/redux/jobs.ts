@@ -36,7 +36,7 @@ export const invoke_job = createAsyncThunk(
                 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 handle: result.loadedTraces![t].handle,
                 title: result.loadedTraces?.[t].suggestedTitle ?? t.split('::').reverse()[0],
-                style: { width: 1, color: randomContrastingColor() },
+                style: { width: 1, color: randomContrastingColor(), points: false },
                 active: true,
                 rev: 0,
             }));
