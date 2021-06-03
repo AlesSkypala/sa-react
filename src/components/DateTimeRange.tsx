@@ -197,8 +197,6 @@ class DateTimeRange
         const { disabled, graphs } = this.props;
         const value = this.props.value && { from: parseTimestamp(this.props.value[0]), to: parseTimestamp(this.props.value[1]) };
 
-        console.log([ ...this.generateDisabled() ]);
-
         return (
             <div className='range-picker'>
                 <Form.Control name='timeRange' readOnly autoComplete='off' value={this.getRangeString()}></Form.Control>

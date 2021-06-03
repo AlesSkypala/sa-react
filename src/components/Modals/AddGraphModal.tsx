@@ -232,8 +232,6 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         const defaultRange: Dataset['dataRange'] = [ [ dateToTimestamp(now), dateToTimestamp(now) ] ];
         const availableRange = selectedSource?.dataranges;
 
-        console.log(availableRange);
-
         return (
             <Row className='separated'>
                 <Form.Group as={Col} md={3} className='d-flex flex-column'>
