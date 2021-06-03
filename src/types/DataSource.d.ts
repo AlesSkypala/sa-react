@@ -3,6 +3,7 @@ extends Identified {
     name: string;
     type: string;
     datasets: Dataset[];
+    dataranges: [number, number][];
     features: string[];
     metadata: { [key: string]: string };
 }

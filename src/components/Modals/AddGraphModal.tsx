@@ -230,7 +230,9 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         const setsDisabled = !selectedRange;
         const now = new Date();
         const defaultRange: Dataset['dataRange'] = [ [ dateToTimestamp(now), dateToTimestamp(now) ] ];
-        const availableRange = selectedSource?.datasets[0].dataRange;
+        const availableRange = selectedSource?.dataranges;
+
+        console.log(availableRange);
 
         return (
             <Row className='separated'>

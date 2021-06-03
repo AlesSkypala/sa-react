@@ -149,6 +149,8 @@ class DateTimeRange
 
         yield { before: DateTime.getDay(parseTimestamp(bounds[0][0]), 0) };
         for (let i = 1; i < bounds.length; ++i) {
+            if (DateTime.getDay(parseTimestamp(bounds[i - 1][1])).getTime() === DateTime.getDay(parseTimestamp(bounds[i][0])).getTime()) continue;
+
             yield {
                 after:  parseTimestamp(bounds[i - 1][1]),
                 before: parseTimestamp(bounds[i][0]),
@@ -194,6 +196,8 @@ class DateTimeRange
     public render() {
         const { disabled, graphs } = this.props;
         const value = this.props.value && { from: parseTimestamp(this.props.value[0]), to: parseTimestamp(this.props.value[1]) };
+
+        console.log([ ...this.generateDisabled() ]);
 
         return (
             <div className='range-picker'>

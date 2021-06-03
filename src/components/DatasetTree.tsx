@@ -422,6 +422,7 @@ class LeafComponent extends React.Component<LeafProps> {
                             onToggle={onToggle}
                             onDoubleClick={onDoubleClick}
                             onFavoriteToggle={this.props.onFavoriteToggle}
+                            onExpand={this.props.onExpand}
                         />
                     ))}</div>
                 )}
