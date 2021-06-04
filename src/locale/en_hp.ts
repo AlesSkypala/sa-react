@@ -250,6 +250,10 @@ export const titles = {
     'timeseriestruncatedframes': 'Truncated Frames',
     'timeseriesutilpercentagerx': 'Port Utilization Rx',
     'timeseriesutilpercentagetx': 'Port Utilization Tx',
+
+    'mppkById': 'By ID',
+    'mppkByKernel': 'By kernel',
+    'mppkByType': 'By type',
 };
 
 export const descriptions = {

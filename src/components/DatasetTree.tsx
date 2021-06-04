@@ -23,6 +23,7 @@ const knownIcons: { [key: string]: { [key: string]: IconDefinition } } = {
         'PhyPG_dat': faHdd,
         'Port_dat': faEyeDropper,
         'PhyMPPK_dat': faCogs,
+        'PhyProcDetail_dat': faCogs,
     }
 };
 
@@ -312,6 +313,8 @@ class LeafComponent extends React.Component<LeafProps> {
 
             if ((match = id.match(/([\w_]+_MPU)-(\d+)$/))) {
                 return t(`datasets.titles.hp.${match[1]}`, id, { val: match[2] });
+            } else if ((match = id.match(/^PHY_.+-by(\w+)$/))) {
+                return t(`datasets.titles.hp.mppkBy${match[1]}`, id);
             }
         }
 
@@ -361,7 +364,11 @@ class LeafComponent extends React.Component<LeafProps> {
             tooltip += `${t('datasets.items', { count: leaf.value.length })}\n`;
         } else {
             if (source.type === 'hp') {
-                tooltip += `${t('datasets.path', { path: leaf.value.category.map(c => `${c}.ZIP\\`).join() + leaf.value.id + '.csv' })}\n`;
+                if ((leaf.value.id.match(/^PHY_.+-by(\w+)$/)) && leaf.value.category.length >= 2) {
+                    tooltip += `${t('datasets.path', { path: `${leaf.value.category[0]}.ZIP\\${leaf.value.category[1]}.csv`})}\n`;
+                } else {
+                    tooltip += `${t('datasets.path', { path: leaf.value.category.map(c => `${c}.ZIP\\`).join('') + leaf.value.id + '.csv' })}\n`;
+                }
             } else {
                 tooltip += `${t('datasets.id', { id: leaf.value })}\n`;
             }
