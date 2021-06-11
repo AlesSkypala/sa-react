@@ -112,7 +112,7 @@ export const graph_threshold_select = createAsyncThunk(
     }
 );
 
-type GraphEdit = Partial<Pick<Graph, 'title' | 'xLabel' | 'yLabel'| 'zoom'>>;
+type GraphEdit = Partial<Pick<Graph, 'title' | 'xLabel' | 'yLabel'| 'zoom' | 'timeZone'>>;
 type TraceEdit = Partial<Pick<Trace, 'title'>> & { style?: Partial<TraceStyle> };
 
 export const graphsSlice = createSlice({

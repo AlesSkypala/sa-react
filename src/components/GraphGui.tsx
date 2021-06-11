@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { icon } from '../utils/icon';
 import { faDesktop, faArrowsAltH, faChartLine } from '@fortawesome/free-solid-svg-icons';
-import moment from 'moment';
+import moment from 'moment-timezone';
 import { parseTimestamp } from '../utils/datetime';
 import { timestampToLongDate } from '../locale/date';
 import { X_TICK_SPACE } from './Graph';
@@ -561,7 +561,12 @@ class GraphGui extends React.Component<Props, State> {
 
     private getXTickString = (val: number) => {
         if (this.props.xType === 'datetime') {
-            return moment(parseTimestamp(val)).format('DD.MM. hh:mm');
+            const { timeZone } = this.props;
+            const timestamp = parseTimestamp(val);
+
+            const m = timeZone ? moment.tz(timestamp, timeZone) : moment.tz(timestamp, 'UTC') ;
+
+            return m.format('DD.MM. HH:mm z');
         } else {
             return val.toString();
         }

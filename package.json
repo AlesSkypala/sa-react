@@ -36,6 +36,7 @@
     "immer": "^8.0.2",
     "lodash.debounce": "^4.0.8",
     "moment": "^2.29.1",
+    "moment-timezone": "^0.5.33",
     "react": "^17.0.1",
     "react-app-rewired": "^2.1.8",
     "react-bootstrap": "^1.4.0",

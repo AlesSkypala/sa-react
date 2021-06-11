@@ -98,6 +98,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
 
         const sourceType = this.state.selectedSource.type;
         const sourceName = this.state.selectedSource.name;
+        const timeZone = this.state.selectedSource?.metadata['tz'];
 
         // TODO convert units if possible
         const units = new Set<string>();
@@ -108,11 +109,13 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
             // TODO: this must be reworked to take into account the real xtype of selected traces
             xType: 'datetime',
             xRange,
+            timeZone,
 
             metadata: {
                 sourceNames: [ sourceName ],
                 datasetNames: datasets.map( d => GraphUtils.getTitle(sourceType, d.id) ),
                 units: [...units],
+                timeZone,
             },
         });
 
@@ -134,6 +137,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
 
         const sourceType = this.state.selectedSource.type;
         const sourceName = this.state.selectedSource.name;
+        const timeZone = this.state.selectedSource?.metadata['tz'];
 
         this.state.selectedDatasets.forEach(dataset => {
             const datasetName = GraphUtils.getTitle(sourceType, dataset.id);
@@ -146,11 +150,13 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
                 // TODO: this must be reworked to take into account the real xtype of selected traces
                 xType: 'datetime',
                 xRange,
+                timeZone,
 
                 metadata: {
                     sourceNames: [ sourceName ],
                     datasetNames: [ datasetName ],
                     units: [ dataset.units ],
+                    timeZone,
                 },
             }));
 
@@ -175,6 +181,7 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
 
         const datasetName = GraphUtils.getTitle(sourceType, dataset.id);
         const title = `${datasetName} [${dataset.units === 'percent' ? '%' : dataset.units}]`;
+        const timeZone = this.state.selectedSource?.metadata['tz'];
 
         const graph: Graph = GraphUtils.createGraph({
             title,
@@ -182,11 +189,13 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
             // TODO: this must be reworked to take into account the real xtype of selected traces
             xType: 'datetime',
             xRange,
+            timeZone,
 
             metadata: {
                 sourceNames: [ sourceName ],
                 datasetNames: [ GraphUtils.getTitle(sourceType, dataset.id) ],
                 units: [ dataset.units ],
+                timeZone,
             },
         });
 
@@ -203,7 +212,11 @@ class AddGraphModal extends ModalComponent<ImportResult, Args, State> {
         tooltip += t('datasets.id', { id: source.id }) + '\n';
 
         if ('path' in source.metadata) {
-            tooltip += t('datasets.path', { path: source.metadata['path'].replaceAll('/', '\\') }) + '\n';
+            tooltip += t('datasets.path', { path: source.metadata['path'] }) + '\n';
+        }
+
+        if ('tz' in source.metadata) {
+            tooltip += t('datasets.timeZone', { tz: source.metadata['tz'] }) + '\n';
         }
 
         return tooltip.trimEnd();

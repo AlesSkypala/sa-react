@@ -28,6 +28,7 @@ const en_lang = {
         title: 'Graph title',
         xLabel: 'x axis label',
         yLabel: 'y axis label',
+        timeZone: 'Time zone',
 
         xAxis: 'x axis',
         yAxis: 'y axis',
@@ -117,11 +118,11 @@ const en_lang = {
         },
 
         editGraph: {
-            title: 'Edit the graph {{name}}',
+            title: 'Edit the graph {{- name}}',
         },
 
         editTrace: {
-            title: 'Edit the trace {{title}}',
+            title: 'Edit the trace {{- title}}',
         },
 
         removeGraph: {
@@ -190,8 +191,9 @@ const en_lang = {
         },
 
         items: 'Items: {{count}}',
-        id: 'ID: {{id}}',
-        path: 'Path: {{path}}',
+        id: 'ID: {{- id}}',
+        path: 'Path: {{- path}}',
+        timeZone: 'Time zone: {{- tz}}',
         favorites: 'Favorites',
 
         avg: 'Average of {{count}} trace',
@@ -208,7 +210,12 @@ const en_lang = {
         title: 'An unexpected error has occurred!',
         directions: 'Please, save your console log (enter the developer menu by pressing F12 and follow the instructions in the gif above) and email it to us.',
         jobFailed: 'Data job {{handle}} has failed.',
-    }
+    },
+
+    timeZone: {
+        local: 'Local ({{- tz}})',
+        device: 'Device ({{- tz}})',
+    },
 };
 
 export default en_lang;

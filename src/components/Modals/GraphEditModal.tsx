@@ -1,24 +1,34 @@
 
+import moment from 'moment-timezone';
 import * as React from 'react';
 import { Button, ModalTitle, Form } from 'react-bootstrap';
-import { ModalComponent } from '.';
+import { ModalComponent, ModalProps } from '.';
 import { t } from '../../locale';
 
-class GraphEditModal extends ModalComponent<EditResult, Args, State> {
-    public state: State = {
-        title: t('graph.new'),
-        xLabel: 'osa x',
-        yLabel: 'osa y',
-    };
+export interface Args {
+    graph: Graph;
+}
 
-    public componentDidMount(): void {
+interface State extends Pick<Graph, 'title' | 'xLabel' | 'yLabel' | 'timeZone'> {
+    
+}
+
+export type EditResult = Partial<Pick<Graph, 'title' | 'xLabel' | 'yLabel'>> | undefined;
+
+class GraphEditModal extends ModalComponent<EditResult, Args, State> {
+    constructor(props: ModalProps<EditResult, Args>) {
+        super(props);
+
         const { graph } = this.props;
 
-        this.setState({
+        this.state = {
             title: graph.title,
             xLabel: graph.xLabel,
             yLabel: graph.yLabel,
-        });
+            timeZone: graph.timeZone ?? 'UTC',
+        };
+
+        (window as any).moment = moment;
     }
 
     protected renderHeader(): JSX.Element {
@@ -30,7 +40,13 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
     
     private onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); this.okClicked(); }
     private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
+    private onFormSelect = (e: React.ChangeEvent<HTMLSelectElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.selectedOptions[0].value } as never);
+
     protected renderBody(): JSX.Element {
+        const hasTimezones = this.props.graph.xType === 'datetime';
+        const sourceTz = this.props.graph.metadata.timeZone;
+        const localTz = moment.tz.guess();
+
         return (
             <Form onSubmit={this.onFormSubmit}>
                 <Form.Group>
@@ -45,6 +61,14 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
                     <Form.Label>{t('graph.yLabel')}</Form.Label>
                     <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
                 </Form.Group>
+                {hasTimezones && <Form.Group>
+                    <Form.Label>{t('graph.timeZone')}</Form.Label>
+                    <Form.Control as='select' name='timeZone' value={this.state.timeZone} onChange={this.onFormSelect}>
+                        <option value='UTC'>UTC</option>
+                        {localTz !== 'UTC' && localTz !== sourceTz && <option value={localTz}>{t('timeZone.local', { tz: localTz })}</option>}
+                        {sourceTz && sourceTz !== 'UTC' && <option value={sourceTz}>{t('timeZone.device', { tz: sourceTz })}</option>}
+                    </Form.Control>
+                </Form.Group>}
                 <Form.Control type="submit" hidden />
             </Form>
         );
@@ -66,15 +90,5 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
         );
     }
 }
-
-export interface Args {
-    graph: Graph;
-}
-
-interface State extends Pick<Graph, 'title' | 'xLabel' | 'yLabel'> {
-    
-}
-
-export type EditResult = Partial<Pick<Graph, 'title' | 'xLabel' | 'yLabel'>> | undefined;
 
 export default GraphEditModal;

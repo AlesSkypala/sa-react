@@ -6,6 +6,7 @@ interface Graph<T extends XType = XType> {
     title: string;
     xLabel: string;
     yLabel: string;
+    timeZone?: string;
 
     metadata: GraphMetadata;
     style: GraphStyle;
@@ -23,6 +24,7 @@ interface GraphMetadata {
     units: string[];
     datasetNames: string[];
     sourceNames: string[];
+    timeZone?: string;
 }
 
 interface GraphStyle {
