@@ -27,8 +27,6 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
             yLabel: graph.yLabel,
             timeZone: graph.timeZone ?? 'UTC',
         };
-
-        (window as any).moment = moment;
     }
 
     protected renderHeader(): JSX.Element {

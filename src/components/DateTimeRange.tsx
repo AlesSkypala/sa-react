@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Button, ButtonGroup, Dropdown, Form, Overlay, Popover } from 'react-bootstrap';
+import { Button, Dropdown, Form, Overlay, Popover } from 'react-bootstrap';
 import { parseTimestamp, dateToTimestamp } from '../utils/datetime';
 import * as DateTime from '../utils/datetime';
 import DayPicker, { DayModifiers } from 'react-day-picker';
@@ -200,35 +200,38 @@ class DateTimeRange
         return (
             <div className='range-picker'>
                 <Form.Control name='timeRange' readOnly autoComplete='off' value={this.getRangeString()}></Form.Control>
-                <Dropdown as={ButtonGroup} className='my-2'>
+                <div className='button-row my-2'>
+                    <small>Days</small>
                     <Button onClick={this.onRangeButton} {...this.getRelDate(0)}>{t('modals.addGraph.lastDay')}</Button>
                     <Button onClick={this.onRangeButton} {...this.getRelDate(1)}>{t('modals.addGraph.prevDay')}</Button>
                     <Button onClick={this.onRangeButton} {...this.getRelDate(2)}>{t('modals.addGraph.prevPrevDay')}</Button>
-                </Dropdown>
+                </div>
 
-                <Dropdown as={ButtonGroup} className='mb-2'>
+                <div className='button-row mb-2'>
+                    <small>Last</small>
                     <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(1)}>{t('modals.addGraph.day')}</Button>
                     <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(2)}>{t('modals.addGraph.twodays')}</Button>
                     <Button disabled={disabled} variant='warning' onClick={this.onRangeButton} data-range={this.getDays(4)}>{t('modals.addGraph.fourdays')}</Button>
-
-                    <Dropdown.Toggle disabled={disabled} variant='warning' />
-                    <Dropdown.Menu>
-                        <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(7)}  >{t('modals.addGraph.week')}</Dropdown.Item>
-                        <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(28)} >{t('modals.addGraph.month')}</Dropdown.Item>
-                        <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(91)} >{t('modals.addGraph.quarter')}</Dropdown.Item>
-                        <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(183)}>{t('modals.addGraph.halfYear')}</Dropdown.Item>
-                        <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(365)}>{t('modals.addGraph.year')}</Dropdown.Item>
-                        {graphs.length > 0 && (
-                            <>
-                                <Dropdown.Divider />
-                                <Dropdown.ItemText>{t('modals.addGraph.copy')}</Dropdown.ItemText>
-                                {graphs.map(g => (
-                                    <Dropdown.Item key={g.id} data-from={g.xRange[0]} data-to={g.xRange[1]} onClick={this.onRangeButton}>{g.title}</Dropdown.Item>
-                                ))}
-                            </>
-                        )}
-                    </Dropdown.Menu>
-                </Dropdown>
+                    <Dropdown style={{ flexGrow: 0 }}>
+                        <Dropdown.Toggle disabled={disabled} variant='warning' ></Dropdown.Toggle>
+                        <Dropdown.Menu>
+                            <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(7)}  >{t('modals.addGraph.week')}</Dropdown.Item>
+                            <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(28)} >{t('modals.addGraph.month')}</Dropdown.Item>
+                            <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(91)} >{t('modals.addGraph.quarter')}</Dropdown.Item>
+                            <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(183)}>{t('modals.addGraph.halfYear')}</Dropdown.Item>
+                            <Dropdown.Item onClick={this.onRangeButton} data-range={this.getDays(365)}>{t('modals.addGraph.year')}</Dropdown.Item>
+                            {graphs.length > 0 && (
+                                <>
+                                    <Dropdown.Divider />
+                                    <Dropdown.ItemText>{t('modals.addGraph.copy')}</Dropdown.ItemText>
+                                    {graphs.map(g => (
+                                        <Dropdown.Item key={g.id} data-from={g.xRange[0]} data-to={g.xRange[1]} onClick={this.onRangeButton}>{g.title}</Dropdown.Item>
+                                    ))}
+                                </>
+                            )}
+                        </Dropdown.Menu>
+                    </Dropdown>
+                </div>
 
                 <DayPicker
                     disabledDays={[ ...this.generateDisabled() ]}

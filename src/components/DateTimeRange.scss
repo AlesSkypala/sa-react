@@ -42,4 +42,23 @@
             }
         }
     }
+
+    .button-row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: stretch;
+        width: 100%;
+
+        & > :first-child {
+            width: 3rem;
+            padding-left: 0.25rem;
+        }
+
+        & > :not(:first-child) {
+            flex-grow: 1;
+            margin-bottom: 0;
+            margin: 0 0.25rem 0;
+        }
+    }
 }
