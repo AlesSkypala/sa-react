@@ -566,7 +566,7 @@ class GraphGui extends React.Component<Props, State> {
 
             const m = timeZone ? moment.tz(timestamp, timeZone) : moment.tz(timestamp, 'UTC') ;
 
-            return m.format('DD.MM. HH:mm z');
+            return `${m.format('DD.MM. HH:mm')} UTC${m.zoneAbbr() !== 'UTC' ? m.format('Z') : ''}`;
         } else {
             return val.toString();
         }

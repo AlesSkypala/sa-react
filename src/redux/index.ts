@@ -10,7 +10,7 @@ export {
     graph_action, graph_threshold_select,
     generate_graph_id, toggle_traces,
     remove_traces, add_traces,
-    edit_traces,
+    edit_traces, sync_timezone
 } from './graphs';
 
 export {

@@ -1,5 +1,6 @@
 import { t } from '../locale';
 import { generate_graph_id } from '../redux/graphs';
+import moment from 'moment-timezone';
 
 type GraphDefaultKeys = 'id' | 'title' | 'xLabel' | 'yLabel' | 'visible' | 'style' | 'traces';
 
@@ -36,4 +37,18 @@ export function getTitle(sourceType: DataSource['type'], id: Trace['id']) {
     }
 
     return t(`datasets.titles.${sourceType}.${id}`, id);
+}
+
+export function getTimezones(graph: Graph): { tz: string, text: string }[] {
+    if (graph.xType !== 'datetime') return [];
+
+    const sourceTz = graph.metadata.timeZone;
+    const localTz = moment.tz.guess();
+    const res: { tz: string, text: string }[] = [];
+
+    res.push({ tz: 'UTC', text: 'UTC' });
+    if (localTz && localTz !== 'UTC') { res.push({ tz: localTz, text: t('timeZone.local', { tz: localTz }) }); }
+    if (sourceTz && sourceTz !== 'UTC' && sourceTz !== localTz) { res.push({ tz: sourceTz, text: t('timeZone.device', { tz: sourceTz }) }); }
+
+    return res;
 }

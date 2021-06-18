@@ -20,12 +20,16 @@
         }
     }
 
-    .buttons > .btn {
+    .buttons > :not(.show) {
         opacity: 0.3;
         transition: 0.3s;
     }
+
+    .dropdown-toggle::before {
+        display: none !important;
+    }
     
-    .buttons > :is(.btn.opaque, .btn:hover) {
+    .buttons > :is(.btn.opaque, :not(.show):hover) {
         opacity: 0.8;
     }
 

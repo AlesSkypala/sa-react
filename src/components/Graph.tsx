@@ -4,9 +4,9 @@ import debounce from 'lodash.debounce';
 import domtoimage from 'dom-to-image';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faWrench, faExclamationTriangle, faCamera, faMinusSquare, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { faTrash, faWrench, faExclamationTriangle, faCamera, faMinusSquare, faArrowUp, faArrowDown, faUserClock } from '@fortawesome/free-solid-svg-icons';
 
-import { Button, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
+import { Button, Dropdown, OverlayTrigger, Spinner, Tooltip } from 'react-bootstrap';
 
 import { dataWorker } from '..';
 import { transfer } from 'comlink';
@@ -15,7 +15,7 @@ import DataJob from '../services/DataJob';
 import * as GraphUtils from '../utils/graph';
 
 import { t } from '../locale';
-import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings, invoke_job, add_graphs, remove_traces, edit_traces } from '../redux';
+import { graph_threshold_select, clone_graph, remove_graphs, edit_graph, toggle_traces, DispatchProps, hide_graphs, set_settings, invoke_job, add_graphs, remove_traces, edit_traces, sync_timezone } from '../redux';
 import { GraphEditModal, LdevSelectModal } from './Modals';
 import RendererHandle from '../services/RendererHandle';
 import { PendingDataJob } from '../redux/jobs';
@@ -44,6 +44,7 @@ const dispatchProps = {
     invoke_job,
     remove_traces,
     edit_traces,
+    sync_timezone,
 };
 
 const stateProps = (state: RootStore, props: Pick<Graph, 'id'>) => ({
@@ -518,6 +519,18 @@ class GraphComponent
         if (!data) return;
     }
 
+    private changeTz = (e: React.MouseEvent<HTMLAnchorElement>) => {
+        const { tz } = e.currentTarget.dataset;
+
+        if (tz) {
+            this.props.edit_graph({ id: this.props.id, timeZone: tz });
+        }
+    }
+
+    private spreadTz = () => {
+        this.props.timeZone && this.props.sync_timezone(this.props.timeZone);
+    }
+
     public render() {
         const { title, traces } = this.props;
         const { error, ldevSelectAvailable, ldevToHostGroupAvailable, selectedTrace } = this.state;
@@ -534,6 +547,7 @@ class GraphComponent
 
         const iconUp   = <FontAwesomeIcon icon={faArrowUp}   color='green' />;
         const iconDown = <FontAwesomeIcon icon={faArrowDown} color='red' />;
+        const timezones = GraphUtils.getTimezones(this.props);
 
         return (
             <div className={`graph ${this.props.focused ? 'active' : ''}`} ref={this.graphRef}>
@@ -563,6 +577,14 @@ class GraphComponent
                             </OverlayTrigger>
                         )}
                         <Button size='sm' variant='none' onClick={this.takeScreenshot}><FontAwesomeIcon icon={faCamera} /></Button>
+                        
+                        {timezones.length > 0 && <Dropdown drop='left'>
+                            <Dropdown.Toggle variant='none' size='sm'><FontAwesomeIcon icon={faUserClock} /></Dropdown.Toggle>
+                            <Dropdown.Menu>
+                                {timezones.map(t => <Dropdown.Item key={t.tz} data-tz={t.tz} onClick={this.changeTz}>{t.text}</Dropdown.Item>)}
+                                <Dropdown.Item style={{ borderTop: 'solid 1px gray' }} onClick={this.spreadTz}>{t('graph.spreadTz', { tz: this.props.timeZone })}</Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>}
                         <Button size='sm' variant='none' onClick={this.onEdit}>  <FontAwesomeIcon icon={faWrench} /></Button>
                         <Button size='sm' variant='none' onClick={this.onHide}><FontAwesomeIcon icon={faMinusSquare} /></Button>
                         <Button size='sm' variant='none' onClick={this.onRemove}><FontAwesomeIcon icon={faTrash}  /></Button>

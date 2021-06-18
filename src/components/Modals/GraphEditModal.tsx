@@ -4,28 +4,38 @@ import * as React from 'react';
 import { Button, ModalTitle, Form } from 'react-bootstrap';
 import { ModalComponent, ModalProps } from '.';
 import { t } from '../../locale';
+import * as GraphUtils from '../../utils/graph';
+import Select, { ValueType } from 'react-select';
 
 export interface Args {
     graph: Graph;
 }
 
-interface State extends Pick<Graph, 'title' | 'xLabel' | 'yLabel' | 'timeZone'> {
-    
+type Timezone = { tz: string, text: string };
+interface State extends Pick<Graph, 'title' | 'xLabel' | 'yLabel'> {
+    timeZones: Timezone[];
+    timeZone: Timezone;
 }
 
-export type EditResult = Partial<Pick<Graph, 'title' | 'xLabel' | 'yLabel'>> | undefined;
+export type EditResult = Partial<Pick<Graph, 'title' | 'xLabel' | 'yLabel' | 'timeZone'>> | undefined;
 
 class GraphEditModal extends ModalComponent<EditResult, Args, State> {
     constructor(props: ModalProps<EditResult, Args>) {
         super(props);
 
         const { graph } = this.props;
+        const tzs = [
+            ...GraphUtils.getTimezones(graph),
+        ];
+
+        moment.tz.names().filter(t => !tzs.some(pt => pt.tz === t)).forEach(t => tzs.push({ tz: t, text: t }));
 
         this.state = {
             title: graph.title,
             xLabel: graph.xLabel,
             yLabel: graph.yLabel,
-            timeZone: graph.timeZone ?? 'UTC',
+            timeZones: tzs,
+            timeZone: (graph.timeZone ? tzs.find(t => t.tz === graph.timeZone) : undefined) ?? tzs[0],
         };
     }
 
@@ -38,12 +48,10 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
     
     private onFormSubmit = (e: React.FormEvent<HTMLFormElement>) => { e.preventDefault(); this.okClicked(); }
     private onFormChange = (e: React.ChangeEvent<HTMLInputElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.value } as never);
-    private onFormSelect = (e: React.ChangeEvent<HTMLSelectElement>) => this.setState({ [e.currentTarget.name]: e.currentTarget.selectedOptions[0].value } as never);
+    private onTzSelect = (e: ValueType<Timezone, false>) => e && this.setState({ timeZone: e });
 
     protected renderBody(): JSX.Element {
-        const hasTimezones = this.props.graph.xType === 'datetime';
-        const sourceTz = this.props.graph.metadata.timeZone;
-        const localTz = moment.tz.guess();
+        const { timeZone, timeZones } = this.state;
 
         return (
             <Form onSubmit={this.onFormSubmit}>
@@ -59,20 +67,29 @@ class GraphEditModal extends ModalComponent<EditResult, Args, State> {
                     <Form.Label>{t('graph.yLabel')}</Form.Label>
                     <Form.Control name='yLabel' value={this.state.yLabel} onChange={this.onFormChange}></Form.Control>
                 </Form.Group>
-                {hasTimezones && <Form.Group>
+                {timeZones.length > 0 && <Form.Group>
                     <Form.Label>{t('graph.timeZone')}</Form.Label>
-                    <Form.Control as='select' name='timeZone' value={this.state.timeZone} onChange={this.onFormSelect}>
-                        <option value='UTC'>UTC</option>
-                        {localTz !== 'UTC' && localTz !== sourceTz && <option value={localTz}>{t('timeZone.local', { tz: localTz })}</option>}
-                        {sourceTz && sourceTz !== 'UTC' && <option value={sourceTz}>{t('timeZone.device', { tz: sourceTz })}</option>}
-                    </Form.Control>
+                    <Select
+                        isMulti={false}
+                        options={timeZones}
+                        value={timeZone}
+                        getOptionValue={t => t.tz}
+                        getOptionLabel={t => t.text}
+                        onChange={this.onTzSelect}
+                        styles={{
+                            option: (provided, state) => ({  ...provided, color: state.isSelected ? 'white' : 'black' })
+                        }}
+                    />
                 </Form.Group>}
                 <Form.Control type="submit" hidden />
             </Form>
         );
     }
 
-    private okClicked = () => this.resolve(this.state);
+    private okClicked = () => {
+        const st = { ...this.state, timeZone: this.state.timeZone.tz };
+        this.resolve(st);
+    };
     private cancelClicked = () => this.resolve(undefined);
 
     protected renderFooter(): JSX.Element {

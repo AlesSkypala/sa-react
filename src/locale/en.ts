@@ -59,6 +59,7 @@ const en_lang = {
             toavgsum: 'To AVG/SUM',
         },
 
+        spreadTz: 'Apply {{- tz}} to all graphs',
         noTraces: 'No active traces',
         redrawNotice: 'The graph will be rerendered after you lock the layout',
         error: 'A critical error has occurred while rendering the graph:',

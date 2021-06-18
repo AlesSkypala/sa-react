@@ -137,6 +137,14 @@ export const graphsSlice = createSlice({
             state.focused = action.payload;
         },
 
+        sync_timezone: (state, action: PayloadAction<Graph['timeZone']>) => {
+            state.items.forEach(g => {
+                if (g.xType === 'datetime') {
+                    g.timeZone = action.payload;
+                }
+            });
+        },
+
         remove_graphs: (state, action: PayloadAction<Graph['id'] | Graph['id'][]>) => {
             const ids = Array.isArray(action.payload) ? action.payload : [ action.payload ];
 
@@ -280,6 +288,7 @@ export const {
     set_layout, set_stacking,
     add_traces, toggle_traces,
     remove_traces, edit_traces,
+    sync_timezone,
 } = graphsSlice.actions;
 
 export default graphsSlice.reducer;
